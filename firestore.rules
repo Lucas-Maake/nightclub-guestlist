@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+	match /databases/{database}/documents {
+		function signedIn() {
+			return request.auth != null;
+		}
+
+		function reservationDoc(reservationId) {
+			return get(/databases/$(database)/documents/reservations/$(reservationId));
+		}
+
+		function isHost(reservationId) {
+			return signedIn() && reservationDoc(reservationId).data.hostUid == request.auth.uid;
+		}
+
+		function isOwnGuest(uid) {
+			return signedIn() && request.auth.uid == uid;
+		}
+
+		function aggregateOnlyUpdate() {
+			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+				'acceptedCount',
+				'declinedCount',
+				'updatedAt'
+			]) &&
+			request.resource.data.acceptedCount >= 0 &&
+			request.resource.data.declinedCount >= 0;
+		}
+
+		match /reservationPublic/{reservationId} {
+			allow get, list: if true;
+			allow create: if signedIn();
+			allow update: if isHost(reservationId) || (signedIn() && aggregateOnlyUpdate());
+			allow delete: if isHost(reservationId);
+		}
+
+		match /reservationDebug/{reservationId} {
+			allow get: if true;
+			allow list: if false;
+			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+			allow update, delete: if isHost(reservationId);
+		}
+
+		match /reservations/{reservationId} {
+			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
+			allow read, update, delete: if isHost(reservationId);
+
+			match /guests/{uid} {
+				allow get: if isHost(reservationId) || isOwnGuest(uid);
+				allow list: if isHost(reservationId);
+				allow create: if isOwnGuest(uid);
+				allow update, delete: if isHost(reservationId) || isOwnGuest(uid);
+			}
+		}
+
+		match /users/{uid} {
+			allow create, read, update, delete: if signedIn() && request.auth.uid == uid;
+		}
+	}
+}

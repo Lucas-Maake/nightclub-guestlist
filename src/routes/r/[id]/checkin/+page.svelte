@@ -1,0 +1,217 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onDestroy, onMount } from 'svelte';
+	import type { Unsubscribe } from 'firebase/firestore';
+	import AppHeader from '$lib/components/common/app-header.svelte';
+	import StatusChip from '$lib/components/common/status-chip.svelte';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
+	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
+	import {
+		getReservationPrivate,
+		listenToGuests,
+		toggleGuestCheckIn
+	} from '$lib/firebase/firestore';
+	import type { GuestRecord } from '$lib/types/models';
+	import { pushToast } from '$lib/stores/toast';
+	import { cn } from '$lib/utils/cn';
+	import { formatPhone } from '$lib/utils/format';
+
+	type GuestWithId = GuestRecord & { uid: string };
+
+	const reservationId = $derived($page.params.id ?? '');
+
+	let guests = $state<GuestWithId[]>([]);
+	let loading = $state(true);
+	let hostAccess = $state<'pending' | 'allowed' | 'denied'>('pending');
+	let search = $state('');
+	let pending = $state<Record<string, boolean>>({});
+
+	let guestsUnsubscribe: Unsubscribe | null = null;
+
+	onMount(async () => {
+		await waitForAuthReady();
+		if (!reservationId) {
+			hostAccess = 'denied';
+			loading = false;
+			return;
+		}
+
+		if (!$currentUser) {
+			await goto(`/login?returnTo=${encodeURIComponent($page.url.pathname)}`);
+			return;
+		}
+
+		const reservation = await getReservationPrivate(reservationId);
+		if (!reservation || reservation.hostUid !== $currentUser.uid) {
+			hostAccess = 'denied';
+			loading = false;
+			return;
+		}
+
+		hostAccess = 'allowed';
+		guestsUnsubscribe = listenToGuests(reservationId, (value) => {
+			guests = value;
+			loading = false;
+		});
+	});
+
+	onDestroy(() => {
+		guestsUnsubscribe?.();
+	});
+
+	function isCheckedIn(guest: GuestWithId): boolean {
+		if (pending[guest.uid] !== undefined) {
+			return pending[guest.uid];
+		}
+
+		return Boolean(guest.checkedInAt);
+	}
+
+	function isEligibleForCheckIn(guest: GuestWithId): boolean {
+		return guest.status === 'accepted';
+	}
+
+	async function handleToggleCheckIn(guest: GuestWithId): Promise<void> {
+		if (!$currentUser) {
+			return;
+		}
+
+		if (!isEligibleForCheckIn(guest)) {
+			pushToast({
+				title: 'Cannot check in',
+				description: 'Guest must accept RSVP before check-in.',
+				variant: 'destructive'
+			});
+			return;
+		}
+
+		const nextValue = !isCheckedIn(guest);
+		pending = { ...pending, [guest.uid]: nextValue };
+
+		try {
+			await toggleGuestCheckIn(reservationId, guest.uid, nextValue, $currentUser.uid);
+			const clone = { ...pending };
+			delete clone[guest.uid];
+			pending = clone;
+		} catch (error) {
+			const clone = { ...pending };
+			delete clone[guest.uid];
+			pending = clone;
+
+			pushToast({
+				title: 'Check-in failed',
+				description: error instanceof Error ? error.message : 'Unable to update guest check-in',
+				variant: 'destructive'
+			});
+		}
+	}
+
+	const normalizedSearch = $derived(search.trim().toLowerCase());
+	const filteredGuests = $derived.by(() =>
+		guests.filter((guest) => {
+			if (!normalizedSearch) {
+				return true;
+			}
+
+			return (
+				guest.displayName.toLowerCase().includes(normalizedSearch) ||
+				guest.phone.toLowerCase().includes(normalizedSearch)
+			);
+		})
+	);
+
+	const checkedInCount = $derived(guests.filter((guest) => guest.checkedInAt).length);
+</script>
+
+<AppHeader compact />
+
+<main class="app-shell py-4 sm:py-6">
+	<section class="space-y-4">
+		<div class="space-y-1">
+			<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Door Check-in</p>
+			<h1 class="section-title">Fast entry workflow</h1>
+			<p class="section-lead">Built for tablet use with large tap targets and minimal clicks.</p>
+		</div>
+
+		{#if loading}
+			<Card>
+				<CardContent class="p-6">
+					<p class="text-sm text-muted-foreground">Loading door list...</p>
+				</CardContent>
+			</Card>
+		{:else if hostAccess === 'denied'}
+			<Card>
+				<CardHeader>
+					<CardTitle>Access denied</CardTitle>
+					<CardDescription>Only the reservation host can access check-in in this MVP.</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href={`/r/${reservationId}`}>
+						Open guest page
+					</a>
+				</CardContent>
+			</Card>
+		{:else}
+			<Card class="overflow-hidden">
+				<div class="sticky top-[64px] z-20 border-b border-border/70 bg-card/95 p-4 backdrop-blur">
+					<div class="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+						<Input
+							type="search"
+							placeholder="Search name or phone..."
+							class="h-12 text-base"
+							bind:value={search}
+						/>
+						<div class="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-2 text-sm text-muted-foreground">
+							{checkedInCount} checked in
+						</div>
+						<a
+							class={cn(buttonVariants({ variant: 'outline', size: 'md' }))}
+							href={`/r/${reservationId}/host`}
+						>
+							Host hub
+						</a>
+					</div>
+				</div>
+
+				<CardContent class="max-h-[72vh] space-y-3 overflow-auto p-3 sm:p-4">
+					{#if filteredGuests.length === 0}
+						<p class="rounded-2xl border border-border/70 bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
+							No guests found.
+						</p>
+					{:else}
+						{#each filteredGuests as guest (guest.uid)}
+							<div class="rounded-2xl border border-border/70 bg-secondary/18 p-4">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div class="space-y-1">
+										<p class="text-base font-medium text-foreground sm:text-lg">{guest.displayName}</p>
+										<p class="text-sm text-muted-foreground">{formatPhone(guest.phone)}</p>
+									</div>
+									<StatusChip status={isCheckedIn(guest) ? 'checked-in' : guest.status} />
+								</div>
+
+								<div class="mt-4 flex flex-wrap gap-3">
+									<Button
+										size="lg"
+										variant={isCheckedIn(guest) ? 'outline' : 'success'}
+										class="min-w-[150px]"
+										onclick={() => handleToggleCheckIn(guest)}
+									>
+										{isCheckedIn(guest) ? 'Undo Check-in' : 'Check In'}
+									</Button>
+									{#if !isEligibleForCheckIn(guest)}
+										<p class="self-center text-xs text-muted-foreground">
+											Guest must accept RSVP first.
+										</p>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					{/if}
+				</CardContent>
+			</Card>
+		{/if}
+	</section>
+</main>
