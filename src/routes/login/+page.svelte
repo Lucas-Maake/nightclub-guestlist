@@ -27,6 +27,25 @@
 	let errorMessage = '';
 	let returnTo = '/';
 
+	function formatAuthError(error: unknown): string {
+		if (!(error instanceof Error)) {
+			return 'Unable to send OTP.';
+		}
+
+		const message = error.message;
+		if (message.includes('auth/invalid-app-credential')) {
+			return 'Invalid app credential from reCAPTCHA. Complete the challenge, then retry. If this persists, verify localhost is an authorized Firebase Auth domain.';
+		}
+		if (message.includes('auth/captcha-check-failed')) {
+			return 'reCAPTCHA verification failed or expired. Complete reCAPTCHA again and retry.';
+		}
+		if (message.includes('auth/invalid-phone-number')) {
+			return 'Phone number format is invalid. Use a valid E.164 number, for example +16105551234.';
+		}
+
+		return message;
+	}
+
 	function normalizePhone(value: string): string {
 		const trimmed = value.trim();
 		if (trimmed.startsWith('+')) {
@@ -83,7 +102,21 @@
 				variant: 'success'
 			});
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Unable to send OTP.';
+			errorMessage = formatAuthError(error);
+
+			// Reset verifier after invalid/expired captcha so the next attempt can succeed.
+			if (
+				error instanceof Error &&
+				(error.message.includes('auth/invalid-app-credential') ||
+					error.message.includes('auth/captcha-check-failed'))
+			) {
+				clearRecaptcha();
+				try {
+					await setupRecaptcha('recaptcha-container');
+				} catch (setupError) {
+					errorMessage = formatAuthError(setupError);
+				}
+			}
 		} finally {
 			loading = false;
 		}
