@@ -25,33 +25,60 @@
 	let currentStep: 'phone' | 'code' = 'phone';
 	let confirmationResult: ConfirmationResult | null = null;
 	let errorMessage = '';
+	type AuthIssue =
+		| 'invalid-app-credential'
+		| 'captcha-check-failed'
+		| 'invalid-phone-number'
+		| 'too-many-requests'
+		| 'billing-not-enabled'
+		| null;
+	let authIssue: AuthIssue = null;
 	let returnTo = '/';
 
-	function formatAuthError(error: unknown): string {
+	function parseAuthError(error: unknown): { message: string; issue: AuthIssue } {
 		if (!(error instanceof Error)) {
-			return 'Unable to send OTP.';
+			return { message: 'Unable to send OTP.', issue: null };
 		}
 
 		const message = error.message;
+		if (message.includes('auth/too-many-requests')) {
+			return {
+				message:
+					'Too many OTP attempts were detected. Wait 30-60 minutes, then retry this number.',
+				issue: 'too-many-requests'
+			};
+		}
 		if (message.includes('auth/invalid-app-credential')) {
-			return 'Invalid app credential from reCAPTCHA. Complete the challenge, then retry. If this persists, verify localhost is an authorized Firebase Auth domain.';
+			return {
+				message:
+					'Invalid app credential from reCAPTCHA. Complete the challenge, then retry. If this persists, verify localhost is an authorized Firebase Auth domain.',
+				issue: 'invalid-app-credential'
+			};
 		}
 		if (message.includes('auth/captcha-check-failed')) {
-			return 'reCAPTCHA verification failed or expired. Complete reCAPTCHA again and retry.';
+			return {
+				message: 'reCAPTCHA verification failed or expired. Complete reCAPTCHA again and retry.',
+				issue: 'captcha-check-failed'
+			};
 		}
 		if (message.includes('auth/invalid-phone-number')) {
-			return 'Phone number format is invalid. Use a valid E.164 number, for example +16105551234.';
+			return {
+				message: 'Phone number format is invalid. Use a valid E.164 number, for example +16105551234.',
+				issue: 'invalid-phone-number'
+			};
+		}
+		if (message.includes('auth/billing-not-enabled')) {
+			return {
+				message: 'Firebase billing is not enabled for real SMS OTP on this project.',
+				issue: 'billing-not-enabled'
+			};
 		}
 
-		return message;
+		return { message, issue: null };
 	}
 
 	function normalizePhone(value: string): string {
 		const trimmed = value.trim();
-		if (trimmed.startsWith('+')) {
-			return trimmed;
-		}
-
 		const digits = trimmed.replace(/\D/g, '');
 		if (digits.length === 10) {
 			return `+1${digits}`;
@@ -73,10 +100,9 @@
 		try {
 			await setupRecaptcha('recaptcha-container');
 		} catch (error) {
-			errorMessage =
-				error instanceof Error
-					? error.message
-					: 'Unable to initialize phone auth. Check Firebase config and emulator status.';
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
 		}
 	});
 
@@ -90,6 +116,7 @@
 
 	async function handleSendOtp(): Promise<void> {
 		errorMessage = '';
+		authIssue = null;
 		loading = true;
 
 		try {
@@ -102,7 +129,9 @@
 				variant: 'success'
 			});
 		} catch (error) {
-			errorMessage = formatAuthError(error);
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
 
 			// Reset verifier after invalid/expired captcha so the next attempt can succeed.
 			if (
@@ -114,7 +143,9 @@
 				try {
 					await setupRecaptcha('recaptcha-container');
 				} catch (setupError) {
-					errorMessage = formatAuthError(setupError);
+					const parsedSetupError = parseAuthError(setupError);
+					errorMessage = parsedSetupError.message;
+					authIssue = parsedSetupError.issue;
 				}
 			}
 		} finally {
@@ -125,10 +156,12 @@
 	async function handleVerifyCode(): Promise<void> {
 		if (!confirmationResult) {
 			errorMessage = 'Request OTP first.';
+			authIssue = null;
 			return;
 		}
 
 		errorMessage = '';
+		authIssue = null;
 		loading = true;
 
 		try {
@@ -140,7 +173,9 @@
 			});
 			await goto(returnTo);
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Invalid verification code.';
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
 		} finally {
 			loading = false;
 		}
@@ -183,6 +218,33 @@
 					<p class="rounded-2xl border border-destructive/35 bg-destructive/15 px-4 py-3 text-sm text-destructive-foreground">
 						{errorMessage}
 					</p>
+				{/if}
+
+				{#if authIssue === 'too-many-requests'}
+					<div class="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-3 text-sm">
+						<p class="font-medium text-foreground">Rate limit guidance</p>
+						<ul class="mt-2 space-y-1 text-xs text-muted-foreground">
+							<li>Wait 30-60 minutes before retrying this real phone number.</li>
+							<li>For immediate local QA, use Firebase test phone numbers.</li>
+							<li>Retry from a different network if throttling persists.</li>
+						</ul>
+					</div>
+				{:else if authIssue === 'invalid-app-credential' || authIssue === 'captcha-check-failed'}
+					<div class="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-3 text-sm">
+						<p class="font-medium text-foreground">reCAPTCHA recovery steps</p>
+						<ul class="mt-2 space-y-1 text-xs text-muted-foreground">
+							<li>Complete the reCAPTCHA challenge and ensure the checkmark is visible.</li>
+							<li>Hard refresh and retry once.</li>
+							<li>For local QA, use Firebase test phone numbers as fallback.</li>
+						</ul>
+					</div>
+				{:else if authIssue === 'billing-not-enabled'}
+					<div class="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-3 text-sm">
+						<p class="font-medium text-foreground">Billing required for real OTP</p>
+						<p class="mt-2 text-xs text-muted-foreground">
+							Real SMS OTP requires Firebase Blaze billing. Test numbers continue to work without live SMS.
+						</p>
+					</div>
 				{/if}
 
 				<div class="flex flex-wrap gap-3">

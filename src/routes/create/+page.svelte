@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { afterNavigate, goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import AppHeader from '$lib/components/common/app-header.svelte';
-	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
-	import ReservationPreviewCard from '$lib/components/common/reservation-preview-card.svelte';
+import { afterNavigate, goto } from '$app/navigation';
+import { page } from '$app/stores';
+import { onDestroy, onMount } from 'svelte';
+import QRCode from 'qrcode';
+import AppHeader from '$lib/components/common/app-header.svelte';
+import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
+import ReservationPreviewCard from '$lib/components/common/reservation-preview-card.svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input, Label } from '$lib/components/ui/input';
@@ -25,10 +26,11 @@
 	import { inviteDebugUrl, inviteUrl } from '$lib/utils/links';
 	import { cn } from '$lib/utils/cn';
 
-	type FormState = CreateReservationInput;
+type FormState = CreateReservationInput;
+type StartPreset = 'plus2h' | 'tonight' | 'tomorrow10';
 
-	const now = new Date();
-	now.setHours(now.getHours() + 3, 0, 0, 0);
+const now = new Date();
+now.setHours(now.getHours() + 3, 0, 0, 0);
 
 	const defaultForm: FormState = {
 		clubName: '',
@@ -45,10 +47,17 @@
 	let isSubmitting = $state(false);
 	let globalError = $state('');
 
-	let shareReservationId = $state('');
-	let shareDebugToken = $state('');
-	let shareReservation = $state<ReservationPublicRecord | null>(null);
-	let shareLoading = $state(false);
+let shareReservationId = $state('');
+let shareDebugToken = $state('');
+let shareReservation = $state<ReservationPublicRecord | null>(null);
+let shareLoading = $state(false);
+let inviteCopied = $state(false);
+let debugInviteCopied = $state(false);
+let inviteQrDataUrl = $state('');
+let inviteQrLoading = $state(false);
+
+let inviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
+let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	function toDateTimeInput(date: Date): string {
 		const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
@@ -65,6 +74,8 @@
 		const { reservationId, debugToken } = parseUrlState();
 		shareReservationId = reservationId;
 		shareDebugToken = debugToken;
+		inviteCopied = false;
+		debugInviteCopied = false;
 
 		if (!reservationId) {
 			shareReservation = null;
@@ -76,6 +87,33 @@
 		shareLoading = false;
 	}
 
+	function startPresetDate(preset: StartPreset): Date {
+	const current = new Date();
+	const next = new Date(current);
+
+	if (preset === 'plus2h') {
+		next.setMinutes(0, 0, 0);
+		next.setHours(next.getHours() + 2);
+		return next;
+	}
+
+	if (preset === 'tonight') {
+		next.setHours(22, 0, 0, 0);
+		if (next <= current) {
+			next.setDate(next.getDate() + 1);
+		}
+		return next;
+	}
+
+	next.setDate(next.getDate() + 1);
+	next.setHours(22, 0, 0, 0);
+	return next;
+	}
+
+	function applyStartPreset(preset: StartPreset): void {
+		form.startAt = toDateTimeInput(startPresetDate(preset));
+	}
+
 	onMount(async () => {
 		await waitForAuthReady();
 		await hydrateShareState();
@@ -83,6 +121,17 @@
 
 	afterNavigate(async () => {
 		await hydrateShareState();
+	});
+
+	onDestroy(() => {
+		if (inviteCopiedTimeout) {
+			clearTimeout(inviteCopiedTimeout);
+			inviteCopiedTimeout = null;
+		}
+		if (debugInviteCopiedTimeout) {
+			clearTimeout(debugInviteCopiedTimeout);
+			debugInviteCopiedTimeout = null;
+		}
 	});
 
 	function resetErrors(): void {
@@ -190,27 +239,100 @@
 		}
 	}
 
-	async function copyText(value: string, successLabel: string): Promise<void> {
-		try {
-			await navigator.clipboard.writeText(value);
-			pushToast({
-				title: successLabel,
-				description: value,
-				variant: 'success'
-			});
-		} catch (error) {
-			pushToast({
-				title: 'Copy failed',
-				description: error instanceof Error ? error.message : 'Clipboard unavailable.',
-				variant: 'destructive'
-			});
+async function copyText(value: string, successLabel: string): Promise<boolean> {
+	try {
+		await navigator.clipboard.writeText(value);
+		pushToast({
+			title: successLabel,
+			description: value,
+			variant: 'success'
+		});
+		return true;
+	} catch (error) {
+		pushToast({
+			title: 'Copy failed',
+			description: error instanceof Error ? error.message : 'Clipboard unavailable.',
+			variant: 'destructive'
+		});
+		return false;
+	}
+}
+
+const invite = $derived(shareReservationId ? inviteUrl(shareReservationId) : '');
+const debugInvite = $derived(
+	shareReservationId && shareDebugToken ? inviteDebugUrl(shareReservationId, shareDebugToken) : ''
+);
+const canSubmitCreate = $derived(createReservationSchema.safeParse(form).success && !isSubmitting);
+
+function markCopied(target: 'invite' | 'debug'): void {
+	if (target === 'invite') {
+		inviteCopied = true;
+		if (inviteCopiedTimeout) {
+			clearTimeout(inviteCopiedTimeout);
 		}
+		inviteCopiedTimeout = setTimeout(() => {
+			inviteCopied = false;
+			inviteCopiedTimeout = null;
+		}, 2200);
+		return;
 	}
 
-	const invite = $derived(shareReservationId ? inviteUrl(shareReservationId) : '');
-	const debugInvite = $derived(
-		shareReservationId && shareDebugToken ? inviteDebugUrl(shareReservationId, shareDebugToken) : ''
-	);
+	debugInviteCopied = true;
+	if (debugInviteCopiedTimeout) {
+		clearTimeout(debugInviteCopiedTimeout);
+	}
+	debugInviteCopiedTimeout = setTimeout(() => {
+		debugInviteCopied = false;
+		debugInviteCopiedTimeout = null;
+	}, 2200);
+}
+
+async function copyShareLink(
+	value: string,
+	successLabel: string,
+	target: 'invite' | 'debug'
+): Promise<void> {
+	const copied = await copyText(value, successLabel);
+	if (copied) {
+		markCopied(target);
+	}
+}
+
+$effect(() => {
+	const value = invite;
+	if (!value) {
+		inviteQrDataUrl = '';
+		inviteQrLoading = false;
+		return;
+	}
+
+	let cancelled = false;
+	inviteQrLoading = true;
+	void QRCode.toDataURL(value, {
+		width: 280,
+		margin: 1,
+		errorCorrectionLevel: 'M'
+	})
+		.then((dataUrl) => {
+			if (!cancelled) {
+				inviteQrDataUrl = dataUrl;
+			}
+		})
+		.catch(() => {
+			if (!cancelled) {
+				inviteQrDataUrl = '';
+			}
+		})
+		.finally(() => {
+			if (!cancelled) {
+				inviteQrLoading = false;
+			}
+		});
+
+	return () => {
+		cancelled = true;
+	};
+});
 </script>
 
 <AppHeader />
@@ -245,8 +367,13 @@
 							<div class="rounded-2xl border border-border/75 bg-secondary/30 p-4">
 								<p class="text-xs uppercase tracking-wide text-muted-foreground">Guest Invite</p>
 								<p class="mt-2 break-all text-sm">{invite}</p>
-								<Button class="mt-4" size="sm" onclick={() => copyText(invite, 'Invite link copied')}>
-									Copy invite link
+								<Button
+									class="mt-4"
+									size="sm"
+									variant={inviteCopied ? 'success' : 'default'}
+									onclick={() => copyShareLink(invite, 'Invite link copied', 'invite')}
+								>
+									{inviteCopied ? 'Copied' : 'Copy invite link'}
 								</Button>
 							</div>
 
@@ -260,10 +387,10 @@
 									<Button
 										class="mt-4"
 										size="sm"
-										variant="outline"
-										onclick={() => copyText(debugInvite, 'Debug link copied')}
+										variant={debugInviteCopied ? 'success' : 'outline'}
+										onclick={() => copyShareLink(debugInvite, 'Debug link copied', 'debug')}
 									>
-										Copy debug link
+										{debugInviteCopied ? 'Copied' : 'Copy debug link'}
 									</Button>
 								</div>
 							{/if}
@@ -276,6 +403,28 @@
 							accepted={shareReservation.acceptedCount}
 							declined={shareReservation.declinedCount}
 						/>
+						<Card>
+							<CardHeader>
+								<CardTitle>Scan invite</CardTitle>
+								<CardDescription>Guests can scan this QR code to open the invite page.</CardDescription>
+							</CardHeader>
+							<CardContent class="space-y-3 p-4">
+								{#if inviteQrLoading}
+									<div class="mx-auto h-[210px] w-[210px] animate-pulse rounded-2xl border border-border/75 bg-secondary/35"></div>
+								{:else if inviteQrDataUrl}
+									<img
+										src={inviteQrDataUrl}
+										alt="QR code for reservation invite link"
+										class="mx-auto h-[210px] w-[210px] rounded-2xl border border-border/75 bg-white p-2"
+									/>
+								{:else}
+									<p class="text-sm text-muted-foreground">Unable to generate QR code.</p>
+								{/if}
+								<p class="text-center text-xs text-muted-foreground">
+									Best for at-door scan and quick guest access.
+								</p>
+							</CardContent>
+						</Card>
 						<Card>
 							<CardContent class="space-y-3 p-4">
 								<a class={cn(buttonVariants({ variant: 'default', size: 'md' }), 'w-full')} href={invite}>
@@ -336,6 +485,29 @@
 							<div class="space-y-2">
 								<Label for="startAt">Start at</Label>
 								<Input id="startAt" type="datetime-local" bind:value={form.startAt} />
+								<div class="flex flex-wrap gap-2">
+									<button
+										type="button"
+										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+										onclick={() => applyStartPreset('plus2h')}
+									>
+										+2 hours
+									</button>
+									<button
+										type="button"
+										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+										onclick={() => applyStartPreset('tonight')}
+									>
+										Tonight 10 PM
+									</button>
+									<button
+										type="button"
+										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+										onclick={() => applyStartPreset('tomorrow10')}
+									>
+										Tomorrow 10 PM
+									</button>
+								</div>
 								{#if fieldErrors.startAt}
 									<p class="text-xs text-destructive-foreground">{fieldErrors.startAt}</p>
 								{/if}
@@ -402,8 +574,8 @@
 						{/if}
 
 						<div class="flex flex-wrap gap-3">
-							<Button type="submit" disabled={isSubmitting}>
-								{isSubmitting ? 'Creating...' : 'Create reservation'}
+							<Button type="submit" disabled={!canSubmitCreate}>
+								{isSubmitting ? 'Creating...' : canSubmitCreate ? 'Create reservation' : 'Complete required fields'}
 							</Button>
 							{#if !$currentUser}
 								<a
@@ -414,6 +586,11 @@
 								</a>
 							{/if}
 						</div>
+						{#if !canSubmitCreate && !isSubmitting}
+							<p class="text-xs text-muted-foreground">
+								Fill all required fields to enable reservation creation.
+							</p>
+						{/if}
 					</form>
 				</CardContent>
 			</Card>
