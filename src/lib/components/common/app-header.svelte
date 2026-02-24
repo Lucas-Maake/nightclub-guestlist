@@ -15,7 +15,7 @@
 	}
 </script>
 
-<header class="app-shell pt-4 sm:pt-6">
+<header class="app-shell motion-enter pt-4 sm:pt-6">
 	<div class="flex items-center justify-between gap-3 rounded-2xl border border-border/75 bg-card/60 px-4 py-3 backdrop-blur-sm sm:px-5">
 		<a class="inline-flex items-center gap-3" href="/">
 			<span

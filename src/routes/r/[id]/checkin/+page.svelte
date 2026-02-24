@@ -4,6 +4,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import type { Unsubscribe } from 'firebase/firestore';
 	import AppHeader from '$lib/components/common/app-header.svelte';
+	import GuestKpiStrip from '$lib/components/common/guest-kpi-strip.svelte';
 	import StatusChip from '$lib/components/common/status-chip.svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -28,8 +29,28 @@
 	let hostAccess = $state<'pending' | 'allowed' | 'denied'>('pending');
 	let search = $state('');
 	let pending = $state<Record<string, boolean>>({});
+	let selectedGuestUid = $state('');
 
 	let guestsUnsubscribe: Unsubscribe | null = null;
+
+	function isTypingTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof HTMLElement)) {
+			return false;
+		}
+
+		const tag = target.tagName;
+		return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+	}
+
+	function focusCheckinSearch(): void {
+		const searchElement = document.getElementById('checkin-search');
+		if (!(searchElement instanceof HTMLInputElement)) {
+			return;
+		}
+
+		searchElement.focus();
+		searchElement.select();
+	}
 
 	onMount(async () => {
 		await waitForAuthReady();
@@ -58,6 +79,54 @@
 		});
 	});
 
+	onMount(() => {
+		const handler = (event: KeyboardEvent) => {
+			if (event.ctrlKey || event.metaKey || event.altKey) {
+				return;
+			}
+
+			if (event.key === '/') {
+				if (isTypingTarget(event.target)) {
+					return;
+				}
+
+				event.preventDefault();
+				focusCheckinSearch();
+				return;
+			}
+
+			if (hostAccess !== 'allowed' || filteredGuests.length === 0 || isTypingTarget(event.target)) {
+				return;
+			}
+
+			if (event.key === 'ArrowDown') {
+				event.preventDefault();
+				moveSelection(1);
+				return;
+			}
+
+			if (event.key === 'ArrowUp') {
+				event.preventDefault();
+				moveSelection(-1);
+				return;
+			}
+
+			if (event.key === 'Enter') {
+				if (event.repeat || !selectedGuest) {
+					return;
+				}
+
+				event.preventDefault();
+				void handleToggleCheckIn(selectedGuest);
+			}
+		};
+
+		window.addEventListener('keydown', handler);
+		return () => {
+			window.removeEventListener('keydown', handler);
+		};
+	});
+
 	onDestroy(() => {
 		guestsUnsubscribe?.();
 	});
@@ -76,6 +145,10 @@
 
 	async function handleToggleCheckIn(guest: GuestWithId): Promise<void> {
 		if (!$currentUser) {
+			return;
+		}
+
+		if (pending[guest.uid] !== undefined) {
 			return;
 		}
 
@@ -123,13 +196,49 @@
 		})
 	);
 
+	const selectedGuest = $derived.by(
+		() => filteredGuests.find((guest) => guest.uid === selectedGuestUid) ?? null
+	);
+	const acceptedCount = $derived(guests.filter((guest) => guest.status === 'accepted').length);
+	const declinedCount = $derived(guests.filter((guest) => guest.status === 'declined').length);
+	const noResponseCount = $derived(guests.filter((guest) => guest.status === 'invited').length);
 	const checkedInCount = $derived(guests.filter((guest) => guest.checkedInAt).length);
+
+	function moveSelection(direction: 1 | -1): void {
+		if (filteredGuests.length === 0) {
+			return;
+		}
+
+		const currentIndex = filteredGuests.findIndex((guest) => guest.uid === selectedGuestUid);
+		const safeCurrentIndex = currentIndex < 0 ? 0 : currentIndex;
+		const nextIndex =
+			(safeCurrentIndex + direction + filteredGuests.length) % filteredGuests.length;
+		selectedGuestUid = filteredGuests[nextIndex].uid;
+
+		queueMicrotask(() => {
+			const selectedElement = document.querySelector(`[data-guest-id="${selectedGuestUid}"]`);
+			if (selectedElement instanceof HTMLElement) {
+				selectedElement.scrollIntoView({ block: 'nearest' });
+			}
+		});
+	}
+
+	$effect(() => {
+		if (filteredGuests.length === 0) {
+			selectedGuestUid = '';
+			return;
+		}
+
+		if (!filteredGuests.some((guest) => guest.uid === selectedGuestUid)) {
+			selectedGuestUid = filteredGuests[0].uid;
+		}
+	});
 </script>
 
 <AppHeader compact />
 
 <main class="app-shell py-4 sm:py-6">
-	<section class="space-y-4">
+	<section class="motion-stagger space-y-4">
 		<div class="space-y-1">
 			<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Door Check-in</p>
 			<h1 class="section-title">Fast entry workflow</h1>
@@ -155,15 +264,28 @@
 				</CardContent>
 			</Card>
 		{:else}
+			<GuestKpiStrip {acceptedCount} {declinedCount} {noResponseCount} {checkedInCount} />
+
 			<Card class="overflow-hidden">
 				<div class="sticky top-[64px] z-20 border-b border-border/70 bg-card/95 p-4 backdrop-blur">
-					<div class="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-						<Input
-							type="search"
-							placeholder="Search name or phone..."
-							class="h-12 text-base"
-							bind:value={search}
-						/>
+					<div class="grid gap-3 md:grid-cols-[1fr_auto] xl:grid-cols-[1fr_auto_auto]">
+						<div class="space-y-2">
+							<div class="relative">
+								<Input
+									id="checkin-search"
+									type="search"
+									placeholder="Search name or phone..."
+									class="h-12 pr-20 text-base"
+									bind:value={search}
+								/>
+								<span
+									class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-pill border border-border/80 bg-secondary/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+								>
+									/ Focus
+								</span>
+							</div>
+							<p class="text-xs text-muted-foreground">Use ↑/↓ to move and Enter to toggle check-in.</p>
+						</div>
 						<div class="rounded-2xl border border-border/70 bg-secondary/30 px-4 py-2 text-sm text-muted-foreground">
 							{checkedInCount} checked in
 						</div>
@@ -183,7 +305,27 @@
 						</p>
 					{:else}
 						{#each filteredGuests as guest (guest.uid)}
-							<div class="rounded-2xl border border-border/70 bg-secondary/18 p-4">
+							<div
+								class={cn(
+									'rounded-2xl border p-4 transition-colors',
+									selectedGuestUid === guest.uid
+										? 'border-primary/45 bg-primary/10'
+										: 'border-border/70 bg-secondary/18'
+								)}
+								role="button"
+								tabindex="0"
+								aria-label={`Select guest ${guest.displayName}`}
+								data-guest-id={guest.uid}
+								onclick={() => {
+									selectedGuestUid = guest.uid;
+								}}
+								onkeydown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										selectedGuestUid = guest.uid;
+									}
+								}}
+							>
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div class="space-y-1">
 										<p class="text-base font-medium text-foreground sm:text-lg">{guest.displayName}</p>

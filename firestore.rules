@@ -10,8 +10,26 @@ service cloud.firestore {
 			return get(/databases/$(database)/documents/reservations/$(reservationId));
 		}
 
+		function reservationPath(reservationId) {
+			return /databases/$(database)/documents/reservations/$(reservationId);
+		}
+
+		function guestPath(reservationId, uid) {
+			return /databases/$(database)/documents/reservations/$(reservationId)/guests/$(uid);
+		}
+
 		function isHost(reservationId) {
 			return signedIn() && reservationDoc(reservationId).data.hostUid == request.auth.uid;
+		}
+
+		function isHostAfter(reservationId) {
+			return signedIn() &&
+				existsAfter(reservationPath(reservationId)) &&
+				getAfter(reservationPath(reservationId)).data.hostUid == request.auth.uid;
+		}
+
+		function isOwnGuestAfter(reservationId) {
+			return signedIn() && existsAfter(guestPath(reservationId, request.auth.uid));
 		}
 
 		function isOwnGuest(uid) {
@@ -28,10 +46,78 @@ service cloud.firestore {
 			request.resource.data.declinedCount >= 0;
 		}
 
+		function validReservationPublicCreate(reservationId) {
+			return request.resource.data.reservationId == reservationId &&
+				request.resource.data.acceptedCount == 0 &&
+				request.resource.data.declinedCount == 0;
+		}
+
+		function reservationHostUidUnchanged() {
+			return !request.resource.data.diff(resource.data).changedKeys().hasAny(['hostUid']);
+		}
+
+		function guestStatusValid() {
+			return request.resource.data.status in ['accepted', 'declined'];
+		}
+
+		function validGuestSelfCreate() {
+			return request.resource.data.keys().hasOnly([
+				'displayName',
+				'phone',
+				'status',
+				'plusOnes',
+				'checkedInAt',
+				'checkedInBy',
+				'updatedAt'
+			]) &&
+			request.resource.data.keys().hasAll([
+				'displayName',
+				'phone',
+				'status',
+				'plusOnes',
+				'updatedAt'
+			]) &&
+			guestStatusValid() &&
+			request.resource.data.checkedInAt == null &&
+			request.resource.data.checkedInBy == null;
+		}
+
+		function validGuestSelfUpdate() {
+			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+				'displayName',
+				'phone',
+				'status',
+				'plusOnes',
+				'updatedAt'
+			]) &&
+			guestStatusValid() &&
+			request.resource.data.checkedInAt == resource.data.checkedInAt &&
+			request.resource.data.checkedInBy == resource.data.checkedInBy;
+		}
+
+		function validCheckInPair() {
+			return (request.resource.data.checkedInAt == null && request.resource.data.checkedInBy == null) ||
+				(request.resource.data.checkedInAt != null &&
+					request.resource.data.checkedInBy == request.auth.uid);
+		}
+
+		function validGuestHostCheckInUpdate() {
+			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+				'checkedInAt',
+				'checkedInBy',
+				'updatedAt'
+			]) &&
+			request.resource.data.diff(resource.data).changedKeys().hasAny([
+				'checkedInAt',
+				'checkedInBy'
+			]) &&
+			validCheckInPair();
+		}
+
 		match /reservationPublic/{reservationId} {
 			allow get, list: if true;
-			allow create: if signedIn();
-			allow update: if isHost(reservationId) || (signedIn() && aggregateOnlyUpdate());
+			allow create: if isHostAfter(reservationId) && validReservationPublicCreate(reservationId);
+			allow update: if isHost(reservationId) || (isOwnGuestAfter(reservationId) && aggregateOnlyUpdate());
 			allow delete: if isHost(reservationId);
 		}
 
@@ -44,13 +130,16 @@ service cloud.firestore {
 
 		match /reservations/{reservationId} {
 			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
-			allow read, update, delete: if isHost(reservationId);
+			allow read, delete: if isHost(reservationId);
+			allow update: if isHost(reservationId) && reservationHostUidUnchanged();
 
 			match /guests/{uid} {
 				allow get: if isHost(reservationId) || isOwnGuest(uid);
 				allow list: if isHost(reservationId);
-				allow create: if isOwnGuest(uid);
-				allow update, delete: if isHost(reservationId) || isOwnGuest(uid);
+				allow create: if isOwnGuest(uid) && validGuestSelfCreate();
+				allow update: if (isOwnGuest(uid) && validGuestSelfUpdate()) ||
+					(isHost(reservationId) && validGuestHostCheckInUpdate());
+				allow delete: if isHost(reservationId) || isOwnGuest(uid);
 			}
 		}
 

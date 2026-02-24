@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { toasts, dismissToast } from '$lib/stores/toast';
+	import { fly } from 'svelte/transition';
 	import { cn } from '$lib/utils/cn';
+
+	const TOAST_ENTER_MS = 180;
+	const TOAST_EXIT_MS = 140;
 </script>
 
 <div class="pointer-events-none fixed inset-x-0 bottom-4 z-[70] mx-auto flex max-w-xl flex-col gap-2 px-4">
@@ -12,6 +16,8 @@
 				toast.variant === 'destructive' && 'border-destructive/35 bg-destructive/16 text-destructive-foreground',
 				(!toast.variant || toast.variant === 'default') && 'border-border bg-card/95 text-card-foreground'
 			)}
+			in:fly={{ y: 10, opacity: 0, duration: TOAST_ENTER_MS }}
+			out:fly={{ y: 6, opacity: 0, duration: TOAST_EXIT_MS }}
 		>
 			<div class="flex items-start justify-between gap-3">
 				<div class="space-y-1">

@@ -28,7 +28,7 @@
 
 ## Emulator Workflow
 - Start Firebase emulators:
-  - `firebase emulators:start --only auth,firestore,hosting`
+  - `firebase emulators:start --only auth,firestore`
 - Start app in emulator mode:
   - `npm run dev:emulators`
 - Emulator mode uses `.env.emulator` flags (`PUBLIC_FIREBASE_USE_EMULATORS=true`).
@@ -36,7 +36,7 @@
 ## Firestore Rules
 - Rules file: `firestore.rules`
 - Index file: `firestore.indexes.json`
-- Deploy rules + hosting:
+- Deploy rules + indexes:
   - `npm run firebase:deploy`
 
 ## Build + Preview

@@ -269,19 +269,20 @@ export async function upsertGuestRsvp(
 		acceptedCount = Math.max(0, acceptedCount);
 		declinedCount = Math.max(0, declinedCount);
 
-		transaction.set(
-			guestRef,
-			{
-				displayName: payload.displayName,
-				phone: payload.phone,
-				status: payload.status,
-				plusOnes: payload.plusOnes,
-				checkedInAt: null,
-				checkedInBy: null,
-				updatedAt: serverTimestamp()
-			},
-			{ merge: true }
-		);
+		const guestPayload: Record<string, unknown> = {
+			displayName: payload.displayName,
+			phone: payload.phone,
+			status: payload.status,
+			plusOnes: payload.plusOnes,
+			updatedAt: serverTimestamp()
+		};
+
+		if (!guestSnapshot.exists()) {
+			guestPayload.checkedInAt = null;
+			guestPayload.checkedInBy = null;
+		}
+
+		transaction.set(guestRef, guestPayload, { merge: true });
 
 		transaction.update(publicRef, {
 			acceptedCount,

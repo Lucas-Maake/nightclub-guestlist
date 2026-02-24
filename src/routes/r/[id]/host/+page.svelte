@@ -5,6 +5,7 @@
 	import type { Unsubscribe } from 'firebase/firestore';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
+	import GuestKpiStrip from '$lib/components/common/guest-kpi-strip.svelte';
 	import StatusChip from '$lib/components/common/status-chip.svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -38,6 +39,25 @@
 	let publicUnsubscribe: Unsubscribe | null = null;
 	let guestsUnsubscribe: Unsubscribe | null = null;
 
+	function isTypingTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof HTMLElement)) {
+			return false;
+		}
+
+		const tag = target.tagName;
+		return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+	}
+
+	function focusHostSearch(): void {
+		const searchElement = document.getElementById('host-search');
+		if (!(searchElement instanceof HTMLInputElement)) {
+			return;
+		}
+
+		searchElement.focus();
+		searchElement.select();
+	}
+
 	onMount(async () => {
 		await waitForAuthReady();
 		if (!reservationId) {
@@ -67,6 +87,26 @@
 		guestsUnsubscribe = listenToGuests(reservationId, (value) => {
 			guests = value;
 		});
+	});
+
+	onMount(() => {
+		const handler = (event: KeyboardEvent) => {
+			if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) {
+				return;
+			}
+
+			if (isTypingTarget(event.target)) {
+				return;
+			}
+
+			event.preventDefault();
+			focusHostSearch();
+		};
+
+		window.addEventListener('keydown', handler);
+		return () => {
+			window.removeEventListener('keydown', handler);
+		};
 	});
 
 	onDestroy(() => {
@@ -104,6 +144,11 @@
 		});
 	});
 
+	const acceptedCount = $derived(guests.filter((guest) => guest.status === 'accepted').length);
+	const declinedCount = $derived(guests.filter((guest) => guest.status === 'declined').length);
+	const noResponseCount = $derived(guests.filter((guest) => guest.status === 'invited').length);
+	const checkedInCount = $derived(guests.filter((guest) => guest.checkedInAt).length);
+
 	async function copyInvite(): Promise<void> {
 		try {
 			await navigator.clipboard.writeText(inviteUrl(reservationId));
@@ -125,7 +170,7 @@
 <AppHeader />
 
 <main class="app-shell py-6 sm:py-8">
-	<section class="space-y-6">
+	<section class="motion-stagger space-y-6">
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="space-y-1">
 				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Host Hub</p>
@@ -159,16 +204,26 @@
 				</CardContent>
 			</Card>
 		{:else}
+			<GuestKpiStrip {acceptedCount} {declinedCount} {noResponseCount} {checkedInCount} />
+
 			<div class="grid gap-4 lg:grid-cols-[1fr_320px]">
 				<Card class="min-h-[540px] overflow-hidden">
 					<div class="sticky top-[68px] z-20 border-b border-border/70 bg-card/95 p-4 backdrop-blur">
 						<div class="space-y-3">
-							<Input
-								type="search"
-								placeholder="Search by name or phone..."
-								bind:value={search}
-								class="h-12 text-base"
-							/>
+							<div class="relative">
+								<Input
+									id="host-search"
+									type="search"
+									placeholder="Search by name or phone..."
+									bind:value={search}
+									class="h-12 pr-20 text-base"
+								/>
+								<span
+									class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-pill border border-border/80 bg-secondary/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+								>
+									/ Focus
+								</span>
+							</div>
 
 							<Tabs>
 								<TabsList class="w-full overflow-x-auto">
@@ -269,9 +324,10 @@
 						</CardHeader>
 						<CardContent class="space-y-2 text-sm text-muted-foreground">
 							<p>{guests.length} total guests</p>
-							<p>{guests.filter((guest) => guest.status === 'accepted').length} accepted</p>
-							<p>{guests.filter((guest) => guest.status === 'declined').length} declined</p>
-							<p>{guests.filter((guest) => guest.checkedInAt).length} checked in</p>
+							<p>{acceptedCount} accepted</p>
+							<p>{declinedCount} declined</p>
+							<p>{noResponseCount} no response</p>
+							<p>{checkedInCount} checked in</p>
 						</CardContent>
 					</Card>
 				</div>
