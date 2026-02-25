@@ -6,6 +6,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import type { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 	import { X } from 'lucide-svelte';
+	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import {
 		authReady,
 		clearRecaptcha,
@@ -332,8 +333,8 @@
 			</div>
 
 			<div class="mt-2 text-center">
-				<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f7fa] text-sm font-semibold tracking-[0.14em] text-[#0f172a]">
-					NG
+				<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f7fa]">
+					<BrandMark class="h-6 w-6" />
 				</div>
 				<h2 id="auth-modal-title" class="mt-4 text-[2rem] font-semibold leading-none tracking-tight text-[#20242a]">
 					Sign In / Sign Up

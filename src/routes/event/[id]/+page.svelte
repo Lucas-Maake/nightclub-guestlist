@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { MapPinned } from 'lucide-svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { QuantitySelect } from '$lib/components/ui/quantity-select';
@@ -139,9 +140,7 @@
 	<section class="mx-auto w-full max-w-[520px] space-y-4">
 		<div class="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
 			<a class="inline-flex items-center gap-2 text-foreground no-underline" href="/event">
-				<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-semibold tracking-[0.16em] text-primary">
-					NG
-				</span>
+				<BrandMark class="h-4 w-4" />
 				<span class="text-sm font-semibold">Events</span>
 			</a>
 			{#if $currentUser}

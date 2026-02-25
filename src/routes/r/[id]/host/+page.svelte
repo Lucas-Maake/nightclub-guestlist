@@ -269,7 +269,7 @@
 
 			<div class="grid gap-4 lg:grid-cols-[1fr_320px]">
 				<Card class="min-h-[540px] overflow-hidden">
-					<div class="sticky top-[68px] z-20 border-b border-border/70 bg-card/95 p-4 backdrop-blur">
+					<div class="border-b border-border/70 bg-card/95 p-4">
 						<div class="space-y-3">
 							<div class="relative">
 								<Input
@@ -287,18 +287,18 @@
 							</div>
 
 							<Tabs>
-								<TabsList class="w-full overflow-x-auto">
-									<TabsTrigger active={filter === 'all'} onclick={() => (filter = 'all')}>All</TabsTrigger>
-									<TabsTrigger active={filter === 'accepted'} onclick={() => (filter = 'accepted')}>
+								<TabsList class="grid h-auto w-full grid-cols-5 gap-1">
+									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'all'} onclick={() => (filter = 'all')}>All</TabsTrigger>
+									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'accepted'} onclick={() => (filter = 'accepted')}>
 										Accepted
 									</TabsTrigger>
-									<TabsTrigger active={filter === 'checked-in'} onclick={() => (filter = 'checked-in')}>
+									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'checked-in'} onclick={() => (filter = 'checked-in')}>
 										Checked In
 									</TabsTrigger>
-									<TabsTrigger active={filter === 'declined'} onclick={() => (filter = 'declined')}>
+									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'declined'} onclick={() => (filter = 'declined')}>
 										Declined
 									</TabsTrigger>
-									<TabsTrigger active={filter === 'invited'} onclick={() => (filter = 'invited')}>
+									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'invited'} onclick={() => (filter = 'invited')}>
 										Invited
 									</TabsTrigger>
 								</TabsList>
@@ -314,52 +314,54 @@
 						</div>
 					</div>
 
-					<div class="max-h-[62vh] overflow-auto">
-						<Table class="hidden md:table">
-							<TableHeader>
-								<TableRow>
-									<TableHead>Name</TableHead>
-									<TableHead>Phone</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead class="text-right">Plus-ones</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{#if filteredGuests.length === 0}
+					<div class="scrollbar-none max-h-[62vh] overflow-auto">
+						<div class="hidden md:block">
+							<Table>
+								<TableHeader>
 									<TableRow>
-										<TableCell colspan={4} class="py-7 text-center text-sm text-muted-foreground">
-											No guests match this view.
-											{#if hasActiveFilters}
-												<button
-													type="button"
-													class="ml-2 text-primary underline-offset-2 hover:underline"
-													onclick={clearFilters}
-												>
-													Clear filters
-												</button>
-											{/if}
-										</TableCell>
+										<TableHead>Name</TableHead>
+										<TableHead>Phone</TableHead>
+										<TableHead>Status</TableHead>
+										<TableHead class="text-right">Plus-ones</TableHead>
 									</TableRow>
-								{:else}
-									{#each filteredGuests as guest (guest.uid)}
-										<TableRow class="h-14">
-											<TableCell>
-												<div class="space-y-1">
-													<p class="text-sm font-medium">{guest.displayName}</p>
-												</div>
-											</TableCell>
-											<TableCell class="text-muted-foreground">{formatPhone(guest.phone)}</TableCell>
-											<TableCell>
-												<StatusChip status={guestStatus(guest)} />
-											</TableCell>
-											<TableCell class="text-right text-muted-foreground">
-												{guest.plusOnes?.length ?? 0}
+								</TableHeader>
+								<TableBody>
+									{#if filteredGuests.length === 0}
+										<TableRow>
+											<TableCell colspan={4} class="py-7 text-center text-sm text-muted-foreground">
+												No guests match this view.
+												{#if hasActiveFilters}
+													<button
+														type="button"
+														class="ml-2 text-primary underline-offset-2 hover:underline"
+														onclick={clearFilters}
+													>
+														Clear filters
+													</button>
+												{/if}
 											</TableCell>
 										</TableRow>
-									{/each}
-								{/if}
-							</TableBody>
-						</Table>
+									{:else}
+										{#each filteredGuests as guest (guest.uid)}
+											<TableRow class="h-14">
+												<TableCell>
+													<div class="space-y-1">
+														<p class="text-sm font-medium">{guest.displayName}</p>
+													</div>
+												</TableCell>
+												<TableCell class="text-muted-foreground">{formatPhone(guest.phone)}</TableCell>
+												<TableCell>
+													<StatusChip status={guestStatus(guest)} />
+												</TableCell>
+												<TableCell class="text-right text-muted-foreground">
+													{guest.plusOnes?.length ?? 0}
+												</TableCell>
+											</TableRow>
+										{/each}
+									{/if}
+								</TableBody>
+							</Table>
+						</div>
 
 						<div class="space-y-3 p-3 md:hidden">
 							{#if filteredGuests.length === 0}

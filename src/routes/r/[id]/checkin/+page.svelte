@@ -283,7 +283,7 @@
 			<GuestKpiStrip {acceptedCount} {declinedCount} {noResponseCount} {checkedInCount} />
 
 			<Card class="overflow-hidden">
-				<div class="sticky top-[64px] z-20 border-b border-border/70 bg-card/95 p-4 backdrop-blur">
+				<div class="border-b border-border/70 bg-card/95 p-4">
 					<div class="grid gap-3 md:grid-cols-[1fr_auto] xl:grid-cols-[1fr_auto_auto]">
 						<div class="space-y-2">
 							<div class="relative">

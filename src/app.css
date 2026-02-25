@@ -159,6 +159,16 @@
 		appearance: none;
 		-webkit-appearance: none;
 	}
+
+	.scrollbar-none {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+
+	.scrollbar-none::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+	}
 }
 
 @keyframes motion-fade-up {

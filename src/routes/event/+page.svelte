@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { listEventsSortedAsc } from '$lib/data/events';
@@ -96,9 +97,7 @@
 	<section class="mx-auto w-full max-w-[520px] space-y-5">
 		<div class="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
 			<a class="inline-flex items-center gap-2 text-foreground no-underline" href="/">
-				<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-semibold tracking-[0.16em] text-primary">
-					NG
-				</span>
+				<BrandMark class="h-4 w-4" />
 				<span class="text-sm font-semibold">Events</span>
 			</a>
 			{#if $currentUser}
