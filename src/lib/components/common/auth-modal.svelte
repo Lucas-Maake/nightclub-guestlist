@@ -2,7 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onDestroy, tick } from 'svelte';
-	import type { ConfirmationResult } from 'firebase/auth';
+	import { quintInOut, quintOut } from 'svelte/easing';
+	import { fade, fly } from 'svelte/transition';
+	import type { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
 	import { X } from 'lucide-svelte';
 	import {
 		authReady,
@@ -19,6 +21,10 @@
 
 	const recaptchaContainerId = 'auth-modal-recaptcha';
 	const productionLike = isProductionLikeRuntime();
+	const MODAL_BACKDROP_ENTER_MS = 240;
+	const MODAL_BACKDROP_EXIT_MS = 200;
+	const MODAL_PANEL_ENTER_MS = 320;
+	const MODAL_PANEL_EXIT_MS = 260;
 
 	let panelElement = $state<HTMLDivElement | null>(null);
 	let phoneInput = $state<HTMLInputElement | null>(null);
@@ -30,6 +36,7 @@
 	let confirmationResult = $state<ConfirmationResult | null>(null);
 	let errorMessage = $state('');
 	let authIssue = $state<AuthIssue>(null);
+	let recaptchaReady = $state(false);
 	let openSnapshot = $state(false);
 	let interactionToken = $state(0);
 
@@ -68,7 +75,14 @@
 		confirmationResult = null;
 		errorMessage = '';
 		authIssue = null;
+		recaptchaReady = false;
 		interactionToken += 1;
+	}
+
+	async function ensureRecaptcha(): Promise<RecaptchaVerifier> {
+		const verifier = await setupRecaptcha(recaptchaContainerId);
+		recaptchaReady = true;
+		return verifier;
 	}
 
 	function getFocusableElements(): HTMLElement[] {
@@ -137,7 +151,7 @@
 		}
 
 		try {
-			await setupRecaptcha(recaptchaContainerId);
+			await ensureRecaptcha();
 		} catch (error) {
 			const parsed = parseAuthError(error);
 			errorMessage = parsed.message;
@@ -162,7 +176,7 @@
 		const token = interactionToken;
 
 		try {
-			const verifier = await setupRecaptcha(recaptchaContainerId);
+			const verifier = await ensureRecaptcha();
 			const result = await sendPhoneOtp(normalizePhone(phone), verifier);
 
 			if (!$authModalState.open || token !== interactionToken) {
@@ -191,8 +205,9 @@
 					error.message.includes('auth/captcha-check-failed'))
 			) {
 				clearRecaptcha();
+				recaptchaReady = false;
 				try {
-					await setupRecaptcha(recaptchaContainerId);
+					await ensureRecaptcha();
 				} catch (setupError) {
 					const parsedSetupError = parseAuthError(setupError);
 					errorMessage = parsedSetupError.message;
@@ -290,16 +305,20 @@
 		class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-[2px]"
 		aria-label="Dismiss sign-in dialog"
 		onclick={closeModal}
+		in:fade={{ duration: MODAL_BACKDROP_ENTER_MS, easing: quintOut }}
+		out:fade={{ duration: MODAL_BACKDROP_EXIT_MS, easing: quintInOut }}
 	></button>
 	<div class="fixed inset-0 z-[65] grid place-items-center px-4 py-6 sm:py-8">
 		<div
 			bind:this={panelElement}
-			class="w-full max-w-[420px] rounded-2xl bg-white px-6 pb-6 pt-5 text-[#1f2328] shadow-[0_30px_70px_-35px_rgba(0,0,0,0.55)] motion-surface sm:px-7"
+			class="w-full max-w-[420px] rounded-2xl bg-white px-6 pb-6 pt-5 text-[#1f2328] shadow-[0_30px_70px_-35px_rgba(0,0,0,0.55)] sm:px-7"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="auth-modal-title"
 			tabindex="-1"
 			onkeydown={handlePanelKeydown}
+			in:fly={{ y: -8, opacity: 0, duration: MODAL_PANEL_ENTER_MS, easing: quintOut }}
+			out:fly={{ y: -6, opacity: 0, duration: MODAL_PANEL_EXIT_MS, easing: quintInOut }}
 		>
 			<div class="flex justify-end">
 				<button
@@ -358,7 +377,21 @@
 			{/if}
 
 			{#if currentStep === 'phone'}
-				<div id={recaptchaContainerId} class="mt-4 min-h-0 overflow-hidden rounded-xl"></div>
+				<div class="relative mt-4 h-[86px] overflow-hidden rounded-xl border border-[#e3e6ec] bg-[#f8fafc]">
+					{#if !recaptchaReady}
+						<div
+							class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-[#7d8692]"
+						>
+							Loading verification...
+						</div>
+					{/if}
+					<div class="flex h-full items-center justify-center">
+						<div
+							id={recaptchaContainerId}
+							class={recaptchaReady ? 'w-full max-w-[304px]' : 'w-full max-w-[304px] opacity-0'}
+						></div>
+					</div>
+				</div>
 			{/if}
 
 			{#if errorMessage}

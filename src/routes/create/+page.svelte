@@ -71,6 +71,11 @@ let appliedPrefillSignature = $state('');
 		return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
 	}
 
+	function parseDateTimeInput(value: string): Date | null {
+		const parsed = new Date(value);
+		return Number.isNaN(parsed.getTime()) ? null : parsed;
+	}
+
 	function parseUrlState(): { reservationId: string; debugToken: string } {
 		const reservationId = $page.url.searchParams.get('reservationId') ?? '';
 		const debugToken = $page.url.searchParams.get('debug') ?? '';
@@ -201,26 +206,27 @@ let appliedPrefillSignature = $state('');
 	}
 
 	function startPresetDate(preset: StartPreset): Date {
-	const current = new Date();
-	const next = new Date(current);
+		const current = new Date();
 
-	if (preset === 'plus2h') {
-		next.setMinutes(0, 0, 0);
-		next.setHours(next.getHours() + 2);
-		return next;
-	}
-
-	if (preset === 'tonight') {
-		next.setHours(22, 0, 0, 0);
-		if (next <= current) {
-			next.setDate(next.getDate() + 1);
+		if (preset === 'plus2h') {
+			const baseDate = parseDateTimeInput(form.startAt) ?? current;
+			const next = new Date(baseDate);
+			next.setHours(next.getHours() + 2);
+			return next;
 		}
-		return next;
-	}
 
-	next.setDate(next.getDate() + 1);
-	next.setHours(22, 0, 0, 0);
-	return next;
+		const next = new Date(current);
+		if (preset === 'tonight') {
+			next.setHours(22, 0, 0, 0);
+			if (next <= current) {
+				next.setDate(next.getDate() + 1);
+			}
+			return next;
+		}
+
+		next.setDate(next.getDate() + 1);
+		next.setHours(22, 0, 0, 0);
+		return next;
 	}
 
 	function applyStartPreset(preset: StartPreset): void {

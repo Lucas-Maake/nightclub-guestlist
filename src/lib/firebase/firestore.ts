@@ -385,15 +385,11 @@ export async function upsertGuestRsvp(
 		}
 
 		transaction.set(guestRef, guestPayload, { merge: true });
-		transaction.set(
-			attendeeRef,
-			{
-				namePublic: formatPublicGuestName(payload.displayName),
-				status: payload.status,
-				updatedAt: serverTimestamp()
-			},
-			{ merge: true }
-		);
+		transaction.set(attendeeRef, {
+			namePublic: formatPublicGuestName(payload.displayName),
+			status: payload.status,
+			updatedAt: serverTimestamp()
+		});
 
 		transaction.update(publicRef, {
 			acceptedCount,
