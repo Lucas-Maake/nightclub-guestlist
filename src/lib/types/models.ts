@@ -92,3 +92,16 @@ export interface UserActiveTicketRecord {
 	guestDisplayName: string;
 	plusOneCount: number;
 }
+
+export interface HostReservationListItem {
+	reservationId: string;
+	clubName: string;
+	startAt: Timestamp;
+	tableType: string;
+	capacity: number;
+	notes: string;
+	dressCode?: string;
+	acceptedCount: number;
+	declinedCount: number;
+	updatedAt?: Timestamp;
+}

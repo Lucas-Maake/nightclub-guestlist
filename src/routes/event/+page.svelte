@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { listEventsSortedAsc } from '$lib/data/events';
 	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
@@ -61,6 +62,7 @@
 
 	async function handleSignOut(): Promise<void> {
 		await signOutCurrentUser();
+		await goto('/');
 	}
 
 	async function loadTicketsFor(uid: string): Promise<void> {
@@ -101,7 +103,12 @@
 				<span class="text-sm font-semibold">Events</span>
 			</a>
 			{#if $currentUser}
-				<Button variant="outline" size="sm" onclick={handleSignOut}>Sign out</Button>
+				<div class="flex items-center gap-2">
+					<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))} href="/host/events">
+						My events
+					</a>
+					<Button variant="outline" size="sm" onclick={handleSignOut}>Sign out</Button>
+				</div>
 			{:else}
 				<Button variant="outline" size="sm" onclick={handleSignIn}>Sign in</Button>
 			{/if}

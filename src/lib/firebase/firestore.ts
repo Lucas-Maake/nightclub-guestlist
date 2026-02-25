@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { customAlphabet } from 'nanoid';
 import {
 	collection,
+	documentId,
 	doc,
 	getDoc,
 	getDocs,
@@ -21,6 +22,7 @@ import type {
 	CreateReservationInput,
 	DebugReservationRecord,
 	GuestRecord,
+	HostReservationListItem,
 	PublicAttendeeRecord,
 	ReservationPublicRecord,
 	ReservationRecord,
@@ -36,6 +38,38 @@ const RSVP_CAPACITY_FULL_ERROR = 'RSVP_CAPACITY_FULL';
 
 const reservationPublicCollection = collection(db, 'reservationPublic');
 const reservationDebugCollection = collection(db, 'reservationDebug');
+
+function coerceTimestamp(value: unknown): Timestamp | null {
+	if (value instanceof Timestamp) {
+		return value;
+	}
+
+	if (
+		value &&
+		typeof value === 'object' &&
+		typeof (value as { toDate?: unknown }).toDate === 'function' &&
+		typeof (value as { toMillis?: unknown }).toMillis === 'function'
+	) {
+		return value as Timestamp;
+	}
+
+	if (typeof value === 'string' || typeof value === 'number' || value instanceof Date) {
+		const parsedDate = new Date(value);
+		if (!Number.isNaN(parsedDate.getTime())) {
+			return Timestamp.fromDate(parsedDate);
+		}
+	}
+
+	return null;
+}
+
+function coerceString(value: unknown, fallback = ''): string {
+	return typeof value === 'string' ? value : fallback;
+}
+
+function coerceNumber(value: unknown, fallback = 0): number {
+	return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
 
 export function reservationDocRef(reservationId: string) {
 	return doc(db, 'reservations', reservationId);
@@ -208,8 +242,22 @@ export async function validateDebugToken(reservationId: string, token: string): 
 }
 
 export async function isHostForReservation(reservationId: string, uid: string): Promise<boolean> {
-	const reservation = await getReservationPrivate(reservationId);
-	return reservation?.hostUid === uid;
+	if (!reservationId || !uid) {
+		return false;
+	}
+
+	try {
+		const hostReservationQuery = query(
+			collection(db, 'reservations'),
+			where('hostUid', '==', uid),
+			where(documentId(), '==', reservationId),
+			limit(1)
+		);
+		const snapshot = await getDocs(hostReservationQuery);
+		return !snapshot.empty;
+	} catch {
+		return false;
+	}
 }
 
 export function listenToReservationPublic(
@@ -321,6 +369,54 @@ export async function listUserActiveTickets(uid: string): Promise<UserActiveTick
 	);
 
 	return mapped.filter((value): value is UserActiveTicketRecord => value !== null);
+}
+
+export async function listHostReservations(uid: string): Promise<HostReservationListItem[]> {
+	if (!uid) {
+		return [];
+	}
+
+	const hostReservationsQuery = query(collection(db, 'reservations'), where('hostUid', '==', uid));
+	const hostSnapshot = await getDocs(hostReservationsQuery);
+
+	const mapped = await Promise.all(
+		hostSnapshot.docs.map(async (document) => {
+			const reservation = document.data() as Partial<ReservationRecord>;
+			const reservationId = document.id;
+			const startAt = coerceTimestamp(reservation.startAt);
+			if (!startAt) {
+				return null;
+			}
+
+			const publicSnapshot = await getDoc(reservationPublicDocRef(reservationId));
+			const publicData = publicSnapshot.exists()
+				? normalizeReservationPublicRecord(publicSnapshot.data() as ReservationPublicRecord)
+				: null;
+
+			const item: HostReservationListItem = {
+				reservationId,
+				clubName: coerceString(reservation.clubName, 'Untitled event'),
+				startAt,
+				tableType: coerceString(reservation.tableType, 'Table'),
+				capacity: Math.max(0, coerceNumber(reservation.capacity, 0)),
+				notes: coerceString(reservation.notes, ''),
+				acceptedCount: Math.max(0, coerceNumber(publicData?.acceptedCount, 0)),
+				declinedCount: Math.max(0, coerceNumber(publicData?.declinedCount, 0)),
+				updatedAt: publicData?.updatedAt
+			};
+
+			const dressCode = coerceString(reservation.dressCode);
+			if (dressCode) {
+				item.dressCode = dressCode;
+			}
+
+			return item;
+		})
+	);
+
+	return mapped
+		.filter((item): item is HostReservationListItem => item !== null)
+		.sort((a, b) => b.startAt.toMillis() - a.startAt.toMillis());
 }
 
 export async function upsertGuestRsvp(

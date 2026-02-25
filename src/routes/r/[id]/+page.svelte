@@ -14,6 +14,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	import { rsvpSchema } from '$lib/schemas/reservation';
 	import { authReady, currentUser, signInAnonymouslyForDebug, waitForAuthReady } from '$lib/firebase/auth';
 	import {
+		isHostForReservation,
 		listenToGuest,
 		listenToPublicAttendees,
 		listenToReservationPublic,
@@ -43,6 +44,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	let loadingReservation = $state(true);
 	let submitting = $state(false);
 	let sharing = $state(false);
+	let hostViewOnly = $state(false);
 	let celebrateAccepted = $state(false);
 	let debugMessage = $state('');
 	let errorMessage = $state('');
@@ -105,7 +107,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	});
 
 	$effect(() => {
-		if (!$authReady || !$currentUser || !reservationId) {
+		if (!$authReady || !$currentUser || !reservationId || hostViewOnly) {
 			guest = null;
 			if (guestUnsubscribe) {
 				guestUnsubscribe();
@@ -122,6 +124,29 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 		return () => {
 			guestUnsubscribe?.();
 			guestUnsubscribe = null;
+		};
+	});
+
+	$effect(() => {
+		if (!$authReady || !$currentUser || !reservationId) {
+			hostViewOnly = false;
+			return;
+		}
+
+		let cancelled = false;
+		void (async () => {
+			const isHost = await isHostForReservation(reservationId, $currentUser.uid);
+			if (!cancelled) {
+				hostViewOnly = isHost;
+				if (isHost) {
+					guest = null;
+					errorMessage = '';
+				}
+			}
+		})();
+
+		return () => {
+			cancelled = true;
 		};
 	});
 
@@ -245,6 +270,11 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	}
 
 	async function submitRsvp(): Promise<void> {
+		if (hostViewOnly) {
+			errorMessage = 'Hosts cannot RSVP from the guest page.';
+			return;
+		}
+
 		if (!$currentUser) {
 			await joinGuestlist();
 			return;
@@ -497,6 +527,21 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 								>
 									Sign in
 								</button>
+							</div>
+						{:else if hostViewOnly}
+							<div class="space-y-3 rounded-2xl border border-primary/30 bg-primary/10 p-4">
+								<p class="text-sm font-medium text-foreground">Host preview mode</p>
+								<p class="text-sm text-muted-foreground">
+									Hosts can view this guest page, but RSVP actions are disabled.
+								</p>
+								<div class="flex flex-wrap gap-2">
+									<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservationId}/host`}>
+										Open host hub
+									</a>
+									<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))} href={`/r/${reservationId}/checkin`}>
+										Open check-in
+									</a>
+								</div>
 							</div>
 						{:else}
 							<div class="space-y-2">

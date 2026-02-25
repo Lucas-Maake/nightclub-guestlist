@@ -97,6 +97,7 @@
 
 	async function handleSignOut(): Promise<void> {
 		await signOutCurrentUser();
+		await goto('/');
 	}
 
 	async function handleBookTable(): Promise<void> {

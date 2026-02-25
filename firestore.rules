@@ -167,8 +167,10 @@ service cloud.firestore {
 
 		match /reservations/{reservationId} {
 			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
-			allow read, delete: if isHost(reservationId);
-			allow update: if isHost(reservationId) && reservationHostUidUnchanged();
+			allow read, delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+			allow update: if signedIn() &&
+				resource.data.hostUid == request.auth.uid &&
+				reservationHostUidUnchanged();
 
 			match /guests/{uid} {
 				allow get: if isHost(reservationId) || isOwnGuest(uid);
