@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import AppHeader from '$lib/components/common/app-header.svelte';
 import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
 import ReservationPreviewCard from '$lib/components/common/reservation-preview-card.svelte';
+	import { findEventById } from '$lib/data/events';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input, Label } from '$lib/components/ui/input';
@@ -63,6 +64,7 @@ let copyingTarget = $state<'invite' | 'debug' | null>(null);
 
 let inviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
+let appliedPrefillSignature = $state('');
 
 	function toDateTimeInput(date: Date): string {
 		const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
@@ -73,6 +75,112 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		const reservationId = $page.url.searchParams.get('reservationId') ?? '';
 		const debugToken = $page.url.searchParams.get('debug') ?? '';
 		return { reservationId, debugToken };
+	}
+
+	function trimBounded(value: string | null, maxLength: number): string | undefined {
+		if (!value) {
+			return undefined;
+		}
+
+		const trimmed = value.trim();
+		if (!trimmed) {
+			return undefined;
+		}
+
+		return trimmed.slice(0, maxLength);
+	}
+
+	function normalizePrefillStartAt(value: string | null): string | undefined {
+		if (!value) {
+			return undefined;
+		}
+
+		const trimmed = value.trim();
+		if (!trimmed) {
+			return undefined;
+		}
+
+		if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+			return trimmed;
+		}
+
+		const parsed = new Date(trimmed);
+		if (Number.isNaN(parsed.getTime())) {
+			return undefined;
+		}
+
+		return toDateTimeInput(parsed);
+	}
+
+	function prefillSignature(params: URLSearchParams): string {
+		const keys = ['eventId', 'clubName', 'startAt', 'tableType', 'notes', 'dressCode'];
+		return keys.map((key) => `${key}=${params.get(key) ?? ''}`).join('&');
+	}
+
+	function applyCreatePrefillFromUrl(): void {
+		const params = $page.url.searchParams;
+		const reservationId = params.get('reservationId');
+		if (reservationId) {
+			appliedPrefillSignature = '';
+			return;
+		}
+
+		const signature = prefillSignature(params);
+		if (!signature || signature === appliedPrefillSignature) {
+			return;
+		}
+
+		const eventId = trimBounded(params.get('eventId'), 120);
+		const linkedEvent = eventId ? findEventById(eventId) : null;
+
+		const nextForm: FormState = { ...form };
+		let hasPrefill = false;
+
+		if (linkedEvent) {
+			nextForm.clubName = linkedEvent.venue;
+			nextForm.startAt = toDateTimeInput(new Date(linkedEvent.startAt));
+			nextForm.tableType = linkedEvent.defaultTableType;
+			nextForm.notes = `${linkedEvent.title} — table request from event detail page.`;
+			nextForm.dressCode = linkedEvent.dressCode;
+			hasPrefill = true;
+		}
+
+		const clubName = trimBounded(params.get('clubName'), 100);
+		if (clubName) {
+			nextForm.clubName = clubName;
+			hasPrefill = true;
+		}
+
+		const startAt = normalizePrefillStartAt(params.get('startAt'));
+		if (startAt) {
+			nextForm.startAt = startAt;
+			hasPrefill = true;
+		}
+
+		const tableType = trimBounded(params.get('tableType'), 80);
+		if (tableType) {
+			nextForm.tableType = tableType;
+			hasPrefill = true;
+		}
+
+		const notes = trimBounded(params.get('notes'), 500);
+		if (notes) {
+			nextForm.notes = notes;
+			hasPrefill = true;
+		}
+
+		const dressCode = trimBounded(params.get('dressCode'), 120);
+		if (dressCode) {
+			nextForm.dressCode = dressCode;
+			hasPrefill = true;
+		}
+
+		if (!hasPrefill) {
+			return;
+		}
+
+		form = nextForm;
+		appliedPrefillSignature = signature;
 	}
 
 	async function hydrateShareState(): Promise<void> {
@@ -136,10 +244,12 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	onMount(async () => {
 		await waitForAuthReady();
+		applyCreatePrefillFromUrl();
 		await hydrateShareState();
 	});
 
 	afterNavigate(async () => {
+		applyCreatePrefillFromUrl();
 		await hydrateShareState();
 	});
 
