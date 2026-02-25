@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import { currentUser, signOutCurrentUser } from '$lib/firebase/auth';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { cn } from '$lib/utils/cn';
 	import { initialsFromName } from '$lib/utils/format';
 
@@ -12,6 +14,11 @@
 
 	async function handleSignOut(): Promise<void> {
 		await signOutCurrentUser();
+	}
+
+	async function handleSignIn(): Promise<void> {
+		const returnTo = `${$page.url.pathname}${$page.url.search}`;
+		await openAuthModal({ returnTo, source: 'app-header' });
 	}
 </script>
 
@@ -38,7 +45,13 @@
 				</span>
 				<Button variant="outline" size="sm" onclick={handleSignOut}>Sign out</Button>
 			{:else}
-				<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href="/login">Login</a>
+				<button
+					type="button"
+					class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+					onclick={handleSignIn}
+				>
+					Sign in
+				</button>
 			{/if}
 		</div>
 	</div>

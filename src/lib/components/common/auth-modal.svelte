@@ -1,0 +1,419 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onDestroy, tick } from 'svelte';
+	import type { ConfirmationResult } from 'firebase/auth';
+	import { X } from 'lucide-svelte';
+	import {
+		authReady,
+		clearRecaptcha,
+		confirmPhoneOtp,
+		currentUser,
+		sendPhoneOtp,
+		setupRecaptcha
+	} from '$lib/firebase/auth';
+	import { completeAuthModal, authModalState, closeAuthModal } from '$lib/stores/auth-modal';
+	import { pushToast } from '$lib/stores/toast';
+	import { detectAuthIssue, toUserSafeAuthMessage, type AuthIssue } from '$lib/utils/messages';
+	import { isProductionLikeRuntime } from '$lib/utils/security';
+
+	const recaptchaContainerId = 'auth-modal-recaptcha';
+	const productionLike = isProductionLikeRuntime();
+
+	let panelElement = $state<HTMLDivElement | null>(null);
+	let phoneInput = $state<HTMLInputElement | null>(null);
+
+	let phone = $state('');
+	let otp = $state('');
+	let loading = $state(false);
+	let currentStep = $state<'phone' | 'code'>('phone');
+	let confirmationResult = $state<ConfirmationResult | null>(null);
+	let errorMessage = $state('');
+	let authIssue = $state<AuthIssue>(null);
+	let openSnapshot = $state(false);
+	let interactionToken = $state(0);
+
+	const stepLabel = $derived(currentStep === 'phone' ? 'Step 1 of 2' : 'Step 2 of 2');
+
+	function parseAuthError(error: unknown): { message: string; issue: AuthIssue } {
+		return {
+			message: toUserSafeAuthMessage(error, productionLike),
+			issue: detectAuthIssue(error)
+		};
+	}
+
+	function normalizePhone(value: string): string {
+		const trimmed = value.trim();
+		const digits = trimmed.replace(/\D/g, '');
+		if (digits.length === 10) {
+			return `+1${digits}`;
+		}
+
+		return `+${digits}`;
+	}
+
+	function setBodyScrollLock(locked: boolean): void {
+		if (typeof document === 'undefined') {
+			return;
+		}
+
+		document.body.style.overflow = locked ? 'hidden' : '';
+	}
+
+	function resetModalState(): void {
+		phone = '';
+		otp = '';
+		loading = false;
+		currentStep = 'phone';
+		confirmationResult = null;
+		errorMessage = '';
+		authIssue = null;
+		interactionToken += 1;
+	}
+
+	function getFocusableElements(): HTMLElement[] {
+		if (!panelElement) {
+			return [];
+		}
+
+		const query =
+			'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+		return Array.from(panelElement.querySelectorAll<HTMLElement>(query)).filter((element) =>
+			Boolean(element.offsetParent || element.getClientRects().length)
+		);
+	}
+
+	function trapFocus(event: KeyboardEvent): void {
+		if (event.key !== 'Tab') {
+			return;
+		}
+
+		const focusables = getFocusableElements();
+		if (focusables.length === 0) {
+			return;
+		}
+
+		const firstElement = focusables[0];
+		const lastElement = focusables[focusables.length - 1];
+		const activeElement = document.activeElement as HTMLElement | null;
+
+		if (event.shiftKey && activeElement === firstElement) {
+			event.preventDefault();
+			lastElement.focus();
+			return;
+		}
+
+		if (!event.shiftKey && activeElement === lastElement) {
+			event.preventDefault();
+			firstElement.focus();
+		}
+	}
+
+	function closeModal(): void {
+		closeAuthModal();
+	}
+
+	async function finalizeAuthenticated(): Promise<void> {
+		const target = $authModalState.returnTo || '/';
+		const currentLocation = `${$page.url.pathname}${$page.url.search}`;
+		completeAuthModal();
+		clearRecaptcha();
+		setBodyScrollLock(false);
+
+		if (target !== currentLocation) {
+			await goto(target);
+		}
+	}
+
+	async function initializeModal(): Promise<void> {
+		resetModalState();
+		await tick();
+		phoneInput?.focus();
+
+		if ($currentUser) {
+			await finalizeAuthenticated();
+			return;
+		}
+
+		try {
+			await setupRecaptcha(recaptchaContainerId);
+		} catch (error) {
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
+		}
+	}
+
+	function handlePanelKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			closeModal();
+			return;
+		}
+
+		trapFocus(event);
+	}
+
+	async function handleSendOtp(): Promise<void> {
+		errorMessage = '';
+		authIssue = null;
+		loading = true;
+		const token = interactionToken;
+
+		try {
+			const verifier = await setupRecaptcha(recaptchaContainerId);
+			const result = await sendPhoneOtp(normalizePhone(phone), verifier);
+
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			confirmationResult = result;
+			currentStep = 'code';
+			pushToast({
+				title: 'Code sent',
+				description: 'Check your messages for the 6-digit verification code.',
+				variant: 'success'
+			});
+		} catch (error) {
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
+
+			if (
+				error instanceof Error &&
+				(error.message.includes('auth/invalid-app-credential') ||
+					error.message.includes('auth/captcha-check-failed'))
+			) {
+				clearRecaptcha();
+				try {
+					await setupRecaptcha(recaptchaContainerId);
+				} catch (setupError) {
+					const parsedSetupError = parseAuthError(setupError);
+					errorMessage = parsedSetupError.message;
+					authIssue = parsedSetupError.issue;
+				}
+			}
+		} finally {
+			if ($authModalState.open && token === interactionToken) {
+				loading = false;
+			}
+		}
+	}
+
+	async function handleVerifyCode(): Promise<void> {
+		if (!confirmationResult) {
+			errorMessage = 'Request a code first.';
+			authIssue = null;
+			return;
+		}
+
+		errorMessage = '';
+		authIssue = null;
+		loading = true;
+		const token = interactionToken;
+
+		try {
+			await confirmPhoneOtp(confirmationResult, otp);
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			pushToast({
+				title: 'Logged in',
+				description: 'You are signed in and can continue.',
+				variant: 'success'
+			});
+			await finalizeAuthenticated();
+		} catch (error) {
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
+		} finally {
+			if ($authModalState.open && token === interactionToken) {
+				loading = false;
+			}
+		}
+	}
+
+	function handleEmailPlaceholder(): void {
+		pushToast({
+			title: 'Coming soon',
+			description: 'Email sign-in is not available yet.',
+			variant: 'default'
+		});
+	}
+
+	$effect(() => {
+		const isOpen = $authModalState.open;
+
+		if (isOpen && !openSnapshot) {
+			setBodyScrollLock(true);
+			void initializeModal();
+		}
+
+		if (!isOpen && openSnapshot) {
+			clearRecaptcha();
+			setBodyScrollLock(false);
+			resetModalState();
+		}
+
+		openSnapshot = isOpen;
+	});
+
+	$effect(() => {
+		if (!$authModalState.open || !$authReady || !$currentUser) {
+			return;
+		}
+
+		void finalizeAuthenticated();
+	});
+
+	onDestroy(() => {
+		clearRecaptcha();
+		setBodyScrollLock(false);
+	});
+</script>
+
+{#if $authModalState.open}
+	<button
+		type="button"
+		class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-[2px]"
+		aria-label="Dismiss sign-in dialog"
+		onclick={closeModal}
+	></button>
+	<div class="fixed inset-0 z-[65] grid place-items-center px-4 py-6 sm:py-8">
+		<div
+			bind:this={panelElement}
+			class="w-full max-w-[420px] rounded-2xl bg-white px-6 pb-6 pt-5 text-[#1f2328] shadow-[0_30px_70px_-35px_rgba(0,0,0,0.55)] motion-surface sm:px-7"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="auth-modal-title"
+			tabindex="-1"
+			onkeydown={handlePanelKeydown}
+		>
+			<div class="flex justify-end">
+				<button
+					type="button"
+					class="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#8a8f98] transition-colors hover:bg-[#f3f4f6] hover:text-[#3b3f45]"
+					onclick={closeModal}
+					aria-label="Close sign-in dialog"
+				>
+					<X class="h-5 w-5" aria-hidden="true" />
+				</button>
+			</div>
+
+			<div class="mt-2 text-center">
+				<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f7fa] text-sm font-semibold tracking-[0.14em] text-[#0f172a]">
+					NG
+				</div>
+				<h2 id="auth-modal-title" class="mt-4 text-[2rem] font-semibold leading-none tracking-tight text-[#20242a]">
+					Sign In / Sign Up
+				</h2>
+				<p class="mt-3 text-base leading-snug text-[#666c75]">
+					Use your phone number to log in or create an account.
+				</p>
+				<p class="mt-3 text-xs uppercase tracking-[0.18em] text-[#9ca3af]">{stepLabel}</p>
+			</div>
+
+			{#if currentStep === 'phone'}
+				<div class="mt-6 overflow-hidden rounded-xl border border-[#d7dbe2] bg-white">
+					<div class="flex items-center">
+						<div class="flex h-14 min-w-[7.5rem] items-center border-r border-[#d7dbe2] px-4 text-base text-[#5f6670]">
+							US (+1)
+						</div>
+						<input
+							bind:this={phoneInput}
+							type="tel"
+							inputmode="tel"
+							placeholder="201 555 0123"
+							class="h-14 w-full bg-transparent px-4 text-lg text-[#1f2328] outline-none placeholder:text-[#a6acb5]"
+							bind:value={phone}
+						/>
+					</div>
+				</div>
+			{:else}
+				<div class="mt-6 space-y-2">
+					<label for="otp" class="text-sm font-medium text-[#414853]">Verification code</label>
+					<input
+						id="otp"
+						type="text"
+						inputmode="numeric"
+						maxlength={6}
+						placeholder="123456"
+						class="h-14 w-full rounded-xl border border-[#d7dbe2] bg-white px-4 text-center text-lg tracking-[0.24em] text-[#1f2328] outline-none placeholder:tracking-normal placeholder:text-[#a6acb5]"
+						bind:value={otp}
+					/>
+					<p class="text-xs text-[#777d87]">Enter the 6-digit code that was sent to your phone.</p>
+				</div>
+			{/if}
+
+			{#if currentStep === 'phone'}
+				<div id={recaptchaContainerId} class="mt-4 min-h-0 overflow-hidden rounded-xl"></div>
+			{/if}
+
+			{#if errorMessage}
+				<p class="mt-4 rounded-xl border border-[#f3c0c0] bg-[#fff2f2] px-4 py-3 text-sm text-[#a33838]" aria-live="polite">
+					{errorMessage}
+				</p>
+			{/if}
+
+			{#if !productionLike && authIssue === 'too-many-requests'}
+				<div class="mt-4 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 text-xs text-[#5f6670]">
+					Wait 30-60 minutes before retrying, or use Firebase test phone numbers for local QA.
+				</div>
+			{/if}
+
+			<div class="mt-5 space-y-3">
+				{#if currentStep === 'phone'}
+					<button
+						type="button"
+						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#23262b] text-lg font-semibold text-white transition-colors hover:bg-[#17191d] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={handleSendOtp}
+						disabled={loading || phone.trim().length < 8}
+					>
+						{loading ? 'Sending...' : 'Continue'}
+					</button>
+					<button
+						type="button"
+						class="mx-auto block text-base font-semibold text-[#3173e5] transition-colors hover:text-[#1f5ec9]"
+						onclick={handleEmailPlaceholder}
+					>
+						Use Email Instead
+					</button>
+				{:else}
+					<button
+						type="button"
+						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#23262b] text-lg font-semibold text-white transition-colors hover:bg-[#17191d] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={handleVerifyCode}
+						disabled={loading || otp.trim().length < 6}
+					>
+						{loading ? 'Verifying...' : 'Verify and Continue'}
+					</button>
+					<button
+						type="button"
+						class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-[#d7dbe2] bg-transparent text-sm font-medium text-[#39404a] transition-colors hover:bg-[#f5f7fa]"
+						onclick={() => {
+							currentStep = 'phone';
+							otp = '';
+							confirmationResult = null;
+							errorMessage = '';
+							authIssue = null;
+						}}
+					>
+						Edit phone
+					</button>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}

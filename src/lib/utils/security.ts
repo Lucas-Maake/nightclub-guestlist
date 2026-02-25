@@ -15,16 +15,36 @@ export async function sha256(text: string): Promise<string> {
 		.join('');
 }
 
+function isLocalHost(hostname: string): boolean {
+	return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
 export function isDebugHostnameAllowed(hostname: string): boolean {
 	if (!hostname) {
 		return false;
 	}
 
-	if (hostname === 'localhost' || hostname === '127.0.0.1') {
+	return isLocalHost(hostname);
+}
+
+export function isProductionLikeHostname(hostname: string): boolean {
+	if (!hostname) {
 		return true;
 	}
 
-	return hostname.startsWith('staging.');
+	return !isLocalHost(hostname);
+}
+
+export function isProductionLikeRuntime(): boolean {
+	if (typeof window === 'undefined') {
+		return !import.meta.env.DEV;
+	}
+
+	if (import.meta.env.DEV) {
+		return false;
+	}
+
+	return isProductionLikeHostname(window.location.hostname);
 }
 
 export function canUseDebugMode(): boolean {

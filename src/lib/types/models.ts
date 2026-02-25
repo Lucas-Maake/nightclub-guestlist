@@ -28,8 +28,15 @@ export interface ReservationPublicRecord {
 	notes: string;
 	dressCode?: string;
 	debugEnabled: boolean;
+	guestListVisibility: 'hidden' | 'visible';
 	acceptedCount: number;
 	declinedCount: number;
+	updatedAt: Timestamp;
+}
+
+export interface PublicAttendeeRecord {
+	namePublic: string;
+	status: Extract<GuestStatus, 'accepted' | 'declined'>;
 	updatedAt: Timestamp;
 }
 
@@ -71,4 +78,17 @@ export interface RsvpInput {
 	status: Extract<GuestStatus, 'accepted' | 'declined'>;
 	plusOnes: PlusOne[];
 	displayName: string;
+}
+
+export interface UserActiveTicketRecord {
+	reservationId: string;
+	clubName: string;
+	startAt: Timestamp;
+	tableType: string;
+	capacity: number;
+	notes: string;
+	dressCode?: string;
+	guestStatus: Extract<GuestStatus, 'accepted'>;
+	guestDisplayName: string;
+	plusOneCount: number;
 }

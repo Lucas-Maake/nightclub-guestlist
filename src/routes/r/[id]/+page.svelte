@@ -1,5 +1,4 @@
 <script lang="ts">
-import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { onDestroy, onMount } from 'svelte';
 import { Timestamp, type Unsubscribe } from 'firebase/firestore';
@@ -16,21 +15,31 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	import { authReady, currentUser, signInAnonymouslyForDebug, waitForAuthReady } from '$lib/firebase/auth';
 	import {
 		listenToGuest,
+		listenToPublicAttendees,
 		listenToReservationPublic,
 		upsertGuestRsvp,
 		validateDebugToken
 	} from '$lib/firebase/firestore';
-	import type { GuestRecord, ReservationPublicRecord, RsvpInput } from '$lib/types/models';
+	import type {
+		GuestRecord,
+		PublicAttendeeRecord,
+		ReservationPublicRecord,
+		RsvpInput
+	} from '$lib/types/models';
+	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
 	import { cn } from '$lib/utils/cn';
-	import { formatReservationDate } from '$lib/utils/format';
+	import { formatLastUpdated, formatReservationDate } from '$lib/utils/format';
 	import { inviteUrl } from '$lib/utils/links';
-	import { canUseDebugMode } from '$lib/utils/security';
+	import { toUserSafeRsvpMessage } from '$lib/utils/messages';
+	import { canUseDebugMode, isProductionLikeRuntime } from '$lib/utils/security';
 
 	const reservationId = $derived($page.params.id ?? '');
+	const productionLike = isProductionLikeRuntime();
 
 	let reservation = $state<ReservationPublicRecord | null>(null);
 	let guest = $state<GuestRecord | null>(null);
+	let publicAttendees = $state<Array<PublicAttendeeRecord & { uid: string }>>([]);
 	let loadingReservation = $state(true);
 	let submitting = $state(false);
 	let sharing = $state(false);
@@ -45,6 +54,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 
 	let reservationUnsubscribe: Unsubscribe | null = null;
 	let guestUnsubscribe: Unsubscribe | null = null;
+	let attendeesUnsubscribe: Unsubscribe | null = null;
 	let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
 
 	function stableIndex(value: string, length: number): number {
@@ -116,12 +126,38 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	});
 
 	$effect(() => {
+		const visibility = reservation?.guestListVisibility ?? 'hidden';
+		if (!reservationId || visibility !== 'visible') {
+			publicAttendees = [];
+			if (attendeesUnsubscribe) {
+				attendeesUnsubscribe();
+				attendeesUnsubscribe = null;
+			}
+			return;
+		}
+
+		attendeesUnsubscribe = listenToPublicAttendees(reservationId, (records) => {
+			publicAttendees = records.filter((record) => record.status === 'accepted');
+		});
+
+		return () => {
+			attendeesUnsubscribe?.();
+			attendeesUnsubscribe = null;
+		};
+	});
+
+	$effect(() => {
 		if (debugAttempted || !reservation) {
 			return;
 		}
 
 		const token = $page.url.searchParams.get('debug');
 		if (!token || !$authReady || $currentUser) {
+			return;
+		}
+
+		if (productionLike) {
+			debugAttempted = true;
 			return;
 		}
 
@@ -138,6 +174,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	onDestroy(() => {
 		reservationUnsubscribe?.();
 		guestUnsubscribe?.();
+		attendeesUnsubscribe?.();
 		if (celebrateTimer) {
 			clearTimeout(celebrateTimer);
 			celebrateTimer = null;
@@ -145,6 +182,10 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	});
 
 	async function handleDebugToken(token: string): Promise<void> {
+		if (productionLike) {
+			return;
+		}
+
 		if (!canUseDebugMode()) {
 			debugMessage = 'Debug login bypass is disabled on this hostname.';
 			return;
@@ -171,8 +212,15 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	async function joinGuestlist(): Promise<void> {
 		const destination = `${$page.url.pathname}${$page.url.search}`;
 		if (!$currentUser) {
-			await goto(`/login?returnTo=${encodeURIComponent(destination)}`);
-			return;
+			const authResult = await openAuthModal({ returnTo: destination, source: 'guest-join' });
+			if (authResult !== 'authenticated') {
+				return;
+			}
+
+			await waitForAuthReady();
+			if (!$currentUser) {
+				return;
+			}
 		}
 
 		if (!displayName) {
@@ -181,6 +229,11 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 				displayName = $currentUser.phoneNumber;
 			}
 		}
+	}
+
+	async function openGuestSignIn(): Promise<void> {
+		const destination = `${$page.url.pathname}${$page.url.search}`;
+		await openAuthModal({ returnTo: destination, source: 'guest-signin' });
 	}
 
 	function parsePlusOnes(value: string): Array<{ name: string }> {
@@ -213,6 +266,12 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 			return;
 		}
 
+		if (parsed.data.status === 'accepted' && blocksNewAcceptance) {
+			errorMessage = 'This guest list is full right now. You can still choose "Can\'t make it".';
+			submitting = false;
+			return;
+		}
+
 		const previousGuest = guest;
 		guest = {
 			displayName: parsed.data.displayName,
@@ -239,7 +298,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 			}
 		} catch (error) {
 			guest = previousGuest;
-			errorMessage = error instanceof Error ? error.message : 'Unable to save RSVP.';
+			errorMessage = toUserSafeRsvpMessage(error, productionLike);
 		} finally {
 			submitting = false;
 		}
@@ -253,10 +312,10 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 				description: guestInviteLink,
 				variant: 'success'
 			});
-		} catch (error) {
+		} catch {
 			pushToast({
 				title: 'Copy failed',
-				description: error instanceof Error ? error.message : 'Clipboard unavailable.',
+				description: 'Could not copy invite link. Try again.',
 				variant: 'destructive'
 			});
 		}
@@ -301,6 +360,15 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	const canNativeShare = $derived(
 		typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 	);
+	const isCapacityFull = $derived(
+		reservation ? reservation.acceptedCount >= reservation.capacity : false
+	);
+	const isCurrentlyAccepted = $derived(guest?.status === 'accepted');
+	const blocksNewAcceptance = $derived(isCapacityFull && !isCurrentlyAccepted);
+	const publicGuestListVisible = $derived((reservation?.guestListVisibility ?? 'hidden') === 'visible');
+	const guestLastUpdated = $derived(
+		guest?.updatedAt && 'toDate' in guest.updatedAt ? formatLastUpdated(guest.updatedAt.toDate()) : ''
+	);
 	const themeIndex = $derived(stableIndex(reservationId || reservation?.clubName || 'invite', 3));
 	const vibeLabel = $derived(
 		themeIndex === 0 ? 'Apollo Midnight' : themeIndex === 1 ? 'Neon Lounge' : 'Skyline Session'
@@ -327,19 +395,22 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	{#if loadingReservation}
 		<Card>
 			<CardContent class="p-6">
-				<p class="text-sm text-muted-foreground">Loading reservation...</p>
+				<p class="state-panel-muted" aria-live="polite">Loading reservation...</p>
 			</CardContent>
 		</Card>
 	{:else if !reservation}
 		<Card>
 			<CardHeader>
 				<CardTitle>Reservation not found</CardTitle>
-				<CardDescription>The invite link may be invalid or expired.</CardDescription>
+				<CardDescription>
+					This invite may be invalid, expired, or removed by the host.
+				</CardDescription>
 			</CardHeader>
-			<CardContent>
+			<CardContent class="flex flex-wrap gap-3">
 				<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href="/create">
-					Create a new reservation
+					Create reservation
 				</a>
+				<a class={cn(buttonVariants({ variant: 'outline', size: 'md' }))} href="/">Back to home</a>
 			</CardContent>
 		</Card>
 	{:else}
@@ -349,11 +420,11 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 					<CardContent class="space-y-6 p-6 sm:p-7">
 						<div class="flex flex-wrap items-center gap-2">
 							<Badge class={cn('border', themeBadgeClass)}>{vibeLabel}</Badge>
-							<Badge variant="outline">Guestlist Live</Badge>
+							<Badge variant="outline">Live updates</Badge>
 						</div>
 
 						<div class="space-y-3">
-							<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Reservation Invite</p>
+							<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Invite details</p>
 							<h1 class="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
 								{reservation.clubName}
 							</h1>
@@ -384,8 +455,8 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 					</CardContent>
 				</Card>
 
-				{#if debugMessage}
-					<div class="rounded-2xl border border-border/80 bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+				{#if !productionLike && debugMessage}
+					<div class="state-panel-muted">
 						{debugMessage}
 					</div>
 				{/if}
@@ -402,8 +473,8 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 							<p class="text-xs uppercase tracking-wide text-muted-foreground">Share invite</p>
 							<p class="mt-2 text-xs text-muted-foreground">
 								{canNativeShare
-									? 'On mobile, share opens your native share sheet.'
-									: 'Native share is unavailable on this browser, so copy link is used.'}
+									? 'On mobile, share opens your device share sheet.'
+									: 'Native sharing is unavailable in this browser, so copy link is used.'}
 							</p>
 							<div class="mt-3 flex flex-wrap gap-2">
 								<Button size="sm" onclick={shareInvite} disabled={sharing}>
@@ -415,16 +486,17 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 
 						{#if !$currentUser}
 							<p class="text-sm text-muted-foreground">
-								Sign in with phone OTP to respond and reserve your spot.
+								Sign in with phone verification to respond and reserve your spot.
 							</p>
 							<div class="flex flex-wrap gap-3">
 								<Button onclick={joinGuestlist}>Join Guestlist</Button>
-								<a
+								<button
+									type="button"
 									class={cn(buttonVariants({ variant: 'outline', size: 'md' }))}
-									href={`/login?returnTo=${encodeURIComponent(`${$page.url.pathname}${$page.url.search}`)}`}
+									onclick={openGuestSignIn}
 								>
-									Login
-								</a>
+									Sign in
+								</button>
 							</div>
 						{:else}
 							<div class="space-y-2">
@@ -432,12 +504,19 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 								<Input id="displayName" bind:value={displayName} placeholder="Your full name" />
 							</div>
 
+							{#if blocksNewAcceptance}
+								<p class="state-panel-muted border-destructive/30 bg-destructive/10 text-destructive-foreground">
+									This guest list is at capacity. New accepts are currently paused.
+								</p>
+							{/if}
+
 							<div class="grid gap-3 sm:grid-cols-2">
 								<button
 									type="button"
 									aria-pressed={status === 'accepted'}
+									disabled={blocksNewAcceptance}
 									class={cn(
-										'rounded-2xl border p-4 text-left transition-colors',
+										'rounded-2xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
 										status === 'accepted'
 											? 'border-success/45 bg-success/15'
 											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35'
@@ -482,7 +561,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 							</div>
 
 							{#if errorMessage}
-								<p class="rounded-2xl border border-destructive/35 bg-destructive/16 px-4 py-3 text-sm text-destructive-foreground">
+								<p class="state-panel-error" aria-live="polite">
 									{errorMessage}
 								</p>
 							{/if}
@@ -508,15 +587,21 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 
 						{#if guest}
 							<Separator class="my-2" />
-							<div class="space-y-2 rounded-2xl border border-border/70 bg-secondary/25 p-4">
+							<div class="space-y-3 rounded-2xl border border-border/70 bg-secondary/25 p-4">
 								<div class="flex flex-wrap items-center gap-2">
 									<StatusChip status={guest.checkedInAt ? 'checked-in' : guest.status} />
-									<span class="text-xs text-muted-foreground">Current state</span>
+									<span class="text-xs text-muted-foreground">Saved response</span>
 								</div>
-								<p class="text-sm text-muted-foreground">
+								<p class="text-sm font-medium text-foreground">
 									{guest.status === 'accepted'
-										? 'You are confirmed on the guestlist.'
-										: 'Your response is saved.'}
+										? 'You already responded: Accepted'
+										: 'You already responded: Declined'}
+								</p>
+								{#if guestLastUpdated}
+									<p class="text-xs text-muted-foreground">{guestLastUpdated}</p>
+								{/if}
+								<p class="text-xs text-muted-foreground">
+									Need to change your response? Edit the fields above and save again.
 								</p>
 							</div>
 						{/if}
@@ -546,6 +631,30 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 						</div>
 					</CardContent>
 				</Card>
+
+				{#if publicGuestListVisible}
+					<Card>
+						<CardHeader>
+							<CardTitle>Who&apos;s going</CardTitle>
+							<CardDescription>Accepted attendees shown in first-name format.</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{#if publicAttendees.length === 0}
+								<div class="state-panel-muted" aria-live="polite">
+									No accepted guests yet. Check back once more responses come in.
+								</div>
+							{:else}
+								<div class="grid gap-2">
+									{#each publicAttendees as attendee (attendee.uid)}
+										<p class="rounded-2xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm">
+											{attendee.namePublic}
+										</p>
+									{/each}
+								</div>
+							{/if}
+						</CardContent>
+					</Card>
+				{/if}
 			</div>
 		</section>
 	{/if}

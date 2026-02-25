@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import type { Unsubscribe } from 'firebase/firestore';
@@ -10,15 +9,18 @@
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
+	import { Switch } from '$lib/components/ui/switch';
 	import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '$lib/components/ui/table';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import {
 		getReservationPrivate,
 		listenToGuests,
-		listenToReservationPublic
+		listenToReservationPublic,
+		setGuestListVisibility
 	} from '$lib/firebase/firestore';
 	import type { GuestRecord, ReservationPublicRecord } from '$lib/types/models';
+	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
 	import { cn } from '$lib/utils/cn';
 	import { formatPhone } from '$lib/utils/format';
@@ -35,6 +37,7 @@
 	let hostAccess = $state<'pending' | 'allowed' | 'denied'>('pending');
 	let search = $state('');
 	let filter = $state<FilterTab>('all');
+	let guestListVisibilityPending = $state(false);
 
 	let publicUnsubscribe: Unsubscribe | null = null;
 	let guestsUnsubscribe: Unsubscribe | null = null;
@@ -58,6 +61,11 @@
 		searchElement.select();
 	}
 
+	function clearFilters(): void {
+		search = '';
+		filter = 'all';
+	}
+
 	onMount(async () => {
 		await waitForAuthReady();
 		if (!reservationId) {
@@ -67,8 +75,14 @@
 		}
 
 		if (!$currentUser) {
-			await goto(`/login?returnTo=${encodeURIComponent($page.url.pathname)}`);
-			return;
+			const destination = `${$page.url.pathname}${$page.url.search}`;
+			const authResult = await openAuthModal({ returnTo: destination, source: 'host-gate' });
+			await waitForAuthReady();
+			if (authResult !== 'authenticated' || !$currentUser) {
+				hostAccess = 'denied';
+				loading = false;
+				return;
+			}
 		}
 
 		const privateReservation = await getReservationPrivate(reservationId);
@@ -148,6 +162,12 @@
 	const declinedCount = $derived(guests.filter((guest) => guest.status === 'declined').length);
 	const noResponseCount = $derived(guests.filter((guest) => guest.status === 'invited').length);
 	const checkedInCount = $derived(guests.filter((guest) => guest.checkedInAt).length);
+	const guestListVisibility = $derived(reservationPublic?.guestListVisibility ?? 'hidden');
+	const publicGuestListVisible = $derived(guestListVisibility === 'visible');
+	const hasActiveFilters = $derived(search.trim().length > 0 || filter !== 'all');
+	const filteredCountLabel = $derived(
+		`${filteredGuests.length} ${filteredGuests.length === 1 ? 'guest' : 'guests'} shown`
+	);
 
 	async function copyInvite(): Promise<void> {
 		try {
@@ -157,12 +177,53 @@
 				description: inviteUrl(reservationId),
 				variant: 'success'
 			});
-		} catch (error) {
+		} catch {
 			pushToast({
 				title: 'Copy failed',
-				description: error instanceof Error ? error.message : 'Unable to copy',
+				description: 'Could not copy invite link. Try again.',
 				variant: 'destructive'
 			});
+		}
+	}
+
+	async function updateGuestListVisibility(nextVisible: boolean): Promise<void> {
+		if (!reservationPublic || guestListVisibilityPending) {
+			return;
+		}
+
+		const nextVisibility = nextVisible ? 'visible' : 'hidden';
+		const previousVisibility = reservationPublic.guestListVisibility ?? 'hidden';
+		if (nextVisibility === previousVisibility) {
+			return;
+		}
+
+		guestListVisibilityPending = true;
+		reservationPublic = {
+			...reservationPublic,
+			guestListVisibility: nextVisibility
+		};
+
+		try {
+			await setGuestListVisibility(reservationId, nextVisibility);
+			pushToast({
+				title: nextVisible ? 'Public list enabled' : 'Public list hidden',
+				description: nextVisible
+					? 'Accepted guest names are now visible on the invite page.'
+					: 'Guest names are no longer shown on the invite page.',
+				variant: 'success'
+			});
+		} catch {
+			reservationPublic = {
+				...reservationPublic,
+				guestListVisibility: previousVisibility
+			};
+			pushToast({
+				title: 'Update failed',
+				description: 'Could not update public list visibility. Try again.',
+				variant: 'destructive'
+			});
+		} finally {
+			guestListVisibilityPending = false;
 		}
 	}
 </script>
@@ -188,7 +249,7 @@
 		{#if loading}
 			<Card>
 				<CardContent class="p-6">
-					<p class="text-sm text-muted-foreground">Loading host dashboard...</p>
+					<p class="state-panel-muted" aria-live="polite">Loading host dashboard...</p>
 				</CardContent>
 			</Card>
 		{:else if hostAccess === 'denied'}
@@ -219,9 +280,9 @@
 									class="h-12 pr-20 text-base"
 								/>
 								<span
-									class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-pill border border-border/80 bg-secondary/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+									class="inline-kbd absolute right-3 top-1/2 -translate-y-1/2"
 								>
-									/ Focus
+									Press /
 								</span>
 							</div>
 
@@ -243,6 +304,13 @@
 								</TabsList>
 								<TabsContent></TabsContent>
 							</Tabs>
+
+							<div class="flex flex-wrap items-center justify-between gap-2">
+								<p class="text-xs text-muted-foreground" aria-live="polite">{filteredCountLabel}</p>
+								{#if hasActiveFilters}
+									<Button size="sm" variant="ghost" onclick={clearFilters}>Clear filters</Button>
+								{/if}
+							</div>
 						</div>
 					</div>
 
@@ -260,7 +328,16 @@
 								{#if filteredGuests.length === 0}
 									<TableRow>
 										<TableCell colspan={4} class="py-7 text-center text-sm text-muted-foreground">
-											No guests match this filter.
+											No guests match this view.
+											{#if hasActiveFilters}
+												<button
+													type="button"
+													class="ml-2 text-primary underline-offset-2 hover:underline"
+													onclick={clearFilters}
+												>
+													Clear filters
+												</button>
+											{/if}
 										</TableCell>
 									</TableRow>
 								{:else}
@@ -286,9 +363,12 @@
 
 						<div class="space-y-3 p-3 md:hidden">
 							{#if filteredGuests.length === 0}
-								<p class="rounded-2xl border border-border/70 bg-secondary/20 px-4 py-5 text-sm text-muted-foreground">
-									No guests match this filter.
-								</p>
+								<div class="state-panel-muted px-4 py-5">
+									<p>No guests match this view.</p>
+									{#if hasActiveFilters}
+										<Button size="sm" variant="ghost" class="mt-3" onclick={clearFilters}>Clear filters</Button>
+									{/if}
+								</div>
 							{:else}
 								{#each filteredGuests as guest (guest.uid)}
 									<div class="rounded-2xl border border-border/70 bg-secondary/20 p-4">
@@ -310,6 +390,39 @@
 				</Card>
 
 				<div class="space-y-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Public guest list</CardTitle>
+							<CardDescription>
+								Control whether accepted attendee names are shown on the invite page.
+							</CardDescription>
+						</CardHeader>
+						<CardContent class="space-y-4">
+							<div class="flex items-center justify-between gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
+								<div class="space-y-1">
+									<p class="text-sm font-medium text-foreground">
+										{publicGuestListVisible ? 'Visible on invite page' : 'Hidden from invite page'}
+									</p>
+									<p class="text-xs text-muted-foreground">
+										{publicGuestListVisible
+											? 'Guests can see accepted names in first-name format.'
+											: 'Only host and check-in views can see the full guest list.'}
+									</p>
+								</div>
+								<Switch
+									checked={publicGuestListVisible}
+									disabled={guestListVisibilityPending}
+									on:toggle={(event) => {
+										void updateGuestListVisibility(event.detail);
+									}}
+								/>
+							</div>
+							{#if guestListVisibilityPending}
+								<p class="text-xs text-muted-foreground">Saving visibility setting...</p>
+							{/if}
+						</CardContent>
+					</Card>
+
 					{#if reservationPublic}
 						<CapacityMeter
 							capacity={reservationPublic.capacity}

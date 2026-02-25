@@ -4,12 +4,15 @@ import {
 	collection,
 	doc,
 	getDoc,
+	getDocs,
+	limit,
 	onSnapshot,
 	orderBy,
 	query,
 	runTransaction,
 	serverTimestamp,
 	Timestamp,
+	where,
 	type Unsubscribe,
 	updateDoc,
 	writeBatch
@@ -18,14 +21,18 @@ import type {
 	CreateReservationInput,
 	DebugReservationRecord,
 	GuestRecord,
+	PublicAttendeeRecord,
 	ReservationPublicRecord,
 	ReservationRecord,
-	RsvpInput
+	RsvpInput,
+	UserActiveTicketRecord
 } from '$lib/types/models';
+import { formatPublicGuestName } from '$lib/utils/format';
 import { generateDebugToken, sha256 } from '$lib/utils/security';
 import { db } from './client';
 
 const createReservationId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 12);
+const RSVP_CAPACITY_FULL_ERROR = 'RSVP_CAPACITY_FULL';
 
 const reservationPublicCollection = collection(db, 'reservationPublic');
 const reservationDebugCollection = collection(db, 'reservationDebug');
@@ -38,6 +45,10 @@ export function reservationPublicDocRef(reservationId: string) {
 	return doc(reservationPublicCollection, reservationId);
 }
 
+export function reservationPublicAttendeeDocRef(reservationId: string, uid: string) {
+	return doc(db, 'reservationPublic', reservationId, 'attendees', uid);
+}
+
 export function reservationDebugDocRef(reservationId: string) {
 	return doc(reservationDebugCollection, reservationId);
 }
@@ -48,6 +59,17 @@ export function guestDocRef(reservationId: string, uid: string) {
 
 export function guestsCollectionRef(reservationId: string) {
 	return collection(db, 'reservations', reservationId, 'guests');
+}
+
+export function reservationPublicAttendeesCollectionRef(reservationId: string) {
+	return collection(db, 'reservationPublic', reservationId, 'attendees');
+}
+
+function normalizeReservationPublicRecord(data: ReservationPublicRecord): ReservationPublicRecord {
+	return {
+		...data,
+		guestListVisibility: data.guestListVisibility === 'visible' ? 'visible' : 'hidden'
+	};
 }
 
 export async function createReservation(
@@ -92,6 +114,7 @@ export async function createReservation(
 		notes: input.notes,
 		dressCode: input.dressCode ?? '',
 		debugEnabled: input.debugEnabled,
+		guestListVisibility: 'hidden',
 		acceptedCount: 0,
 		declinedCount: 0,
 		updatedAt: serverTimestamp()
@@ -155,7 +178,7 @@ export async function getReservationPublic(
 		return null;
 	}
 
-	return snapshot.data() as ReservationPublicRecord;
+	return normalizeReservationPublicRecord(snapshot.data() as ReservationPublicRecord);
 }
 
 export async function getReservationPrivate(
@@ -194,7 +217,30 @@ export function listenToReservationPublic(
 	handler: (value: ReservationPublicRecord | null) => void
 ): Unsubscribe {
 	return onSnapshot(reservationPublicDocRef(reservationId), (snapshot) => {
-		handler(snapshot.exists() ? (snapshot.data() as ReservationPublicRecord) : null);
+		handler(
+			snapshot.exists()
+				? normalizeReservationPublicRecord(snapshot.data() as ReservationPublicRecord)
+				: null
+		);
+	});
+}
+
+export function listenToPublicAttendees(
+	reservationId: string,
+	handler: (value: Array<PublicAttendeeRecord & { uid: string }>) => void
+): Unsubscribe {
+	const attendeesQuery = query(
+		reservationPublicAttendeesCollectionRef(reservationId),
+		orderBy('updatedAt', 'desc')
+	);
+
+	return onSnapshot(attendeesQuery, (snapshot) => {
+		handler(
+			snapshot.docs.map((document) => ({
+				...(document.data() as PublicAttendeeRecord),
+				uid: document.id
+			}))
+		);
 	});
 }
 
@@ -227,12 +273,63 @@ export function listenToGuests(
 	});
 }
 
+export async function listUserActiveTickets(uid: string): Promise<UserActiveTicketRecord[]> {
+	if (!uid) {
+		return [];
+	}
+
+	const upcomingQuery = query(
+		reservationPublicCollection,
+		where('startAt', '>=', Timestamp.now()),
+		orderBy('startAt', 'asc'),
+		limit(80)
+	);
+	const upcomingSnapshot = await getDocs(upcomingQuery);
+
+	const mapped = await Promise.all(
+		upcomingSnapshot.docs.map(async (document) => {
+			const reservationId = document.id;
+			const guestSnapshot = await getDoc(guestDocRef(reservationId, uid));
+			if (!guestSnapshot.exists()) {
+				return null;
+			}
+
+			const guest = guestSnapshot.data() as GuestRecord;
+			if (guest.status !== 'accepted') {
+				return null;
+			}
+
+			const reservation = normalizeReservationPublicRecord(document.data() as ReservationPublicRecord);
+			const ticket: UserActiveTicketRecord = {
+				reservationId,
+				clubName: reservation.clubName,
+				startAt: reservation.startAt,
+				tableType: reservation.tableType,
+				capacity: reservation.capacity,
+				notes: reservation.notes,
+				guestStatus: 'accepted' as const,
+				guestDisplayName: guest.displayName,
+				plusOneCount: guest.plusOnes?.length ?? 0
+			};
+
+			if (reservation.dressCode) {
+				ticket.dressCode = reservation.dressCode;
+			}
+
+			return ticket;
+		})
+	);
+
+	return mapped.filter((value): value is UserActiveTicketRecord => value !== null);
+}
+
 export async function upsertGuestRsvp(
 	reservationId: string,
 	uid: string,
 	payload: RsvpInput & { phone: string }
 ): Promise<void> {
 	const publicRef = reservationPublicDocRef(reservationId);
+	const attendeeRef = reservationPublicAttendeeDocRef(reservationId, uid);
 	const guestRef = guestDocRef(reservationId, uid);
 
 	await runTransaction(db, async (transaction) => {
@@ -249,6 +346,11 @@ export async function upsertGuestRsvp(
 		const previousStatus = guestSnapshot.exists()
 			? ((guestSnapshot.data() as GuestRecord).status ?? 'invited')
 			: 'invited';
+		const isNewAcceptance = previousStatus !== 'accepted' && payload.status === 'accepted';
+
+		if (isNewAcceptance && (publicData.acceptedCount ?? 0) >= publicData.capacity) {
+			throw new Error(RSVP_CAPACITY_FULL_ERROR);
+		}
 
 		let acceptedCount = publicData.acceptedCount ?? 0;
 		let declinedCount = publicData.declinedCount ?? 0;
@@ -283,12 +385,35 @@ export async function upsertGuestRsvp(
 		}
 
 		transaction.set(guestRef, guestPayload, { merge: true });
+		transaction.set(
+			attendeeRef,
+			{
+				namePublic: formatPublicGuestName(payload.displayName),
+				status: payload.status,
+				updatedAt: serverTimestamp()
+			},
+			{ merge: true }
+		);
 
 		transaction.update(publicRef, {
 			acceptedCount,
 			declinedCount,
 			updatedAt: serverTimestamp()
 		});
+	});
+}
+
+export function isRsvpCapacityFullError(error: unknown): boolean {
+	return error instanceof Error && error.message.includes(RSVP_CAPACITY_FULL_ERROR);
+}
+
+export async function setGuestListVisibility(
+	reservationId: string,
+	visibility: 'hidden' | 'visible'
+): Promise<void> {
+	await updateDoc(reservationPublicDocRef(reservationId), {
+		guestListVisibility: visibility,
+		updatedAt: serverTimestamp()
 	});
 }
 

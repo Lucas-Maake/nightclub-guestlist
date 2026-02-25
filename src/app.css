@@ -80,6 +80,22 @@
 		@apply text-sm text-muted-foreground sm:text-base;
 	}
 
+	.state-panel {
+		@apply rounded-2xl border px-4 py-3;
+	}
+
+	.state-panel-muted {
+		@apply rounded-2xl border border-border/70 bg-secondary/20 px-4 py-3 text-sm text-muted-foreground;
+	}
+
+	.state-panel-error {
+		@apply rounded-2xl border border-destructive/35 bg-destructive/16 px-4 py-3 text-sm text-destructive-foreground;
+	}
+
+	.inline-kbd {
+		@apply pointer-events-none inline-flex items-center rounded-pill border border-border/80 bg-secondary/30 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground;
+	}
+
 	.motion-enter {
 		animation: motion-fade-up var(--motion-slow) var(--motion-ease-standard) both;
 	}
@@ -119,6 +135,28 @@
 			box-shadow var(--motion-base) var(--motion-ease-gentle),
 			background-color var(--motion-base) var(--motion-ease-gentle),
 			transform var(--motion-base) var(--motion-ease-gentle);
+	}
+
+	.datetime-input {
+		color-scheme: dark;
+	}
+
+	.datetime-input::-webkit-calendar-picker-indicator {
+		cursor: pointer;
+		filter: invert(0.9);
+		opacity: 0.85;
+	}
+
+	.number-input-clean {
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+
+	.number-input-clean::-webkit-inner-spin-button,
+	.number-input-clean::-webkit-outer-spin-button {
+		margin: 0;
+		appearance: none;
+		-webkit-appearance: none;
 	}
 }
 

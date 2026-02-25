@@ -2,6 +2,7 @@
 import { afterNavigate, goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { onDestroy, onMount } from 'svelte';
+import { Minus, Plus } from 'lucide-svelte';
 import QRCode from 'qrcode';
 import AppHeader from '$lib/components/common/app-header.svelte';
 import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
@@ -21,8 +22,10 @@ import ReservationPreviewCard from '$lib/components/common/reservation-preview-c
 		currentUser
 	} from '$lib/firebase/auth';
 	import type { CreateReservationInput, ReservationPublicRecord } from '$lib/types/models';
+	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
-	import { canUseDebugMode } from '$lib/utils/security';
+	import { toUserSafeCreateMessage } from '$lib/utils/messages';
+	import { canUseDebugMode, isProductionLikeRuntime } from '$lib/utils/security';
 	import { inviteDebugUrl, inviteUrl } from '$lib/utils/links';
 	import { cn } from '$lib/utils/cn';
 
@@ -31,6 +34,7 @@ type StartPreset = 'plus2h' | 'tonight' | 'tomorrow10';
 
 const now = new Date();
 now.setHours(now.getHours() + 3, 0, 0, 0);
+const productionLike = isProductionLikeRuntime();
 
 	const defaultForm: FormState = {
 		clubName: '',
@@ -55,6 +59,7 @@ let inviteCopied = $state(false);
 let debugInviteCopied = $state(false);
 let inviteQrDataUrl = $state('');
 let inviteQrLoading = $state(false);
+let copyingTarget = $state<'invite' | 'debug' | null>(null);
 
 let inviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -73,7 +78,7 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 	async function hydrateShareState(): Promise<void> {
 		const { reservationId, debugToken } = parseUrlState();
 		shareReservationId = reservationId;
-		shareDebugToken = debugToken;
+		shareDebugToken = productionLike ? '' : debugToken;
 		inviteCopied = false;
 		debugInviteCopied = false;
 
@@ -114,6 +119,21 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		form.startAt = toDateTimeInput(startPresetDate(preset));
 	}
 
+	function clampCapacity(value: number): number {
+		return Math.min(100, Math.max(1, value));
+	}
+
+	function stepCapacity(delta: number): void {
+		const currentCapacity = Number(form.capacity);
+		const nextCapacity = Number.isFinite(currentCapacity) ? currentCapacity + delta : 1;
+		form.capacity = clampCapacity(nextCapacity);
+	}
+
+	function normalizeCapacity(): void {
+		const parsedCapacity = Number(form.capacity);
+		form.capacity = Number.isFinite(parsedCapacity) ? clampCapacity(Math.round(parsedCapacity)) : 1;
+	}
+
 	onMount(async () => {
 		await waitForAuthReady();
 		await hydrateShareState();
@@ -148,23 +168,6 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		]);
 	}
 
-	function formatCreateError(error: unknown): string {
-		if (!(error instanceof Error)) {
-			return 'Unable to create reservation.';
-		}
-
-		const message = error.message;
-		if (
-			message.includes('firestore.googleapis.com') ||
-			message.includes('Cloud Firestore API has not been used') ||
-			message.includes('SERVICE_DISABLED')
-		) {
-			return 'Cloud Firestore is not enabled for this Firebase project. Enable Firestore in Firebase Console and Cloud Firestore API in Google Cloud, then retry.';
-		}
-
-		return message;
-	}
-
 	async function ensureCreateUser(debugEnabled: boolean): Promise<string | null> {
 		const current = getCurrentUser();
 		if (current) {
@@ -181,7 +184,19 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 			return getCurrentUser()?.uid ?? null;
 		}
 
-		return null;
+		const returnTo = `${$page.url.pathname}${$page.url.search}`;
+		const authResult = await openAuthModal({ returnTo, source: 'create-submit' });
+		if (authResult !== 'authenticated') {
+			return null;
+		}
+
+		await waitForAuthReady();
+		return getCurrentUser()?.uid ?? null;
+	}
+
+	async function openCreateSignIn(): Promise<void> {
+		const returnTo = `${$page.url.pathname}${$page.url.search}`;
+		await openAuthModal({ returnTo, source: 'create-page' });
 	}
 
 	async function handleCreateReservation(event: SubmitEvent): Promise<void> {
@@ -189,7 +204,8 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		resetErrors();
 		isSubmitting = true;
 
-		const parsed = createReservationSchema.safeParse(form);
+		const formCandidate: FormState = productionLike ? { ...form, debugEnabled: false } : form;
+		const parsed = createReservationSchema.safeParse(formCandidate);
 		if (!parsed.success) {
 			for (const issue of parsed.error.issues) {
 				const key = issue.path[0];
@@ -202,7 +218,9 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		}
 
 		if (parsed.data.debugEnabled && !canUseDebugMode()) {
-			globalError = 'Debug mode is blocked on production hostnames.';
+			globalError = productionLike
+				? 'This testing option is unavailable right now.'
+				: 'Debug mode is blocked on this environment.';
 			isSubmitting = false;
 			return;
 		}
@@ -210,8 +228,7 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 		try {
 			const uid = await ensureCreateUser(parsed.data.debugEnabled);
 			if (!uid) {
-				const returnTo = encodeURIComponent('/create');
-				await goto(`/login?returnTo=${returnTo}`);
+				globalError = 'Sign in is required to create a reservation.';
 				return;
 			}
 
@@ -233,7 +250,7 @@ let debugInviteCopiedTimeout: ReturnType<typeof setTimeout> | null = null;
 
 			await goto(`/create?${next.toString()}`);
 		} catch (error) {
-			globalError = formatCreateError(error);
+			globalError = toUserSafeCreateMessage(error, productionLike);
 		} finally {
 			isSubmitting = false;
 		}
@@ -248,10 +265,10 @@ async function copyText(value: string, successLabel: string): Promise<boolean> {
 			variant: 'success'
 		});
 		return true;
-	} catch (error) {
+	} catch {
 		pushToast({
 			title: 'Copy failed',
-			description: error instanceof Error ? error.message : 'Clipboard unavailable.',
+			description: 'Could not copy link. Try again.',
 			variant: 'destructive'
 		});
 		return false;
@@ -260,8 +277,16 @@ async function copyText(value: string, successLabel: string): Promise<boolean> {
 
 const invite = $derived(shareReservationId ? inviteUrl(shareReservationId) : '');
 const debugInvite = $derived(
-	shareReservationId && shareDebugToken ? inviteDebugUrl(shareReservationId, shareDebugToken) : ''
+	!productionLike && shareReservationId && shareDebugToken
+		? inviteDebugUrl(shareReservationId, shareDebugToken)
+		: ''
 );
+const startAtError = $derived.by(() => {
+	const parsedStartAt = createReservationSchema.shape.startAt.safeParse(form.startAt);
+	return parsedStartAt.success
+		? ''
+		: parsedStartAt.error.issues[0]?.message ?? 'Valid date and time is required.';
+});
 const canSubmitCreate = $derived(createReservationSchema.safeParse(form).success && !isSubmitting);
 
 function markCopied(target: 'invite' | 'debug'): void {
@@ -292,9 +317,16 @@ async function copyShareLink(
 	successLabel: string,
 	target: 'invite' | 'debug'
 ): Promise<void> {
-	const copied = await copyText(value, successLabel);
-	if (copied) {
-		markCopied(target);
+	copyingTarget = target;
+	try {
+		const copied = await copyText(value, successLabel);
+		if (copied) {
+			markCopied(target);
+		}
+	} finally {
+		if (copyingTarget === target) {
+			copyingTarget = null;
+		}
 	}
 }
 
@@ -343,13 +375,13 @@ $effect(() => {
 			<div class="space-y-2">
 				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Share Screen</p>
 				<h1 class="section-title">Invite is live</h1>
-				<p class="section-lead">Copy the guest link and send it immediately.</p>
+				<p class="section-lead">Copy the guest link and send it to your guests now.</p>
 			</div>
 
 			{#if shareLoading}
 				<Card>
 					<CardContent class="p-6">
-						<p class="text-sm text-muted-foreground">Loading invite preview...</p>
+						<p class="state-panel-muted" aria-live="polite">Loading invite preview...</p>
 					</CardContent>
 				</Card>
 			{:else if shareReservation}
@@ -359,9 +391,7 @@ $effect(() => {
 					<Card>
 						<CardHeader>
 							<CardTitle>Share links</CardTitle>
-							<CardDescription>
-								Standard HTTPS links only. No dynamic-link dependency.
-							</CardDescription>
+							<CardDescription>Send this link to your guests.</CardDescription>
 						</CardHeader>
 						<CardContent class="space-y-4">
 							<div class="rounded-2xl border border-border/75 bg-secondary/30 p-4">
@@ -370,10 +400,11 @@ $effect(() => {
 								<Button
 									class="mt-4"
 									size="sm"
+									disabled={copyingTarget === 'invite'}
 									variant={inviteCopied ? 'success' : 'default'}
 									onclick={() => copyShareLink(invite, 'Invite link copied', 'invite')}
 								>
-									{inviteCopied ? 'Copied' : 'Copy invite link'}
+									{copyingTarget === 'invite' ? 'Copying...' : inviteCopied ? 'Copied' : 'Copy invite link'}
 								</Button>
 							</div>
 
@@ -387,10 +418,11 @@ $effect(() => {
 									<Button
 										class="mt-4"
 										size="sm"
+										disabled={copyingTarget === 'debug'}
 										variant={debugInviteCopied ? 'success' : 'outline'}
 										onclick={() => copyShareLink(debugInvite, 'Debug link copied', 'debug')}
 									>
-										{debugInviteCopied ? 'Copied' : 'Copy debug link'}
+										{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy debug link'}
 									</Button>
 								</div>
 							{/if}
@@ -418,7 +450,7 @@ $effect(() => {
 										class="mx-auto h-[210px] w-[210px] rounded-2xl border border-border/75 bg-white p-2"
 									/>
 								{:else}
-									<p class="text-sm text-muted-foreground">Unable to generate QR code.</p>
+									<p class="state-panel-muted text-center">Unable to generate QR code right now.</p>
 								{/if}
 								<p class="text-center text-xs text-muted-foreground">
 									Best for at-door scan and quick guest access.
@@ -453,9 +485,12 @@ $effect(() => {
 			{:else}
 				<Card>
 					<CardContent class="p-6">
-						<p class="text-sm text-muted-foreground">
-							Reservation not found. Create a new reservation to generate a share link.
-						</p>
+						<div class="state-panel-muted">
+							<p>Reservation not found. Create a new reservation to generate a share link.</p>
+							<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mt-3')} href="/create">
+								Create reservation
+							</a>
+						</div>
 					</CardContent>
 				</Card>
 			{/if}
@@ -465,9 +500,7 @@ $effect(() => {
 			<div class="space-y-2">
 				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Host Flow</p>
 				<h1 class="section-title">Create a reservation</h1>
-				<p class="section-lead">
-					Hosts must be authenticated with OTP. For safe local QA, debug mode can bypass OTP on allowlisted domains.
-				</p>
+				<p class="section-lead">Sign in to create reservations and manage your guest list.</p>
 			</div>
 
 			<Card>
@@ -484,7 +517,7 @@ $effect(() => {
 
 							<div class="space-y-2">
 								<Label for="startAt">Start at</Label>
-								<Input id="startAt" type="datetime-local" bind:value={form.startAt} />
+								<Input id="startAt" type="datetime-local" class="datetime-input" bind:value={form.startAt} />
 								<div class="flex flex-wrap gap-2">
 									<button
 										type="button"
@@ -508,8 +541,8 @@ $effect(() => {
 										Tomorrow 10 PM
 									</button>
 								</div>
-								{#if fieldErrors.startAt}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.startAt}</p>
+								{#if startAtError}
+									<p class="text-xs text-destructive-foreground" aria-live="polite">{startAtError}</p>
 								{/if}
 							</div>
 
@@ -523,7 +556,38 @@ $effect(() => {
 
 							<div class="space-y-2">
 								<Label for="capacity">Capacity</Label>
-								<Input id="capacity" type="number" min={1} max={100} bind:value={form.capacity} />
+								<div class="flex items-center gap-2">
+									<Button
+										type="button"
+										variant="outline"
+										size="icon"
+										onclick={() => stepCapacity(-1)}
+										disabled={form.capacity <= 1}
+										aria-label="Decrease capacity"
+									>
+										<Minus class="h-4 w-4" aria-hidden="true" />
+									</Button>
+									<Input
+										id="capacity"
+										type="number"
+										min={1}
+										max={100}
+										class="number-input-clean text-center tabular-nums"
+										bind:value={form.capacity}
+										onblur={normalizeCapacity}
+									/>
+									<Button
+										type="button"
+										variant="outline"
+										size="icon"
+										onclick={() => stepCapacity(1)}
+										disabled={form.capacity >= 100}
+										aria-label="Increase capacity"
+									>
+										<Plus class="h-4 w-4" aria-hidden="true" />
+									</Button>
+								</div>
+								<p class="text-xs text-muted-foreground">Set a value between 1 and 100 guests.</p>
 								{#if fieldErrors.capacity}
 									<p class="text-xs text-destructive-foreground">{fieldErrors.capacity}</p>
 								{/if}
@@ -550,25 +614,27 @@ $effect(() => {
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-border/75 bg-secondary/25 p-4">
-							<div class="flex items-start justify-between gap-4">
-								<div class="space-y-1">
-									<p class="text-sm font-medium text-foreground">Enable debug backdoor</p>
-									<p class="text-xs text-muted-foreground">
-										Stores only hashed debug token and enables `?debug=TOKEN` bypass in dev/allowlisted domains.
-									</p>
+						{#if !productionLike}
+							<div class="rounded-2xl border border-border/75 bg-secondary/25 p-4">
+								<div class="flex items-start justify-between gap-4">
+									<div class="space-y-1">
+										<p class="text-sm font-medium text-foreground">Enable debug backdoor</p>
+										<p class="text-xs text-muted-foreground">
+											Stores only hashed debug token and enables `?debug=TOKEN` bypass in dev/allowlisted domains.
+										</p>
+									</div>
+									<Switch
+										checked={form.debugEnabled}
+										on:toggle={(event) => {
+											form.debugEnabled = event.detail;
+										}}
+									/>
 								</div>
-								<Switch
-									checked={form.debugEnabled}
-									on:toggle={(event) => {
-										form.debugEnabled = event.detail;
-									}}
-								/>
 							</div>
-						</div>
+						{/if}
 
 						{#if globalError}
-							<p class="rounded-2xl border border-destructive/35 bg-destructive/15 px-4 py-3 text-sm text-destructive-foreground">
+							<p class="state-panel-error" aria-live="polite">
 								{globalError}
 							</p>
 						{/if}
@@ -578,12 +644,13 @@ $effect(() => {
 								{isSubmitting ? 'Creating...' : canSubmitCreate ? 'Create reservation' : 'Complete required fields'}
 							</Button>
 							{#if !$currentUser}
-								<a
+								<button
+									type="button"
 									class={cn(buttonVariants({ variant: 'outline', size: 'md' }))}
-									href="/login?returnTo=%2Fcreate"
+									onclick={openCreateSignIn}
 								>
-									Login with phone OTP
-								</a>
+									Sign in
+								</button>
 							{/if}
 						</div>
 						{#if !canSubmitCreate && !isSubmitting}

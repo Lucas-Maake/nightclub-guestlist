@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-const now = new Date('2000-01-01T00:00:00.000Z');
+function isFutureDateTime(value: string): boolean {
+	const timestamp = new Date(value).getTime();
+	if (Number.isNaN(timestamp)) {
+		return false;
+	}
+
+	return timestamp > Date.now();
+}
 
 export const plusOneSchema = z.object({
 	name: z.string().trim().min(1, 'Plus-one name is required.').max(60, 'Name is too long.')
@@ -11,7 +18,7 @@ export const createReservationSchema = z.object({
 	startAt: z
 		.string()
 		.refine((value) => !Number.isNaN(new Date(value).getTime()), 'Valid date and time is required.')
-		.refine((value) => new Date(value) > now, 'Start time must be in the future.'),
+		.refine((value) => isFutureDateTime(value), 'Start time must be in the future.'),
 	tableType: z.string().trim().min(2, 'Table type is required.').max(80, 'Table type is too long.'),
 	capacity: z.coerce.number().int().min(1, 'Capacity must be at least 1.').max(100, 'Capacity is too high.'),
 	notes: z.string().trim().min(4, 'Notes are required.').max(500, 'Notes are too long.'),

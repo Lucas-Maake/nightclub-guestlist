@@ -1,7 +1,8 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
-	import '../app.css';
-	import ToastViewport from '$lib/components/common/toast-viewport.svelte';
+import favicon from '$lib/assets/favicon.svg';
+import '../app.css';
+import ToastViewport from '$lib/components/common/toast-viewport.svelte';
+import AuthModal from '$lib/components/common/auth-modal.svelte';
 
 	let { children } = $props();
 </script>
@@ -18,4 +19,5 @@
 	{@render children()}
 </div>
 
+<AuthModal />
 <ToastViewport />

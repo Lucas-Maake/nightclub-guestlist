@@ -14,6 +14,10 @@ service cloud.firestore {
 			return /databases/$(database)/documents/reservations/$(reservationId);
 		}
 
+		function reservationPublicPath(reservationId) {
+			return /databases/$(database)/documents/reservationPublic/$(reservationId);
+		}
+
 		function guestPath(reservationId, uid) {
 			return /databases/$(database)/documents/reservations/$(reservationId)/guests/$(uid);
 		}
@@ -43,13 +47,40 @@ service cloud.firestore {
 				'updatedAt'
 			]) &&
 			request.resource.data.acceptedCount >= 0 &&
+			(
+				request.resource.data.acceptedCount <= resource.data.capacity ||
+				request.resource.data.acceptedCount <= resource.data.acceptedCount
+			) &&
 			request.resource.data.declinedCount >= 0;
 		}
 
 		function validReservationPublicCreate(reservationId) {
 			return request.resource.data.reservationId == reservationId &&
 				request.resource.data.acceptedCount == 0 &&
-				request.resource.data.declinedCount == 0;
+				request.resource.data.declinedCount == 0 &&
+				request.resource.data.guestListVisibility == 'hidden';
+		}
+
+		function publicGuestListVisible(reservationId) {
+			return exists(reservationPublicPath(reservationId)) &&
+				get(reservationPublicPath(reservationId)).data.guestListVisibility == 'visible';
+		}
+
+		function validPublicAttendeeData() {
+			return request.resource.data.keys().hasOnly([
+				'namePublic',
+				'status',
+				'updatedAt'
+			]) &&
+			request.resource.data.keys().hasAll([
+				'namePublic',
+				'status',
+				'updatedAt'
+			]) &&
+			request.resource.data.namePublic is string &&
+			request.resource.data.namePublic.size() > 0 &&
+			request.resource.data.namePublic.size() <= 80 &&
+			request.resource.data.status in ['accepted', 'declined'];
 		}
 
 		function reservationHostUidUnchanged() {
@@ -119,6 +150,12 @@ service cloud.firestore {
 			allow create: if isHostAfter(reservationId) && validReservationPublicCreate(reservationId);
 			allow update: if isHost(reservationId) || (isOwnGuestAfter(reservationId) && aggregateOnlyUpdate());
 			allow delete: if isHost(reservationId);
+
+			match /attendees/{uid} {
+				allow get, list: if publicGuestListVisible(reservationId);
+				allow create, update: if (isHost(reservationId) || isOwnGuest(uid)) && validPublicAttendeeData();
+				allow delete: if isHost(reservationId) || isOwnGuest(uid);
+			}
 		}
 
 		match /reservationDebug/{reservationId} {
