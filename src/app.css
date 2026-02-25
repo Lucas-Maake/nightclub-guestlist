@@ -143,8 +143,9 @@
 
 	.datetime-input::-webkit-calendar-picker-indicator {
 		cursor: pointer;
-		filter: invert(0.9);
-		opacity: 0.85;
+		/* Force a light icon regardless of browser default icon color */
+		filter: brightness(0) invert(0.92);
+		opacity: 0.92;
 	}
 
 	.number-input-clean {

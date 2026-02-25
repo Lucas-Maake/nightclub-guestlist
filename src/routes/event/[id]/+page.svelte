@@ -1,9 +1,10 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { MapPinned } from 'lucide-svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { QuantitySelect } from '$lib/components/ui/quantity-select';
 	import { findEventById } from '$lib/data/events';
 	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import { openAuthModal } from '$lib/stores/auth-modal';
@@ -75,7 +76,7 @@
 		return Array.from({ length: maxPerOrder + 1 }, (_, index) => index);
 	}
 
-	function updateTicketQuantity(tierId: string, value: string): void {
+	function updateTicketQuantity(tierId: string, value: string | number): void {
 		const parsed = Number(value);
 		const tier = eventRecord?.ticketTiers.find((candidate) => candidate.id === tierId);
 		const maxPerOrder = tier?.maxPerOrder ?? 0;
@@ -115,7 +116,7 @@
 			clubName: eventRecord.venue,
 			startAt: eventRecord.startAt,
 			tableType: eventRecord.defaultTableType,
-			notes: `${eventRecord.title} — table request from event detail page.`,
+			notes: `${eventRecord.title} - table request from event detail page.`,
 			dressCode: eventRecord.dressCode
 		});
 		await goto(`/create?${params.toString()}`);
@@ -129,8 +130,8 @@
 		});
 	}
 
-	onMount(async () => {
-		await waitForAuthReady();
+	onMount(() => {
+		void waitForAuthReady();
 	});
 </script>
 
@@ -187,15 +188,12 @@
 							</div>
 							<div class="flex items-center gap-3">
 								<p class="text-sm font-semibold text-primary">{formatPrice(tier.priceCents)}</p>
-								<select
-									class="h-9 rounded-lg border border-border bg-background/30 px-2 text-sm outline-none focus:border-primary/70"
-									value={String(quantities[tier.id] ?? 0)}
-									onchange={(event) => updateTicketQuantity(tier.id, event.currentTarget.value)}
-								>
-									{#each quantityOptions(tier.maxPerOrder) as option}
-										<option value={option}>{option}</option>
-									{/each}
-								</select>
+								<QuantitySelect
+									ariaLabel={`Select ${tier.label} quantity`}
+									options={quantityOptions(tier.maxPerOrder)}
+									value={quantities[tier.id] ?? 0}
+									on:change={(event) => updateTicketQuantity(tier.id, event.detail.value)}
+								/>
 							</div>
 						</div>
 					{/each}
@@ -252,3 +250,4 @@
 		</div>
 	</div>
 {/if}
+
