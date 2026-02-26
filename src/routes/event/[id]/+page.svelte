@@ -6,8 +6,9 @@
 	import { MapPinned } from 'lucide-svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { QuantitySelect } from '$lib/components/ui/quantity-select';
-	import { findEventById } from '$lib/data/events';
+	import type { EventCatalogItem } from '$lib/data/events';
 	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
+	import { getPublishedEventById } from '$lib/firebase/firestore';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
 	import { cn } from '$lib/utils/cn';
@@ -28,7 +29,9 @@
 	});
 
 	const eventId = $derived($page.params.id ?? '');
-	const eventRecord = $derived(findEventById(eventId));
+
+	let eventRecord = $state<EventCatalogItem | null>(null);
+	let loadingEvent = $state(true);
 
 	let quantities = $state<Record<string, number>>({});
 
@@ -132,8 +135,31 @@
 		});
 	}
 
-	onMount(() => {
-		void waitForAuthReady();
+	async function loadEventById(id: string): Promise<void> {
+		loadingEvent = true;
+		try {
+			eventRecord = await getPublishedEventById(id);
+		} catch {
+			eventRecord = null;
+		} finally {
+			loadingEvent = false;
+		}
+	}
+
+	onMount(async () => {
+		await waitForAuthReady();
+	});
+
+	$effect(() => {
+		if (!eventId) {
+			eventRecord = null;
+			loadingEvent = false;
+			quantities = {};
+			return;
+		}
+
+		quantities = {};
+		void loadEventById(eventId);
 	});
 </script>
 
@@ -151,7 +177,11 @@
 			{/if}
 		</div>
 
-		{#if !eventRecord}
+		{#if loadingEvent}
+			<div class="state-panel-muted">
+				<p class="font-medium text-foreground">Loading event...</p>
+			</div>
+		{:else if !eventRecord}
 			<div class="state-panel-muted">
 				<p class="font-medium text-foreground">Event not found.</p>
 				<p class="mt-1 text-sm">This event may have moved or is no longer available.</p>

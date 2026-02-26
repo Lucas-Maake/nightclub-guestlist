@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import type { Unsubscribe } from 'firebase/firestore';
@@ -14,7 +15,7 @@
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import {
-		getReservationPrivate,
+		isHostForReservation,
 		listenToGuests,
 		listenToReservationPublic,
 		setGuestListVisibility
@@ -66,41 +67,71 @@
 		filter = 'all';
 	}
 
-	onMount(async () => {
-		await waitForAuthReady();
-		if (!reservationId) {
-			loading = false;
-			hostAccess = 'denied';
-			return;
-		}
+	onMount(() => {
+		let cancelled = false;
 
-		if (!$currentUser) {
-			const destination = `${$page.url.pathname}${$page.url.search}`;
-			const authResult = await openAuthModal({ returnTo: destination, source: 'host-gate' });
-			await waitForAuthReady();
-			if (authResult !== 'authenticated' || !$currentUser) {
+		void (async () => {
+			try {
+				await waitForAuthReady();
+				if (cancelled) {
+					return;
+				}
+
+				if (!reservationId) {
+					loading = false;
+					hostAccess = 'denied';
+					return;
+				}
+
+				if (!$currentUser) {
+					const destination = `${$page.url.pathname}${$page.url.search}`;
+					const authResult = await openAuthModal({ returnTo: destination, source: 'host-gate' });
+					await waitForAuthReady();
+					if (cancelled) {
+						return;
+					}
+					if (authResult !== 'authenticated' || !$currentUser) {
+						hostAccess = 'denied';
+						loading = false;
+						await goto(`/r/${reservationId}`, { replaceState: true, noScroll: true });
+						return;
+					}
+				}
+
+				const uid = $currentUser?.uid ?? '';
+				if (!uid) {
+					hostAccess = 'denied';
+					loading = false;
+					await goto(`/r/${reservationId}`, { replaceState: true, noScroll: true });
+					return;
+				}
+
+				const hasHostAccess = await isHostForReservation(reservationId, uid);
+				if (!hasHostAccess) {
+					hostAccess = 'denied';
+					loading = false;
+					await goto(`/r/${reservationId}`, { replaceState: true, noScroll: true });
+					return;
+				}
+
+				hostAccess = 'allowed';
+				publicUnsubscribe = listenToReservationPublic(reservationId, (value) => {
+					reservationPublic = value;
+					loading = false;
+				});
+
+				guestsUnsubscribe = listenToGuests(reservationId, (value) => {
+					guests = value;
+				});
+			} catch {
 				hostAccess = 'denied';
 				loading = false;
-				return;
 			}
-		}
+		})();
 
-		const privateReservation = await getReservationPrivate(reservationId);
-		if (!privateReservation || privateReservation.hostUid !== $currentUser.uid) {
-			hostAccess = 'denied';
-			loading = false;
-			return;
-		}
-
-		hostAccess = 'allowed';
-		publicUnsubscribe = listenToReservationPublic(reservationId, (value) => {
-			reservationPublic = value;
-			loading = false;
-		});
-
-		guestsUnsubscribe = listenToGuests(reservationId, (value) => {
-			guests = value;
-		});
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	onMount(() => {

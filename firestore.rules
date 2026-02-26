@@ -32,26 +32,8 @@ service cloud.firestore {
 				getAfter(reservationPath(reservationId)).data.hostUid == request.auth.uid;
 		}
 
-		function isOwnGuestAfter(reservationId) {
-			return signedIn() && existsAfter(guestPath(reservationId, request.auth.uid));
-		}
-
 		function isOwnGuest(uid) {
 			return signedIn() && request.auth.uid == uid;
-		}
-
-		function aggregateOnlyUpdate() {
-			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
-				'acceptedCount',
-				'declinedCount',
-				'updatedAt'
-			]) &&
-			request.resource.data.acceptedCount >= 0 &&
-			(
-				request.resource.data.acceptedCount <= resource.data.capacity ||
-				request.resource.data.acceptedCount <= resource.data.acceptedCount
-			) &&
-			request.resource.data.declinedCount >= 0;
 		}
 
 		function validReservationPublicCreate(reservationId) {
@@ -66,95 +48,18 @@ service cloud.firestore {
 				get(reservationPublicPath(reservationId)).data.guestListVisibility == 'visible';
 		}
 
-		function validPublicAttendeeData() {
-			return request.resource.data.keys().hasOnly([
-				'namePublic',
-				'status',
-				'updatedAt'
-			]) &&
-			request.resource.data.keys().hasAll([
-				'namePublic',
-				'status',
-				'updatedAt'
-			]) &&
-			request.resource.data.namePublic is string &&
-			request.resource.data.namePublic.size() > 0 &&
-			request.resource.data.namePublic.size() <= 80 &&
-			request.resource.data.status in ['accepted', 'declined'];
-		}
-
 		function reservationHostUidUnchanged() {
 			return !request.resource.data.diff(resource.data).changedKeys().hasAny(['hostUid']);
-		}
-
-		function guestStatusValid() {
-			return request.resource.data.status in ['accepted', 'declined'];
-		}
-
-		function validGuestSelfCreate() {
-			return request.resource.data.keys().hasOnly([
-				'displayName',
-				'phone',
-				'status',
-				'plusOnes',
-				'checkedInAt',
-				'checkedInBy',
-				'updatedAt'
-			]) &&
-			request.resource.data.keys().hasAll([
-				'displayName',
-				'phone',
-				'status',
-				'plusOnes',
-				'updatedAt'
-			]) &&
-			guestStatusValid() &&
-			request.resource.data.checkedInAt == null &&
-			request.resource.data.checkedInBy == null;
-		}
-
-		function validGuestSelfUpdate() {
-			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
-				'displayName',
-				'phone',
-				'status',
-				'plusOnes',
-				'updatedAt'
-			]) &&
-			guestStatusValid() &&
-			request.resource.data.checkedInAt == resource.data.checkedInAt &&
-			request.resource.data.checkedInBy == resource.data.checkedInBy;
-		}
-
-		function validCheckInPair() {
-			return (request.resource.data.checkedInAt == null && request.resource.data.checkedInBy == null) ||
-				(request.resource.data.checkedInAt != null &&
-					request.resource.data.checkedInBy == request.auth.uid);
-		}
-
-		function validGuestHostCheckInUpdate() {
-			return request.resource.data.diff(resource.data).changedKeys().hasOnly([
-				'checkedInAt',
-				'checkedInBy',
-				'updatedAt'
-			]) &&
-			request.resource.data.diff(resource.data).changedKeys().hasAny([
-				'checkedInAt',
-				'checkedInBy'
-			]) &&
-			validCheckInPair();
 		}
 
 		match /reservationPublic/{reservationId} {
 			allow get, list: if true;
 			allow create: if isHostAfter(reservationId) && validReservationPublicCreate(reservationId);
-			allow update: if isHost(reservationId) || (isOwnGuestAfter(reservationId) && aggregateOnlyUpdate());
-			allow delete: if isHost(reservationId);
+			allow update, delete: if false;
 
 			match /attendees/{uid} {
 				allow get, list: if publicGuestListVisible(reservationId);
-				allow create, update: if (isHost(reservationId) || isOwnGuest(uid)) && validPublicAttendeeData();
-				allow delete: if isHost(reservationId) || isOwnGuest(uid);
+				allow create, update, delete: if false;
 			}
 		}
 
@@ -163,6 +68,17 @@ service cloud.firestore {
 			allow list: if false;
 			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
 			allow update, delete: if isHost(reservationId);
+		}
+
+		match /events/{eventId} {
+			allow get, list: if resource.data.published == true;
+			allow create, update, delete: if false;
+
+			match /ticketTiers/{tierId} {
+				allow get, list: if exists(/databases/$(database)/documents/events/$(eventId)) &&
+					get(/databases/$(database)/documents/events/$(eventId)).data.published == true;
+				allow create, update, delete: if false;
+			}
 		}
 
 		match /reservations/{reservationId} {
@@ -175,10 +91,7 @@ service cloud.firestore {
 			match /guests/{uid} {
 				allow get: if isHost(reservationId) || isOwnGuest(uid);
 				allow list: if isHost(reservationId);
-				allow create: if isOwnGuest(uid) && validGuestSelfCreate();
-				allow update: if (isOwnGuest(uid) && validGuestSelfUpdate()) ||
-					(isHost(reservationId) && validGuestHostCheckInUpdate());
-				allow delete: if isHost(reservationId) || isOwnGuest(uid);
+				allow create, update, delete: if false;
 			}
 		}
 

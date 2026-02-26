@@ -30,14 +30,18 @@
 ## Firestore Rules Summary
 - `reservationPublic/{id}`:
   - public read
-  - host/admin-style create/delete
-  - constrained aggregate updates from signed-in users
+  - host create during reservation creation
+  - direct client updates blocked (aggregate + visibility updates are callable-only)
 - `reservations/{id}`:
   - create only by authenticated host owner
   - read/update/delete only by host
 - `reservations/{id}/guests/{uid}`:
-  - guest can create/update own document
-  - host can list/read/update all guest documents
+  - host can list/read all guest documents
+  - guest can read own document
+  - direct client writes blocked (RSVP/check-in are callable-only)
+- `reservationPublic/{id}/attendees/{uid}`:
+  - readable only when guest list is visible
+  - direct client writes blocked (projection writes are callable-only)
 - `users/{uid}`:
   - user-scoped read/write
 - `reservationDebug/{id}`:
@@ -52,5 +56,5 @@
 ## Known MVP Limits
 - `reservationDebug` hash document is directly readable by ID for token verification.
   - Mitigation: long random token + SHA-256 + no list access + hostname gating.
-- `acceptedCount/declinedCount` are aggregate counters and constrained in rules, but still mutable by signed-in clients.
-  - Mitigation: transaction-based updates + bounded rule checks; tighten with server-side functions in next iteration.
+- RSVP/check-in/visibility now depend on deployed callable Cloud Functions.
+  - If functions are missing in an environment, those actions fail closed instead of allowing direct document writes.

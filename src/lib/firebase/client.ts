@@ -13,6 +13,7 @@ import {
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions';
 
 const firebaseConfig = {
 	apiKey: PUBLIC_FIREBASE_API_KEY,
@@ -26,6 +27,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let functions: Functions;
 let emulatorsConnected = false;
 
 function ensureFirebaseApp(): FirebaseApp {
@@ -45,6 +47,7 @@ function ensureFirebaseApp(): FirebaseApp {
 	app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 	auth = getAuth(app);
 	db = getFirestore(app);
+	functions = getFunctions(app);
 
 	return app;
 }
@@ -69,6 +72,7 @@ function connectEmulatorsIfNeeded(): void {
 
 	connectAuthEmulator(auth, `http://${host}:${authPort}`, { disableWarnings: true });
 	connectFirestoreEmulator(db, host, firestorePort);
+	connectFunctionsEmulator(functions, host, 5001);
 
 	emulatorsConnected = true;
 }
@@ -76,4 +80,4 @@ function connectEmulatorsIfNeeded(): void {
 ensureFirebaseApp();
 connectEmulatorsIfNeeded();
 
-export { app as firebaseApp, auth, db };
+export { app as firebaseApp, auth, db, functions };

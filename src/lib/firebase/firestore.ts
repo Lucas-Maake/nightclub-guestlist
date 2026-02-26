@@ -15,9 +15,11 @@ import {
 	Timestamp,
 	where,
 	type Unsubscribe,
-	updateDoc,
 	writeBatch
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import type { EventCatalogItem, EventTicketTier } from '$lib/data/events';
+import { findEventById, listEventsSortedAsc } from '$lib/data/events';
 import type {
 	CreateReservationInput,
 	DebugReservationRecord,
@@ -29,15 +31,43 @@ import type {
 	RsvpInput,
 	UserActiveTicketRecord
 } from '$lib/types/models';
-import { formatPublicGuestName } from '$lib/utils/format';
 import { generateDebugToken, sha256 } from '$lib/utils/security';
-import { db } from './client';
+import { db, functions } from './client';
 
 const createReservationId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 12);
 const RSVP_CAPACITY_FULL_ERROR = 'RSVP_CAPACITY_FULL';
 
 const reservationPublicCollection = collection(db, 'reservationPublic');
 const reservationDebugCollection = collection(db, 'reservationDebug');
+const eventsCollection = collection(db, 'events');
+
+const upsertGuestRsvpCallable = httpsCallable<
+	{
+		reservationId: string;
+		status: Extract<GuestRecord['status'], 'accepted' | 'declined'>;
+		plusOnes: Array<{ name: string }>;
+		displayName: string;
+		phone: string;
+	},
+	{ ok: true }
+>(functions, 'upsertGuestRsvp');
+
+const setGuestListVisibilityCallable = httpsCallable<
+	{
+		reservationId: string;
+		visibility: 'hidden' | 'visible';
+	},
+	{ ok: true }
+>(functions, 'setGuestListVisibility');
+
+const toggleGuestCheckInCallable = httpsCallable<
+	{
+		reservationId: string;
+		uid: string;
+		checkedIn: boolean;
+	},
+	{ ok: true }
+>(functions, 'toggleGuestCheckIn');
 
 function coerceTimestamp(value: unknown): Timestamp | null {
 	if (value instanceof Timestamp) {
@@ -69,6 +99,72 @@ function coerceString(value: unknown, fallback = ''): string {
 
 function coerceNumber(value: unknown, fallback = 0): number {
 	return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function coerceEventTicketTier(value: unknown): (EventTicketTier & { sortOrder: number }) | null {
+	if (!value || typeof value !== 'object') {
+		return null;
+	}
+
+	const source = value as Record<string, unknown>;
+	const label = coerceString(source.label);
+	const priceCents = Math.max(0, coerceNumber(source.priceCents, 0));
+	const maxPerOrder = Math.max(0, coerceNumber(source.maxPerOrder, 0));
+	const sortOrder = coerceNumber(source.sortOrder, 0);
+
+	if (!label) {
+		return null;
+	}
+
+	return {
+		id: '',
+		label,
+		priceCents,
+		maxPerOrder,
+		sortOrder
+	};
+}
+
+function mapEventFromDoc(
+	eventId: string,
+	value: unknown,
+	ticketTiers: EventTicketTier[]
+): EventCatalogItem | null {
+	if (!value || typeof value !== 'object') {
+		return null;
+	}
+
+	const source = value as Record<string, unknown>;
+	const startAt = coerceTimestamp(source.startAt);
+	const endAt = coerceTimestamp(source.endAt);
+	if (!startAt || !endAt) {
+		return null;
+	}
+
+	const title = coerceString(source.title);
+	const venue = coerceString(source.venue);
+	if (!title || !venue) {
+		return null;
+	}
+
+	return {
+		id: eventId,
+		title,
+		venue,
+		location: coerceString(source.location),
+		addressLine: coerceString(source.addressLine),
+		startAt: startAt.toDate().toISOString(),
+		endAt: endAt.toDate().toISOString(),
+		posterHeadline: coerceString(source.posterHeadline, title),
+		posterClass: coerceString(
+			source.posterClass,
+			'bg-[radial-gradient(circle_at_18%_0%,rgba(59,130,246,0.25),transparent_36%),radial-gradient(circle_at_82%_10%,rgba(16,185,129,0.25),transparent_42%),linear-gradient(180deg,#0f172a_0%,#0b1220_56%,#05070c_100%)]'
+		),
+		description: coerceString(source.description),
+		ticketTiers,
+		defaultTableType: coerceString(source.defaultTableType, 'Main Floor Table'),
+		dressCode: coerceString(source.dressCode, 'Nightlife attire')
+	};
 }
 
 export function reservationDocRef(reservationId: string) {
@@ -371,6 +467,84 @@ export async function listUserActiveTickets(uid: string): Promise<UserActiveTick
 	return mapped.filter((value): value is UserActiveTicketRecord => value !== null);
 }
 
+async function loadEventTicketTiers(eventId: string): Promise<EventTicketTier[]> {
+	const tiersCollection = collection(db, 'events', eventId, 'ticketTiers');
+	const tiersQuery = query(tiersCollection, orderBy('sortOrder', 'asc'));
+	const tiersSnapshot = await getDocs(tiersQuery);
+
+	const mapped = tiersSnapshot.docs
+		.map((document) => {
+			const tier = coerceEventTicketTier(document.data());
+			if (!tier) {
+				return null;
+			}
+
+			return {
+				id: document.id,
+				label: tier.label,
+				priceCents: tier.priceCents,
+				maxPerOrder: tier.maxPerOrder,
+				sortOrder: tier.sortOrder
+			};
+		})
+		.filter((tier): tier is EventTicketTier & { sortOrder: number } => tier !== null)
+		.sort((a, b) => a.sortOrder - b.sortOrder);
+
+	return mapped.map(({ sortOrder: _sortOrder, ...tier }) => tier);
+}
+
+export async function listPublishedEvents(): Promise<EventCatalogItem[]> {
+	try {
+		const eventsQuery = query(
+			eventsCollection,
+			where('published', '==', true),
+			orderBy('startAt', 'asc'),
+			limit(80)
+		);
+		const eventsSnapshot = await getDocs(eventsQuery);
+
+		const mapped = await Promise.all(
+			eventsSnapshot.docs.map(async (document) => {
+				const eventId = document.id;
+				const ticketTiers = await loadEventTicketTiers(eventId);
+				return mapEventFromDoc(eventId, document.data(), ticketTiers);
+			})
+		);
+
+		const normalized = mapped.filter((event): event is EventCatalogItem => event !== null);
+		if (normalized.length > 0) {
+			return normalized;
+		}
+	} catch {
+		// Fallback to local catalog for environments without seeded events yet.
+	}
+
+	return listEventsSortedAsc();
+}
+
+export async function getPublishedEventById(eventId: string): Promise<EventCatalogItem | null> {
+	if (!eventId) {
+		return null;
+	}
+
+	try {
+		const eventSnapshot = await getDoc(doc(db, 'events', eventId));
+		if (eventSnapshot.exists()) {
+			const data = eventSnapshot.data() as Record<string, unknown>;
+			if (data.published !== true) {
+				return null;
+			}
+
+			const ticketTiers = await loadEventTicketTiers(eventId);
+			return mapEventFromDoc(eventId, data, ticketTiers);
+		}
+	} catch {
+		// Fall through to local fallback.
+	}
+
+	return findEventById(eventId);
+}
+
 export async function listHostReservations(uid: string): Promise<HostReservationListItem[]> {
 	if (!uid) {
 		return [];
@@ -424,74 +598,12 @@ export async function upsertGuestRsvp(
 	uid: string,
 	payload: RsvpInput & { phone: string }
 ): Promise<void> {
-	const publicRef = reservationPublicDocRef(reservationId);
-	const attendeeRef = reservationPublicAttendeeDocRef(reservationId, uid);
-	const guestRef = guestDocRef(reservationId, uid);
-
-	await runTransaction(db, async (transaction) => {
-		const [publicSnapshot, guestSnapshot] = await Promise.all([
-			transaction.get(publicRef),
-			transaction.get(guestRef)
-		]);
-
-		if (!publicSnapshot.exists()) {
-			throw new Error('Reservation was not found.');
-		}
-
-		const publicData = publicSnapshot.data() as ReservationPublicRecord;
-		const previousStatus = guestSnapshot.exists()
-			? ((guestSnapshot.data() as GuestRecord).status ?? 'invited')
-			: 'invited';
-		const isNewAcceptance = previousStatus !== 'accepted' && payload.status === 'accepted';
-
-		if (isNewAcceptance && (publicData.acceptedCount ?? 0) >= publicData.capacity) {
-			throw new Error(RSVP_CAPACITY_FULL_ERROR);
-		}
-
-		let acceptedCount = publicData.acceptedCount ?? 0;
-		let declinedCount = publicData.declinedCount ?? 0;
-
-		if (previousStatus === 'accepted') {
-			acceptedCount -= 1;
-		}
-		if (previousStatus === 'declined') {
-			declinedCount -= 1;
-		}
-		if (payload.status === 'accepted') {
-			acceptedCount += 1;
-		}
-		if (payload.status === 'declined') {
-			declinedCount += 1;
-		}
-
-		acceptedCount = Math.max(0, acceptedCount);
-		declinedCount = Math.max(0, declinedCount);
-
-		const guestPayload: Record<string, unknown> = {
-			displayName: payload.displayName,
-			phone: payload.phone,
-			status: payload.status,
-			plusOnes: payload.plusOnes,
-			updatedAt: serverTimestamp()
-		};
-
-		if (!guestSnapshot.exists()) {
-			guestPayload.checkedInAt = null;
-			guestPayload.checkedInBy = null;
-		}
-
-		transaction.set(guestRef, guestPayload, { merge: true });
-		transaction.set(attendeeRef, {
-			namePublic: formatPublicGuestName(payload.displayName),
-			status: payload.status,
-			updatedAt: serverTimestamp()
-		});
-
-		transaction.update(publicRef, {
-			acceptedCount,
-			declinedCount,
-			updatedAt: serverTimestamp()
-		});
+	await upsertGuestRsvpCallable({
+		reservationId,
+		status: payload.status,
+		displayName: payload.displayName,
+		plusOnes: payload.plusOnes,
+		phone: payload.phone
 	});
 }
 
@@ -503,9 +615,9 @@ export async function setGuestListVisibility(
 	reservationId: string,
 	visibility: 'hidden' | 'visible'
 ): Promise<void> {
-	await updateDoc(reservationPublicDocRef(reservationId), {
-		guestListVisibility: visibility,
-		updatedAt: serverTimestamp()
+	await setGuestListVisibilityCallable({
+		reservationId,
+		visibility
 	});
 }
 
@@ -515,9 +627,10 @@ export async function toggleGuestCheckIn(
 	checkedIn: boolean,
 	checkedInBy: string
 ): Promise<void> {
-	await updateDoc(guestDocRef(reservationId, uid), {
-		checkedInAt: checkedIn ? serverTimestamp() : null,
-		checkedInBy: checkedIn ? checkedInBy : null,
-		updatedAt: serverTimestamp()
+	void checkedInBy;
+	await toggleGuestCheckInCallable({
+		reservationId,
+		uid,
+		checkedIn
 	});
 }

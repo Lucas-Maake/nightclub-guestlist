@@ -1,7 +1,7 @@
 <script lang="ts">
-import { page } from '$app/stores';
-import { onDestroy, onMount } from 'svelte';
-import { Timestamp, type Unsubscribe } from 'firebase/firestore';
+	import { page } from '$app/stores';
+	import { onDestroy, onMount } from 'svelte';
+	import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
 	import StatusChip from '$lib/components/common/status-chip.svelte';
@@ -45,6 +45,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	let submitting = $state(false);
 	let sharing = $state(false);
 	let hostViewOnly = $state(false);
+	let hostRoleChecking = $state(true);
 	let celebrateAccepted = $state(false);
 	let debugMessage = $state('');
 	let errorMessage = $state('');
@@ -107,7 +108,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	});
 
 	$effect(() => {
-		if (!$authReady || !$currentUser || !reservationId || hostViewOnly) {
+		if (!$authReady || !$currentUser || !reservationId || hostViewOnly || hostRoleChecking) {
 			guest = null;
 			if (guestUnsubscribe) {
 				guestUnsubscribe();
@@ -128,12 +129,20 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 	});
 
 	$effect(() => {
-		if (!$authReady || !$currentUser || !reservationId) {
+		if (!$authReady) {
 			hostViewOnly = false;
+			hostRoleChecking = true;
+			return;
+		}
+
+		if (!$currentUser || !reservationId) {
+			hostViewOnly = false;
+			hostRoleChecking = false;
 			return;
 		}
 
 		let cancelled = false;
+		hostRoleChecking = true;
 		void (async () => {
 			const isHost = await isHostForReservation(reservationId, $currentUser.uid);
 			if (!cancelled) {
@@ -142,6 +151,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 					guest = null;
 					errorMessage = '';
 				}
+				hostRoleChecking = false;
 			}
 		})();
 
@@ -187,7 +197,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 		}
 
 		if (!reservation.debugEnabled) {
-			debugMessage = 'Debug token ignored because this reservation was not created with debug enabled.';
+			debugMessage = 'This test link is not available for this invite.';
 			debugAttempted = true;
 			return;
 		}
@@ -212,25 +222,26 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 		}
 
 		if (!canUseDebugMode()) {
-			debugMessage = 'Debug login bypass is disabled on this hostname.';
+			debugMessage = 'This test link only works on local test hosts.';
 			return;
 		}
 
 		try {
 			const isValid = await validateDebugToken(reservationId, token);
 			if (!isValid) {
-				debugMessage = 'Debug token was invalid.';
+				debugMessage = 'This test link is invalid or expired.';
 				return;
 			}
 
 			await signInAnonymouslyForDebug();
 			pushToast({
-				title: 'Debug access granted',
-				description: 'Signed in without OTP for local testing.',
+				title: 'Test access enabled',
+				description: 'Signed in for local testing.',
 				variant: 'success'
 			});
 		} catch (error) {
-			debugMessage = error instanceof Error ? error.message : 'Debug auth failed.';
+			void error;
+			debugMessage = 'Could not open this test link right now.';
 		}
 	}
 
@@ -291,7 +302,7 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 
 		const parsed = rsvpSchema.safeParse(payload);
 		if (!parsed.success) {
-			errorMessage = parsed.error.issues[0]?.message ?? 'Invalid RSVP payload.';
+			errorMessage = parsed.error.issues[0]?.message ?? 'Please review your RSVP details and try again.';
 			submitting = false;
 			return;
 		}
@@ -528,6 +539,8 @@ import { Timestamp, type Unsubscribe } from 'firebase/firestore';
 									Sign in
 								</button>
 							</div>
+						{:else if hostRoleChecking}
+							<p class="state-panel-muted" aria-live="polite">Checking your access...</p>
 						{:else if hostViewOnly}
 							<div class="space-y-3 rounded-2xl border border-primary/30 bg-primary/10 p-4">
 								<p class="text-sm font-medium text-foreground">Host preview mode</p>

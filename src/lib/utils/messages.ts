@@ -44,73 +44,70 @@ export function detectAuthIssue(error: unknown): AuthIssue {
 }
 
 export function toUserSafeAuthMessage(error: unknown, productionLike: boolean): string {
+	void error;
 	const issue = detectAuthIssue(error);
-	if (productionLike) {
-		if (issue === 'too-many-requests') {
-			return 'Too many attempts were detected. Please wait 30-60 minutes and try again.';
-		}
-
-		if (issue === 'invalid-phone-number') {
-			return 'Enter a valid phone number and try again.';
-		}
-
-		return 'We could not complete phone verification. Please try again.';
-	}
-
-	if (!(error instanceof Error)) {
-		return 'Unable to send code.';
-	}
 
 	if (issue === 'too-many-requests') {
-		return 'Too many OTP attempts were detected. Wait 30-60 minutes, then retry this number.';
-	}
-
-	if (issue === 'invalid-app-credential') {
-		return 'Invalid app credential from reCAPTCHA. Complete the challenge, then retry. If this persists, verify localhost is an authorized Firebase Auth domain.';
-	}
-
-	if (issue === 'captcha-check-failed') {
-		return 'reCAPTCHA verification failed or expired. Complete reCAPTCHA again and retry.';
+		return 'Too many attempts were detected. Please wait 30-60 minutes and try again.';
 	}
 
 	if (issue === 'invalid-phone-number') {
-		return 'Phone number format is invalid. Use a valid E.164 number, for example +16105551234.';
+		return productionLike
+			? 'Enter a valid phone number and try again.'
+			: 'That phone number looks incorrect. Please check it and try again.';
+	}
+
+	if (issue === 'invalid-app-credential' || issue === 'captcha-check-failed') {
+		return productionLike
+			? 'Verification expired. Please complete the security check and try again.'
+			: 'The security check expired. Please complete it again and retry.';
 	}
 
 	if (issue === 'billing-not-enabled') {
-		return 'Firebase billing is not enabled for real SMS OTP on this project.';
+		return productionLike
+			? 'Phone verification is temporarily unavailable. Please try again later.'
+			: 'Phone verification is unavailable in this environment right now.';
 	}
 
-	return error.message;
+	return productionLike
+		? 'We could not complete phone verification. Please try again.'
+		: 'We could not verify this phone number right now. Please try again.';
 }
 
 export function toUserSafeCreateMessage(error: unknown, productionLike: boolean): string {
-	if (!productionLike) {
-		if (!(error instanceof Error)) {
-			return 'Unable to create reservation.';
-		}
-
-		const message = error.message;
-		if (
-			message.includes('firestore.googleapis.com') ||
-			message.includes('Cloud Firestore API has not been used') ||
-			message.includes('SERVICE_DISABLED')
-		) {
-			return 'Cloud Firestore is not enabled for this Firebase project. Enable Firestore in Firebase Console and Cloud Firestore API in Google Cloud, then retry.';
-		}
-
-		return message;
-	}
-
 	const message = messageFromError(error).toLowerCase();
 	if (message.includes('timed out') || message.includes('deadline')) {
 		return 'This request timed out. Please try again.';
+	}
+
+	if (
+		message.includes('firestore.googleapis.com') ||
+		message.includes('cloud firestore api has not been used') ||
+		message.includes('service_disabled')
+	) {
+		return productionLike
+			? 'This service is still being set up. Please try again shortly.'
+			: 'This environment is still being set up. Please try again shortly.';
+	}
+
+	if (message.includes('permission-denied') || message.includes('missing or insufficient permissions')) {
+		return 'You do not have access to create this reservation right now.';
+	}
+
+	if (
+		message.includes('network') ||
+		message.includes('failed to fetch') ||
+		message.includes('unavailable') ||
+		message.includes('offline')
+	) {
+		return 'Network connection issue. Please try again.';
 	}
 
 	return 'We could not create the reservation right now. Please try again.';
 }
 
 export function toUserSafeRsvpMessage(error: unknown, productionLike: boolean): string {
+	void productionLike;
 	const message = messageFromError(error);
 	if (!message) {
 		return 'We could not save your RSVP. Please try again.';
@@ -124,9 +121,20 @@ export function toUserSafeRsvpMessage(error: unknown, productionLike: boolean): 
 		return 'This reservation is no longer available.';
 	}
 
-	if (productionLike) {
-		return 'We could not save your RSVP right now. Please try again.';
+	const lower = message.toLowerCase();
+	if (lower.includes('permission-denied') || lower.includes('missing or insufficient permissions')) {
+		return 'We could not save your RSVP right now. Please sign in again and try.';
 	}
 
-	return message;
+	if (
+		lower.includes('timed out') ||
+		lower.includes('deadline') ||
+		lower.includes('network') ||
+		lower.includes('failed to fetch') ||
+		lower.includes('unavailable')
+	) {
+		return 'Network connection issue. Please try again.';
+	}
+
+	return 'We could not save your RSVP right now. Please try again.';
 }

@@ -28,16 +28,26 @@
 
 ## Emulator Workflow
 - Start Firebase emulators:
-  - `firebase emulators:start --only auth,firestore`
+  - `firebase emulators:start --only auth,firestore,functions`
 - Start app in emulator mode:
   - `npm run dev:emulators`
 - Emulator mode uses `.env.emulator` flags (`PUBLIC_FIREBASE_USE_EMULATORS=true`).
+- Functions emulator defaults to `127.0.0.1:5001`.
 
 ## Firestore Rules
 - Rules file: `firestore.rules`
 - Index file: `firestore.indexes.json`
-- Deploy rules + indexes:
+- Deploy rules + indexes + callable functions:
   - `npm run firebase:deploy`
+
+## Seed Events
+- Seed the events feed (`events/*` + `events/{id}/ticketTiers/*`):
+  - `npm run firebase:seed:events`
+- Dry run (no writes):
+  - `npm run firebase:seed:events -- --dry-run`
+- Auth options for non-emulator seeding:
+  - `GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json`
+  - or `FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'`
 
 ## Build + Preview
 - Build:

@@ -403,7 +403,7 @@
 
 			{#if !productionLike && authIssue === 'too-many-requests'}
 				<div class="mt-4 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 text-xs text-[#5f6670]">
-					Wait 30-60 minutes before retrying, or use Firebase test phone numbers for local QA.
+					Wait 30-60 minutes before retrying, or use your local test number setup.
 				</div>
 			{/if}
 

@@ -2,11 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-	import { listEventsSortedAsc } from '$lib/data/events';
 	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
-	import { listUserActiveTickets } from '$lib/firebase/firestore';
+	import { listPublishedEvents, listUserActiveTickets } from '$lib/firebase/firestore';
+	import type { EventCatalogItem } from '$lib/data/events';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import type { UserActiveTicketRecord } from '$lib/types/models';
 	import { cn } from '$lib/utils/cn';
@@ -26,11 +26,16 @@
 	});
 
 	let activeTab = $state<EventTab>('events');
+	let events = $state<EventCatalogItem[]>([]);
+	let loadingEvents = $state(true);
+	let eventsError = $state('');
 	let loadingTickets = $state(false);
 	let ticketsError = $state('');
 	let tickets = $state<UserActiveTicketRecord[]>([]);
 
-	const sortedEvents = $derived(listEventsSortedAsc());
+	const sortedEvents = $derived(
+		[...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+	);
 	const sortedTickets = $derived.by(() =>
 		[...tickets].sort((a, b) => a.startAt.toMillis() - b.startAt.toMillis())
 	);
@@ -65,6 +70,10 @@
 		await goto('/');
 	}
 
+	async function handleMyEvents(): Promise<void> {
+		await goto('/host/events');
+	}
+
 	async function loadTicketsFor(uid: string): Promise<void> {
 		loadingTickets = true;
 		ticketsError = '';
@@ -78,8 +87,22 @@
 		}
 	}
 
+	async function loadEvents(): Promise<void> {
+		loadingEvents = true;
+		eventsError = '';
+		try {
+			events = await listPublishedEvents();
+		} catch {
+			events = [];
+			eventsError = 'Unable to load events right now.';
+		} finally {
+			loadingEvents = false;
+		}
+	}
+
 	onMount(async () => {
 		await waitForAuthReady();
+		await loadEvents();
 	});
 
 	$effect(() => {
@@ -104,9 +127,7 @@
 			</a>
 			{#if $currentUser}
 				<div class="flex items-center gap-2">
-					<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))} href="/host/events">
-						My events
-					</a>
+					<Button variant="ghost" size="sm" onclick={handleMyEvents}>My events</Button>
 					<Button variant="outline" size="sm" onclick={handleSignOut}>Sign out</Button>
 				</div>
 			{:else}
@@ -144,36 +165,49 @@
 
 			{#if activeTab === 'events'}
 				<TabsContent class="space-y-4 pt-1">
-					{#each sortedEvents as event (event.id)}
-						<a
-							href={`/event/${event.id}`}
-							class="group block overflow-hidden rounded-2xl border border-border/70 bg-card/35 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
-							aria-label={`Open ${event.title}`}
-						>
-							<div class={cn('relative min-h-[360px] p-4 sm:min-h-[390px]', event.posterClass)}>
-								<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
-								<div class="absolute right-4 top-4 z-10">
-									<div class="rounded-lg bg-white px-2 py-1 text-center">
-										<p class="text-xl font-bold leading-none text-[#0f172a]">{dateBadgeDay(parseDate(event.startAt))}</p>
-										<p class="text-[10px] font-semibold uppercase tracking-wide text-[#475569]">
-											{dateBadgeMonth(parseDate(event.startAt))}
+					{#if loadingEvents}
+						<p class="state-panel-muted" aria-live="polite">Loading events...</p>
+					{:else if eventsError}
+						<div class="state-panel-muted">
+							<p>{eventsError}</p>
+							<Button class="mt-3" size="sm" variant="outline" onclick={loadEvents}>Try again</Button>
+						</div>
+					{:else if sortedEvents.length === 0}
+						<div class="state-panel-muted">
+							<p>No published events yet.</p>
+						</div>
+					{:else}
+						{#each sortedEvents as event (event.id)}
+							<a
+								href={`/event/${event.id}`}
+								class="group block overflow-hidden rounded-2xl border border-border/70 bg-card/35 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+								aria-label={`Open ${event.title}`}
+							>
+								<div class={cn('relative min-h-[360px] p-4 sm:min-h-[390px]', event.posterClass)}>
+									<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
+									<div class="absolute right-4 top-4 z-10">
+										<div class="rounded-lg bg-white px-2 py-1 text-center">
+											<p class="text-xl font-bold leading-none text-[#0f172a]">{dateBadgeDay(parseDate(event.startAt))}</p>
+											<p class="text-[10px] font-semibold uppercase tracking-wide text-[#475569]">
+												{dateBadgeMonth(parseDate(event.startAt))}
+											</p>
+										</div>
+									</div>
+									<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 text-left">
+										<p class="text-[0.72rem] uppercase tracking-[0.2em] text-white/75">{event.venue}</p>
+										<p class="text-4xl font-black uppercase leading-[0.9] tracking-tight text-white/88">
+											{event.posterHeadline}
 										</p>
+										<p class="text-xl font-semibold leading-tight text-white">{event.title}</p>
+										<p class="text-xs text-white/78">
+											{eventDateLine(parseDate(event.startAt), parseDate(event.endAt))}
+										</p>
+										<p class="text-xs uppercase tracking-[0.16em] text-white/65">{event.location}</p>
 									</div>
 								</div>
-								<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 text-left">
-									<p class="text-[0.72rem] uppercase tracking-[0.2em] text-white/75">{event.venue}</p>
-									<p class="text-4xl font-black uppercase leading-[0.9] tracking-tight text-white/88">
-										{event.posterHeadline}
-									</p>
-									<p class="text-xl font-semibold leading-tight text-white">{event.title}</p>
-									<p class="text-xs text-white/78">
-										{eventDateLine(parseDate(event.startAt), parseDate(event.endAt))}
-									</p>
-									<p class="text-xs uppercase tracking-[0.16em] text-white/65">{event.location}</p>
-								</div>
-							</div>
-						</a>
-					{/each}
+							</a>
+						{/each}
+					{/if}
 				</TabsContent>
 			{:else}
 				<TabsContent class="space-y-4 pt-1">

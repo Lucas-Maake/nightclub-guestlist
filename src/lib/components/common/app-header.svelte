@@ -3,9 +3,8 @@
 	import { page } from '$app/stores';
 	import { currentUser, signOutCurrentUser } from '$lib/firebase/auth';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button';
 	import { openAuthModal } from '$lib/stores/auth-modal';
-	import { cn } from '$lib/utils/cn';
 
 	type Props = {
 		compact?: boolean;
@@ -16,6 +15,10 @@
 	async function handleSignOut(): Promise<void> {
 		await signOutCurrentUser();
 		await goto('/');
+	}
+
+	async function handleMyEvents(): Promise<void> {
+		await goto('/host/events');
 	}
 
 	async function handleSignIn(): Promise<void> {
@@ -35,7 +38,7 @@
 
 		<div class="flex items-center gap-2">
 			{#if $currentUser}
-				<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))} href="/host/events">My events</a>
+				<Button variant="ghost" size="sm" onclick={handleMyEvents}>My events</Button>
 				<Button variant="outline" size="sm" onclick={handleSignOut}>Sign out</Button>
 			{:else}
 				<Button variant="outline" size="sm" onclick={handleSignIn}>Sign in</Button>

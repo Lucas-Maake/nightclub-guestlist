@@ -294,7 +294,7 @@ let appliedPrefillSignature = $state('');
 			await withTimeout(
 				signInAnonymouslyForDebug(),
 				12_000,
-				'Debug sign-in timed out. Check Firebase Auth config and network.'
+				'Quick-access sign-in timed out. Please try again.'
 			);
 			await waitForAuthReady();
 			return getCurrentUser()?.uid ?? null;
@@ -336,7 +336,7 @@ let appliedPrefillSignature = $state('');
 		if (parsed.data.debugEnabled && !canUseDebugMode()) {
 			globalError = productionLike
 				? 'This testing option is unavailable right now.'
-				: 'Debug mode is blocked on this environment.';
+				: 'This quick-access option is unavailable in this environment.';
 			isSubmitting = false;
 			return;
 		}
@@ -351,7 +351,7 @@ let appliedPrefillSignature = $state('');
 			const { reservationId, debugToken } = await withTimeout(
 				createReservation(parsed.data, uid),
 				15_000,
-				'Create reservation timed out. Check Firestore setup and network.'
+				'Create reservation timed out. Please try again.'
 			);
 			const next = new URLSearchParams({ reservationId });
 			if (debugToken) {
@@ -526,19 +526,19 @@ $effect(() => {
 
 							{#if debugInvite}
 								<div class="rounded-2xl border border-primary/30 bg-primary/10 p-4">
-									<p class="text-xs uppercase tracking-wide text-primary">Debug link</p>
+									<p class="text-xs uppercase tracking-wide text-primary">Test access link</p>
 									<p class="mt-2 break-all text-sm">{debugInvite}</p>
 									<p class="mt-2 text-xs text-muted-foreground">
-										Debug bypass is restricted to dev/allowlisted hosts only.
+										For local testing only. This link does not work on live sites.
 									</p>
 									<Button
 										class="mt-4"
 										size="sm"
 										disabled={copyingTarget === 'debug'}
 										variant={debugInviteCopied ? 'success' : 'outline'}
-										onclick={() => copyShareLink(debugInvite, 'Debug link copied', 'debug')}
+										onclick={() => copyShareLink(debugInvite, 'Test link copied', 'debug')}
 									>
-										{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy debug link'}
+										{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy test link'}
 									</Button>
 								</div>
 							{/if}
@@ -734,9 +734,9 @@ $effect(() => {
 							<div class="rounded-2xl border border-border/75 bg-secondary/25 p-4">
 								<div class="flex items-start justify-between gap-4">
 									<div class="space-y-1">
-										<p class="text-sm font-medium text-foreground">Enable debug backdoor</p>
+										<p class="text-sm font-medium text-foreground">Enable quick test access</p>
 										<p class="text-xs text-muted-foreground">
-											Stores only hashed debug token and enables `?debug=TOKEN` bypass in dev/allowlisted domains.
+											Adds a local test sign-in link on the share screen.
 										</p>
 									</div>
 									<Switch
