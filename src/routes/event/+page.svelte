@@ -230,7 +230,11 @@
 					{:else}
 						<div class="space-y-3">
 							{#each sortedTickets as ticket (ticket.reservationId)}
-								<div class="rounded-2xl border border-border/70 bg-card/40 p-4">
+								<a
+									href={`/r/${ticket.reservationId}`}
+									class="block rounded-2xl border border-border/70 bg-card/40 p-4 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+									aria-label={`Open RSVP for ${ticket.clubName}`}
+								>
 									<p class="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active ticket</p>
 									<p class="mt-2 text-lg font-semibold">{ticket.clubName}</p>
 									<p class="mt-1 text-sm text-muted-foreground">{ticketDateLine(ticket)}</p>
@@ -238,7 +242,7 @@
 									<p class="mt-1 text-sm text-muted-foreground">
 										Guest: {ticket.guestDisplayName} {ticket.plusOneCount > 0 ? `(+${ticket.plusOneCount})` : ''}
 									</p>
-								</div>
+								</a>
 							{/each}
 						</div>
 					{/if}
