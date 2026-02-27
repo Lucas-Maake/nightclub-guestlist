@@ -53,6 +53,14 @@
 
 		return eventRecord.ticketTiers.reduce((count, tier) => count + (quantities[tier.id] ?? 0), 0);
 	});
+	const directionsHref = $derived.by(() => {
+		const address = eventRecord?.addressLine?.trim() ?? '';
+		if (!address) {
+			return '';
+		}
+
+		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+	});
 
 	function startDate(): Date | null {
 		return eventRecord ? new Date(eventRecord.startAt) : null;
@@ -191,7 +199,16 @@
 			</div>
 		{:else}
 			<div class="space-y-4">
-				<div class={cn('relative min-h-[330px] overflow-hidden rounded-2xl border border-border/70 p-4 sm:min-h-[380px]', eventRecord.posterClass)}>
+				<div class={cn('relative min-h-[330px] overflow-hidden rounded-2xl border border-border/70 p-4 sm:min-h-[380px]', eventRecord.posterImageUrl ? '' : eventRecord.posterClass)}>
+					{#if eventRecord.posterImageUrl}
+						<img
+							src={eventRecord.posterImageUrl}
+							alt={`Poster for ${eventRecord.title}`}
+							class="absolute inset-0 h-full w-full object-cover"
+							loading="lazy"
+							decoding="async"
+						/>
+					{/if}
 					<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
 					<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 text-left">
 						<p class="text-xs uppercase tracking-[0.2em] text-white/75">{eventRecord.venue}</p>
@@ -265,7 +282,19 @@
 								<p class="text-xs text-muted-foreground">{eventRecord.addressLine}</p>
 							</div>
 						</div>
-						<Button size="sm" variant="outline" disabled>Coming soon</Button>
+						{#if directionsHref}
+							<a
+								href={directionsHref}
+								target="_blank"
+								rel="noopener noreferrer"
+								class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'no-underline')}
+								aria-label={`Get directions to ${eventRecord.venue}`}
+							>
+								Open map
+							</a>
+						{:else}
+							<Button size="sm" variant="outline" disabled>Address unavailable</Button>
+						{/if}
 					</div>
 				</div>
 			</div>

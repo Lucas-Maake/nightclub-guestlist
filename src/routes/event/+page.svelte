@@ -183,7 +183,16 @@
 								class="group block overflow-hidden rounded-2xl border border-border/70 bg-card/35 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
 								aria-label={`Open ${event.title}`}
 							>
-								<div class={cn('relative min-h-[360px] p-4 sm:min-h-[390px]', event.posterClass)}>
+								<div class={cn('relative min-h-[360px] p-4 sm:min-h-[390px]', event.posterImageUrl ? '' : event.posterClass)}>
+									{#if event.posterImageUrl}
+										<img
+											src={event.posterImageUrl}
+											alt={`Poster for ${event.title}`}
+											class="absolute inset-0 h-full w-full object-cover"
+											loading="lazy"
+											decoding="async"
+										/>
+									{/if}
 									<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
 									<div class="absolute right-4 top-4 z-10">
 										<div class="rounded-lg bg-white px-2 py-1 text-center">

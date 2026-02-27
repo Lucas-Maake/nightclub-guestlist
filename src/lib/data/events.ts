@@ -15,6 +15,7 @@ export type EventCatalogItem = {
 	endAt: string;
 	posterHeadline: string;
 	posterClass: string;
+	posterImageUrl?: string;
 	description: string;
 	ticketTiers: EventTicketTier[];
 	defaultTableType: string;
@@ -31,6 +32,7 @@ const eventCatalog: EventCatalogItem[] = [
 		startAt: '2026-03-05T22:00:00-05:00',
 		endAt: '2026-03-06T03:00:00-05:00',
 		posterHeadline: 'THURSDEN',
+		posterImageUrl: '/images/events/den.jpg',
 		posterClass:
 			'bg-[radial-gradient(circle_at_15%_20%,rgba(186,255,14,0.22),transparent_36%),radial-gradient(circle_at_80%_0%,rgba(255,196,0,0.2),transparent_48%),linear-gradient(180deg,#162013_0%,#0b0d11_62%,#050609_100%)]',
 		description:
@@ -51,6 +53,7 @@ const eventCatalog: EventCatalogItem[] = [
 		startAt: '2026-03-06T22:00:00-05:00',
 		endAt: '2026-03-07T02:00:00-05:00',
 		posterHeadline: 'RED ROOM',
+		posterImageUrl: '/images/events/decca.jpg',
 		posterClass:
 			'bg-[radial-gradient(circle_at_14%_0%,rgba(255,154,72,0.2),transparent_33%),radial-gradient(circle_at_92%_18%,rgba(255,51,51,0.3),transparent_42%),linear-gradient(180deg,#51140f_0%,#21080d_58%,#09090b_100%)]',
 		description:
@@ -91,6 +94,7 @@ const eventCatalog: EventCatalogItem[] = [
 		startAt: '2026-03-08T21:00:00-05:00',
 		endAt: '2026-03-09T02:30:00-05:00',
 		posterHeadline: 'ATELIER',
+		posterImageUrl: '/images/events/mission.jpg',
 		posterClass:
 			'bg-[radial-gradient(circle_at_80%_0%,rgba(248,179,81,0.26),transparent_34%),radial-gradient(circle_at_12%_18%,rgba(150,255,218,0.2),transparent_42%),linear-gradient(180deg,#36220f_0%,#15151c_60%,#08080a_100%)]',
 		description:

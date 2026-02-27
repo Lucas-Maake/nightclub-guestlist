@@ -150,6 +150,7 @@ function mapEventFromDoc(
 	if (!title || !venue) {
 		return null;
 	}
+	const posterImageUrl = coerceString(source.posterImageUrl).trim();
 
 	return {
 		id: eventId,
@@ -164,6 +165,7 @@ function mapEventFromDoc(
 			source.posterClass,
 			'bg-[radial-gradient(circle_at_18%_0%,rgba(59,130,246,0.25),transparent_36%),radial-gradient(circle_at_82%_10%,rgba(16,185,129,0.25),transparent_42%),linear-gradient(180deg,#0f172a_0%,#0b1220_56%,#05070c_100%)]'
 		),
+		...(posterImageUrl ? { posterImageUrl } : {}),
 		description: coerceString(source.description),
 		ticketTiers,
 		defaultTableType: coerceString(source.defaultTableType, 'Main Floor Table'),
