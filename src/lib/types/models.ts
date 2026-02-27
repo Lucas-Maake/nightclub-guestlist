@@ -105,3 +105,18 @@ export interface HostReservationListItem {
 	declinedCount: number;
 	updatedAt?: Timestamp;
 }
+
+export interface WaitlistRequestRecord {
+	displayName: string;
+	phone: string;
+	plusOnes: PlusOne[];
+	createdAt: Timestamp;
+	updatedAt: Timestamp;
+}
+
+export interface ReservationCommentRecord {
+	uid: string;
+	displayName: string;
+	text: string;
+	createdAt: Timestamp;
+}

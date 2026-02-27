@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { customAlphabet } from 'nanoid';
 import {
+	addDoc,
 	collection,
 	documentId,
 	doc,
@@ -11,6 +12,7 @@ import {
 	orderBy,
 	query,
 	runTransaction,
+	setDoc,
 	serverTimestamp,
 	Timestamp,
 	where,
@@ -26,10 +28,12 @@ import type {
 	GuestRecord,
 	HostReservationListItem,
 	PublicAttendeeRecord,
+	ReservationCommentRecord,
 	ReservationPublicRecord,
 	ReservationRecord,
 	RsvpInput,
-	UserActiveTicketRecord
+	UserActiveTicketRecord,
+	WaitlistRequestRecord
 } from '$lib/types/models';
 import { generateDebugToken, sha256 } from '$lib/utils/security';
 import { db, functions } from './client';
@@ -185,6 +189,14 @@ export function reservationDebugDocRef(reservationId: string) {
 
 export function guestDocRef(reservationId: string, uid: string) {
 	return doc(db, 'reservations', reservationId, 'guests', uid);
+}
+
+export function waitlistDocRef(reservationId: string, uid: string) {
+	return doc(db, 'reservations', reservationId, 'waitlist', uid);
+}
+
+export function reservationCommentsCollectionRef(reservationId: string) {
+	return collection(db, 'reservations', reservationId, 'comments');
 }
 
 export function guestsCollectionRef(reservationId: string) {
@@ -407,6 +419,57 @@ export function listenToGuest(
 	});
 }
 
+export function listenToWaitlistRequest(
+	reservationId: string,
+	uid: string,
+	handler: (value: WaitlistRequestRecord | null) => void
+): Unsubscribe {
+	return onSnapshot(waitlistDocRef(reservationId, uid), (snapshot) => {
+		handler(snapshot.exists() ? (snapshot.data() as WaitlistRequestRecord) : null);
+	});
+}
+
+export function listenToReservationComments(
+	reservationId: string,
+	handler: (value: Array<ReservationCommentRecord & { id: string }>) => void
+): Unsubscribe {
+	const commentsQuery = query(
+		reservationCommentsCollectionRef(reservationId),
+		orderBy('createdAt', 'desc'),
+		limit(25)
+	);
+	return onSnapshot(
+		commentsQuery,
+		(snapshot) => {
+			handler(
+				snapshot.docs
+					.map((document) => {
+						const source = document.data() as Partial<ReservationCommentRecord>;
+						const createdAt = coerceTimestamp(source.createdAt);
+						const text = coerceString(source.text).trim();
+						if (!createdAt || !text) {
+							return null;
+						}
+
+						return {
+							id: document.id,
+							uid: coerceString(source.uid),
+							displayName: coerceString(source.displayName, 'Guest'),
+							text,
+							createdAt
+						};
+					})
+					.filter(
+						(comment): comment is ReservationCommentRecord & { id: string } => comment !== null
+					)
+			);
+		},
+		() => {
+			handler([]);
+		}
+	);
+}
+
 export function listenToGuests(
 	reservationId: string,
 	handler: (value: Array<GuestRecord & { uid: string }>) => void
@@ -598,12 +661,49 @@ export async function upsertGuestRsvp(
 	uid: string,
 	payload: RsvpInput & { phone: string }
 ): Promise<void> {
+	void uid;
 	await upsertGuestRsvpCallable({
 		reservationId,
 		status: payload.status,
 		displayName: payload.displayName,
 		plusOnes: payload.plusOnes,
 		phone: payload.phone
+	});
+}
+
+export async function upsertWaitlistRequest(
+	reservationId: string,
+	uid: string,
+	payload: Pick<WaitlistRequestRecord, 'displayName' | 'phone' | 'plusOnes'>
+): Promise<void> {
+	await setDoc(
+		waitlistDocRef(reservationId, uid),
+		{
+			displayName: payload.displayName,
+			phone: payload.phone,
+			plusOnes: payload.plusOnes,
+			createdAt: serverTimestamp(),
+			updatedAt: serverTimestamp()
+		},
+		{ merge: true }
+	);
+}
+
+export async function postReservationComment(
+	reservationId: string,
+	uid: string,
+	payload: Pick<ReservationCommentRecord, 'displayName' | 'text'>
+): Promise<void> {
+	const text = payload.text.trim().slice(0, 280);
+	if (!reservationId || !uid || !text) {
+		throw new Error('INVALID_RESERVATION_COMMENT');
+	}
+
+	await addDoc(reservationCommentsCollectionRef(reservationId), {
+		uid,
+		displayName: payload.displayName.trim().slice(0, 48) || 'Guest',
+		text,
+		createdAt: serverTimestamp()
 	});
 }
 

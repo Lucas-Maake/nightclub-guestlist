@@ -18,7 +18,20 @@
 		open = false;
 		dispatch('openChange', false);
 	}
+
+	function handleWindowKeydown(event: KeyboardEvent): void {
+		if (!open) {
+			return;
+		}
+
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			closeDialog();
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 {#if open}
 	<button
@@ -28,10 +41,10 @@
 		disabled={!closeOnBackdrop}
 		onclick={() => closeOnBackdrop && closeDialog()}
 	></button>
-	<div class="fixed inset-0 z-50 grid place-items-center px-4 py-8">
+	<div class="pointer-events-none fixed inset-0 z-50 grid place-items-center px-4 py-8">
 		<div
 			class={cn(
-				'w-full max-w-xl rounded-3xl border border-border bg-card p-6 text-card-foreground shadow-lift sm:p-7',
+				'pointer-events-auto w-full max-w-xl rounded-3xl border border-border bg-card p-6 text-card-foreground shadow-lift sm:p-7',
 				className
 			)}
 			role="dialog"

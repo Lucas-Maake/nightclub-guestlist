@@ -13,6 +13,7 @@ import ReservationPreviewCard from '$lib/components/common/reservation-preview-c
 	import { Input, Label } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Switch } from '$lib/components/ui/switch';
+	import { TextSelect } from '$lib/components/ui/text-select';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { createReservationSchema } from '$lib/schemas/reservation';
 	import { createReservation, getReservationPublic } from '$lib/firebase/firestore';
@@ -36,6 +37,13 @@ type StartPreset = 'plus2h' | 'tonight' | 'tomorrow10';
 const now = new Date();
 now.setHours(now.getHours() + 3, 0, 0, 0);
 const productionLike = isProductionLikeRuntime();
+const TABLE_TYPE_OPTIONS = [
+	'VIP Tables',
+	'Ground Floor Tables',
+	'DJ Tables',
+	'Mezzanine Tables',
+	'Private Buyout'
+] as const;
 
 	const defaultForm: FormState = {
 		clubName: '',
@@ -95,6 +103,43 @@ let appliedPrefillSignature = $state('');
 		return trimmed.slice(0, maxLength);
 	}
 
+	function normalizeTableTypeSelection(value: string | null | undefined): string | undefined {
+		if (!value) {
+			return undefined;
+		}
+
+		const trimmed = value.trim();
+		if (!trimmed) {
+			return undefined;
+		}
+
+		const exactMatch = TABLE_TYPE_OPTIONS.find(
+			(option) => option.toLowerCase() === trimmed.toLowerCase()
+		);
+		if (exactMatch) {
+			return exactMatch;
+		}
+
+		const normalized = trimmed.toLowerCase();
+		if (normalized.includes('vip')) {
+			return 'VIP Tables';
+		}
+		if (normalized.includes('ground') || normalized.includes('main floor')) {
+			return 'Ground Floor Tables';
+		}
+		if (normalized.includes('dj')) {
+			return 'DJ Tables';
+		}
+		if (normalized.includes('mezz')) {
+			return 'Mezzanine Tables';
+		}
+		if (normalized.includes('buyout') || normalized.includes('private')) {
+			return 'Private Buyout';
+		}
+
+		return undefined;
+	}
+
 	function normalizePrefillStartAt(value: string | null): string | undefined {
 		if (!value) {
 			return undefined;
@@ -144,7 +189,7 @@ let appliedPrefillSignature = $state('');
 		if (linkedEvent) {
 			nextForm.clubName = linkedEvent.venue;
 			nextForm.startAt = toDateTimeInput(new Date(linkedEvent.startAt));
-			nextForm.tableType = linkedEvent.defaultTableType;
+			nextForm.tableType = normalizeTableTypeSelection(linkedEvent.defaultTableType) ?? '';
 			nextForm.notes = `${linkedEvent.title} — table request from event detail page.`;
 			nextForm.dressCode = linkedEvent.dressCode;
 			hasPrefill = true;
@@ -162,7 +207,7 @@ let appliedPrefillSignature = $state('');
 			hasPrefill = true;
 		}
 
-		const tableType = trimBounded(params.get('tableType'), 80);
+		const tableType = normalizeTableTypeSelection(trimBounded(params.get('tableType'), 80));
 		if (tableType) {
 			nextForm.tableType = tableType;
 			hasPrefill = true;
@@ -664,7 +709,16 @@ $effect(() => {
 
 							<div class="space-y-2">
 								<Label for="tableType">Table type</Label>
-								<Input id="tableType" bind:value={form.tableType} placeholder="VIP Booth" />
+								<TextSelect
+									id="tableType"
+									value={form.tableType}
+									options={[...TABLE_TYPE_OPTIONS]}
+									placeholder="Select a section"
+									ariaLabel="Select table type"
+									on:change={(event) => {
+										form.tableType = event.detail.value;
+									}}
+								/>
 								{#if fieldErrors.tableType}
 									<p class="text-xs text-destructive-foreground">{fieldErrors.tableType}</p>
 								{/if}

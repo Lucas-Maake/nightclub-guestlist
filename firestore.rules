@@ -93,6 +93,27 @@ service cloud.firestore {
 				allow list: if isHost(reservationId);
 				allow create, update, delete: if false;
 			}
+
+			match /waitlist/{uid} {
+				allow get: if isHost(reservationId) || isOwnGuest(uid);
+				allow list: if isHost(reservationId);
+				allow create, update: if isOwnGuest(uid);
+				allow delete: if isHost(reservationId) || isOwnGuest(uid);
+			}
+
+			match /comments/{commentId} {
+				allow get, list: if true;
+				allow create: if signedIn() &&
+					request.resource.data.keys().hasOnly(['uid', 'displayName', 'text', 'createdAt']) &&
+					request.resource.data.uid == request.auth.uid &&
+					request.resource.data.displayName is string &&
+					request.resource.data.displayName.size() > 0 &&
+					request.resource.data.displayName.size() <= 48 &&
+					request.resource.data.text is string &&
+					request.resource.data.text.size() > 0 &&
+					request.resource.data.text.size() <= 280;
+				allow update, delete: if false;
+			}
 		}
 
 		match /users/{uid} {

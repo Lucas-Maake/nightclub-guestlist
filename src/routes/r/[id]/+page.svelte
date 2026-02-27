@@ -2,12 +2,13 @@
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import { Timestamp, type Unsubscribe } from 'firebase/firestore';
+	import { ChevronDown, Clock3, Music, ShieldCheck, Shirt, Sparkles } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
 	import StatusChip from '$lib/components/common/status-chip.svelte';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Input, Label } from '$lib/components/ui/input';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -17,13 +18,18 @@
 		isHostForReservation,
 		listenToGuest,
 		listenToPublicAttendees,
+		listenToReservationComments,
 		listenToReservationPublic,
+		listenToWaitlistRequest,
+		postReservationComment,
+		upsertWaitlistRequest,
 		upsertGuestRsvp,
 		validateDebugToken
 	} from '$lib/firebase/firestore';
 	import type {
 		GuestRecord,
 		PublicAttendeeRecord,
+		ReservationCommentRecord,
 		ReservationPublicRecord,
 		RsvpInput
 	} from '$lib/types/models';
@@ -37,6 +43,18 @@
 
 	const reservationId = $derived($page.params.id ?? '');
 	const productionLike = isProductionLikeRuntime();
+	const timelineTimeFormatter = new Intl.DateTimeFormat('en-US', {
+		weekday: 'short',
+		hour: 'numeric',
+		minute: '2-digit'
+	});
+	const commentTimeFormatter = new Intl.DateTimeFormat('en-US', {
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit'
+	});
+	const maxCommentLength = 280;
 
 	let reservation = $state<ReservationPublicRecord | null>(null);
 	let guest = $state<GuestRecord | null>(null);
@@ -47,9 +65,18 @@
 	let hostViewOnly = $state(false);
 	let hostRoleChecking = $state(true);
 	let celebrateAccepted = $state(false);
+	let guestListDialogOpen = $state(false);
 	let debugMessage = $state('');
 	let errorMessage = $state('');
 	let debugAttempted = $state(false);
+	let waitlistJoined = $state(false);
+	let waitlistSubmitting = $state(false);
+	let waitlistError = $state('');
+	let comments = $state<Array<ReservationCommentRecord & { id: string }>>([]);
+	let loadingComments = $state(false);
+	let postingComment = $state(false);
+	let commentDraft = $state('');
+	let commentError = $state('');
 
 	let displayName = $state('');
 	let status = $state<'accepted' | 'declined'>('accepted');
@@ -58,7 +85,30 @@
 	let reservationUnsubscribe: Unsubscribe | null = null;
 	let guestUnsubscribe: Unsubscribe | null = null;
 	let attendeesUnsubscribe: Unsubscribe | null = null;
+	let waitlistUnsubscribe: Unsubscribe | null = null;
+	let commentsUnsubscribe: Unsubscribe | null = null;
 	let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+	let nowMs = $state(Date.now());
+	let countdownTicker: ReturnType<typeof setInterval> | null = null;
+
+	const faqItems = [
+		{
+			id: 'id',
+			question: 'Do I need ID at the door?',
+			answer: 'Bring a valid government-issued photo ID. Venue entry rules still apply.'
+		},
+		{
+			id: 'plus-ones',
+			question: 'Can I bring plus-ones?',
+			answer: 'Yes. Add plus-one names before you save RSVP so entry and capacity stay accurate.'
+		},
+		{
+			id: 'arrival',
+			question: 'When should I arrive?',
+			answer:
+				'Aim for your listed start time. Arriving much later can affect entry priority during peak hours.'
+		}
+	] as const;
 
 	function stableIndex(value: string, length: number): number {
 		if (!value || length <= 0) {
@@ -107,6 +157,20 @@
 		});
 	});
 
+	onMount(() => {
+		nowMs = Date.now();
+		countdownTicker = setInterval(() => {
+			nowMs = Date.now();
+		}, 1000);
+
+		return () => {
+			if (countdownTicker) {
+				clearInterval(countdownTicker);
+				countdownTicker = null;
+			}
+		};
+	});
+
 	$effect(() => {
 		if (!$authReady || !$currentUser || !reservationId || hostViewOnly || hostRoleChecking) {
 			guest = null;
@@ -125,6 +189,27 @@
 		return () => {
 			guestUnsubscribe?.();
 			guestUnsubscribe = null;
+		};
+	});
+
+	$effect(() => {
+		if (!$authReady || !$currentUser || !reservationId || hostViewOnly || hostRoleChecking) {
+			waitlistJoined = false;
+			waitlistError = '';
+			if (waitlistUnsubscribe) {
+				waitlistUnsubscribe();
+				waitlistUnsubscribe = null;
+			}
+			return;
+		}
+
+		waitlistUnsubscribe = listenToWaitlistRequest(reservationId, $currentUser.uid, (record) => {
+			waitlistJoined = Boolean(record);
+		});
+
+		return () => {
+			waitlistUnsubscribe?.();
+			waitlistUnsubscribe = null;
 		};
 	});
 
@@ -182,6 +267,32 @@
 	});
 
 	$effect(() => {
+		if (!reservationId) {
+			comments = [];
+			loadingComments = false;
+			commentDraft = '';
+			commentError = '';
+			commentsUnsubscribe?.();
+			commentsUnsubscribe = null;
+			return;
+		}
+
+		comments = [];
+		loadingComments = true;
+		commentError = '';
+		commentsUnsubscribe?.();
+		commentsUnsubscribe = listenToReservationComments(reservationId, (value) => {
+			comments = value;
+			loadingComments = false;
+		});
+
+		return () => {
+			commentsUnsubscribe?.();
+			commentsUnsubscribe = null;
+		};
+	});
+
+	$effect(() => {
 		if (debugAttempted || !reservation) {
 			return;
 		}
@@ -210,11 +321,76 @@
 		reservationUnsubscribe?.();
 		guestUnsubscribe?.();
 		attendeesUnsubscribe?.();
+		waitlistUnsubscribe?.();
+		commentsUnsubscribe?.();
+		if (countdownTicker) {
+			clearInterval(countdownTicker);
+			countdownTicker = null;
+		}
 		if (celebrateTimer) {
 			clearTimeout(celebrateTimer);
 			celebrateTimer = null;
 		}
 	});
+
+	function formatCountdownDuration(milliseconds: number): string {
+		const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+		const days = Math.floor(totalSeconds / 86400);
+		const hours = Math.floor((totalSeconds % 86400) / 3600);
+		const minutes = Math.floor((totalSeconds % 3600) / 60);
+		const seconds = totalSeconds % 60;
+
+		if (days > 0) {
+			return `${days}d ${hours}h ${minutes}m`;
+		}
+
+		if (hours > 0) {
+			return `${hours}h ${minutes}m`;
+		}
+
+		if (minutes > 0) {
+			return `${minutes}m ${seconds}s`;
+		}
+
+		return `${seconds}s`;
+	}
+
+	function initials(value: string): string {
+		const parts = value
+			.split(/\s+/)
+			.map((part) => part.trim())
+			.filter(Boolean)
+			.slice(0, 2);
+
+		if (parts.length === 0) {
+			return 'HT';
+		}
+
+		return parts.map((part) => part[0]?.toUpperCase() ?? '').join('');
+	}
+
+	function formatCommentTime(value: ReservationCommentRecord['createdAt']): string {
+		return commentTimeFormatter.format(value.toDate());
+	}
+
+	function commenterName(): string {
+		const currentName = $currentUser?.displayName?.trim();
+		if (currentName) {
+			return currentName.slice(0, 48);
+		}
+
+		const typedName = displayName.trim();
+		if (typedName) {
+			return typedName.slice(0, 48);
+		}
+
+		const digits = ($currentUser?.phoneNumber ?? '').replace(/\D/g, '');
+		if (digits.length >= 4) {
+			return `Guest ${digits.slice(-4)}`;
+		}
+
+		return 'Guest';
+	}
 
 	async function handleDebugToken(token: string): Promise<void> {
 		if (productionLike) {
@@ -345,6 +521,51 @@
 		}
 	}
 
+	async function joinWaitlist(): Promise<void> {
+		if (hostViewOnly) {
+			waitlistError = 'Hosts cannot join the waitlist from this page.';
+			return;
+		}
+
+		if (!$currentUser) {
+			await joinGuestlist();
+			if (!$currentUser) {
+				return;
+			}
+		}
+
+		const payload: RsvpInput = {
+			status: 'declined',
+			displayName: displayName.trim(),
+			plusOnes: parsePlusOnes(plusOneLines)
+		};
+
+		const parsed = rsvpSchema.safeParse(payload);
+		if (!parsed.success) {
+			waitlistError = parsed.error.issues[0]?.message ?? 'Please review your details and try again.';
+			return;
+		}
+
+		waitlistSubmitting = true;
+		waitlistError = '';
+		try {
+			await upsertWaitlistRequest(reservationId, $currentUser.uid, {
+				displayName: parsed.data.displayName,
+				phone: $currentUser.phoneNumber ?? '',
+				plusOnes: parsed.data.plusOnes
+			});
+			pushToast({
+				title: waitlistJoined ? 'Waitlist updated' : 'Joined waitlist',
+				description: 'You will stay on standby if a spot opens.',
+				variant: 'success'
+			});
+		} catch {
+			waitlistError = 'We could not save your waitlist request right now. Please try again.';
+		} finally {
+			waitlistSubmitting = false;
+		}
+	}
+
 	async function copyInviteLink(): Promise<void> {
 		try {
 			await navigator.clipboard.writeText(guestInviteLink);
@@ -389,14 +610,146 @@
 		}
 	}
 
-	const spotsText = $derived(
-		reservation ? `${reservation.acceptedCount}/${reservation.capacity} spots` : ''
+	async function handlePostComment(): Promise<void> {
+		if (!reservationId || postingComment) {
+			return;
+		}
+
+		const text = commentDraft.trim().slice(0, maxCommentLength);
+		if (!text) {
+			commentError = 'Write a quick update before posting.';
+			return;
+		}
+
+		if (!$currentUser) {
+			const destination = `${$page.url.pathname}${$page.url.search}`;
+			const authResult = await openAuthModal({ returnTo: destination, source: 'guest-comment' });
+			if (authResult !== 'authenticated') {
+				return;
+			}
+		}
+
+		const uid = $currentUser?.uid;
+		if (!uid) {
+			commentError = 'Sign in to post updates.';
+			return;
+		}
+
+		postingComment = true;
+		commentError = '';
+		try {
+			await postReservationComment(reservationId, uid, {
+				displayName: commenterName(),
+				text
+			});
+			commentDraft = '';
+			pushToast({
+				title: 'Update posted',
+				description: 'Your comment is now visible on this invite.',
+				variant: 'success'
+			});
+		} catch {
+			commentError = 'Could not post your update right now. Please try again.';
+		} finally {
+			postingComment = false;
+		}
+	}
+
+	const spotsRemaining = $derived(
+		reservation ? Math.max(0, reservation.capacity - reservation.acceptedCount) : 0
 	);
+	const lowSpotsWarning = $derived(spotsRemaining > 0 && spotsRemaining <= 3);
 	const startsAtText = $derived(
 		reservation && reservation.startAt && 'toDate' in reservation.startAt
 			? formatReservationDate(reservation.startAt.toDate())
 			: ''
 	);
+	const startDate = $derived(
+		reservation && reservation.startAt && 'toDate' in reservation.startAt
+			? reservation.startAt.toDate()
+			: null
+	);
+	const startMs = $derived(startDate ? startDate.getTime() : null);
+	const eventState = $derived.by(() => {
+		if (!startMs) {
+			return 'scheduled';
+		}
+
+		const diff = startMs - nowMs;
+		if (diff > 0) {
+			return 'upcoming';
+		}
+
+		if (diff >= -4 * 60 * 60 * 1000) {
+			return 'live';
+		}
+
+		return 'past';
+	});
+	const countdownHeadline = $derived.by(() => {
+		if (!startMs) {
+			return 'Schedule pending';
+		}
+
+		const diff = startMs - nowMs;
+		if (diff > 0) {
+			return `Starts in ${formatCountdownDuration(diff)}`;
+		}
+
+		if (diff >= -4 * 60 * 60 * 1000) {
+			return 'Live now';
+		}
+
+		return `Started ${formatCountdownDuration(-diff)} ago`;
+	});
+	const countdownSubline = $derived.by(() => {
+		if (!startDate) {
+			return 'Start time will appear once confirmed.';
+		}
+
+		if (eventState === 'upcoming') {
+			return `Doors open ${timelineTimeFormatter.format(startDate)}`;
+		}
+
+		if (eventState === 'live') {
+			return 'Doors are currently open.';
+		}
+
+		return 'Event has already started.';
+	});
+	const hostName = $derived(reservation ? `${reservation.clubName} host team` : 'Host team');
+	const hostInitials = $derived(initials(hostName));
+	const hostWelcome = $derived(
+		reservation
+			? `Welcome in. Keep your RSVP updated so your spot and plus-ones stay locked.`
+			: ''
+	);
+	const eventTimeline = $derived.by(() => {
+		if (!startDate) {
+			return [];
+		}
+
+		return [
+			{
+				id: 'doors',
+				label: 'Doors open',
+				detail: 'Guest check-in and entry begin.',
+				time: startDate
+			},
+			{
+				id: 'peak',
+				label: 'Peak set',
+				detail: 'Main room energy usually ramps up here.',
+				time: new Date(startDate.getTime() + 90 * 60 * 1000)
+			},
+			{
+				id: 'last-entry',
+				label: 'Last entry',
+				detail: 'Late entry may close after this window.',
+				time: new Date(startDate.getTime() + 180 * 60 * 1000)
+			}
+		];
+	});
 	const guestInviteLink = $derived(reservationId ? inviteUrl(reservationId) : '');
 	const canNativeShare = $derived(
 		typeof navigator !== 'undefined' && typeof navigator.share === 'function'
@@ -411,9 +764,6 @@
 		guest?.updatedAt && 'toDate' in guest.updatedAt ? formatLastUpdated(guest.updatedAt.toDate()) : ''
 	);
 	const themeIndex = $derived(stableIndex(reservationId || reservation?.clubName || 'invite', 3));
-	const vibeLabel = $derived(
-		themeIndex === 0 ? 'Apollo Midnight' : themeIndex === 1 ? 'Neon Lounge' : 'Skyline Session'
-	);
 	const themeShellClass = $derived(
 		themeIndex === 0
 			? 'border-primary/35 bg-gradient-to-br from-primary/16 via-card/90 to-card'
@@ -421,18 +771,18 @@
 				? 'border-success/35 bg-gradient-to-br from-success/16 via-card/90 to-card'
 				: 'border-sky-400/35 bg-gradient-to-br from-sky-400/16 via-card/90 to-card'
 	);
-	const themeBadgeClass = $derived(
+	const heroPosterClass = $derived(
 		themeIndex === 0
-			? 'border-primary/35 bg-primary/12 text-primary'
+			? 'bg-[radial-gradient(circle_at_16%_18%,rgba(59,130,246,0.45),transparent_40%),radial-gradient(circle_at_84%_10%,rgba(16,185,129,0.3),transparent_36%),linear-gradient(160deg,#050911_0%,#0a1326_55%,#030712_100%)]'
 			: themeIndex === 1
-				? 'border-success/35 bg-success/12 text-success-foreground'
-				: 'border-sky-400/35 bg-sky-400/12 text-sky-100'
+				? 'bg-[radial-gradient(circle_at_14%_22%,rgba(34,197,94,0.42),transparent_42%),radial-gradient(circle_at_84%_14%,rgba(250,204,21,0.26),transparent_36%),linear-gradient(165deg,#07120d_0%,#122318_55%,#030a06_100%)]'
+				: 'bg-[radial-gradient(circle_at_18%_20%,rgba(14,165,233,0.4),transparent_40%),radial-gradient(circle_at_84%_8%,rgba(168,85,247,0.28),transparent_38%),linear-gradient(158deg,#05111a_0%,#102438_55%,#03080f_100%)]'
 	);
 </script>
 
 <AppHeader />
 
-<main class="app-shell py-6 sm:py-10">
+<main class="app-shell pb-24 pt-6 sm:pb-28 sm:pt-10">
 	{#if loadingReservation}
 		<Card>
 			<CardContent class="p-6">
@@ -459,40 +809,111 @@
 			<div class="space-y-6">
 				<Card class={cn('overflow-hidden', themeShellClass)}>
 					<CardContent class="space-y-6 p-6 sm:p-7">
-						<div class="flex flex-wrap items-center gap-2">
-							<Badge class={cn('border', themeBadgeClass)}>{vibeLabel}</Badge>
-							<Badge variant="outline">Live updates</Badge>
+						<div
+							class={cn(
+								'relative min-h-[220px] overflow-hidden rounded-2xl border border-border/75 p-5 sm:min-h-[260px] sm:p-6',
+								heroPosterClass
+							)}
+						>
+							<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/12 via-black/36 to-black/68"></div>
+							<div class="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-pill bg-white/10 blur-3xl"></div>
+							<div class="pointer-events-none absolute -right-10 bottom-0 h-44 w-44 rounded-pill bg-primary/25 blur-3xl"></div>
+							<div class="relative z-10 flex h-full flex-col justify-end gap-2">
+								<p class="text-xs uppercase tracking-[0.2em] text-white/82">Guest invite</p>
+								<h2 class="max-w-xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
+									{reservation.clubName}
+								</h2>
+								<p class="text-sm text-white/80">{startsAtText || 'Date pending'}</p>
+							</div>
 						</div>
 
 						<div class="space-y-3">
 							<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Invite details</p>
-							<h1 class="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-								{reservation.clubName}
-							</h1>
 							<p class="text-sm text-muted-foreground sm:text-base">{reservation.notes}</p>
 						</div>
 
-						<div class="grid gap-3 sm:grid-cols-3">
-							<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Starts</p>
-								<p class="mt-2 text-sm font-medium">{startsAtText}</p>
+						<div class="grid gap-3 sm:grid-cols-[1.2fr_1fr]">
+							<div class="rounded-2xl border border-border/80 bg-secondary/25 p-4">
+								<p class="text-xs uppercase tracking-wide text-muted-foreground">Countdown</p>
+								<p class="mt-2 text-lg font-semibold text-foreground">{countdownHeadline}</p>
+								<p class="mt-1 text-xs text-muted-foreground">{countdownSubline}</p>
 							</div>
-							<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Table</p>
-								<p class="mt-2 text-sm font-medium">{reservation.tableType}</p>
-							</div>
-							<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Capacity</p>
-								<p class="mt-2 text-sm font-medium">{reservation.capacity} guests</p>
+							<div class="rounded-2xl border border-border/80 bg-secondary/25 p-4">
+								<div class="flex items-center gap-3">
+									<span class="inline-flex h-10 w-10 items-center justify-center rounded-pill border border-primary/35 bg-primary/15 text-sm font-semibold text-primary">
+										{hostInitials}
+									</span>
+									<div class="min-w-0">
+										<p class="text-xs uppercase tracking-wide text-muted-foreground">Hosted by</p>
+										<p class="truncate text-sm font-medium text-foreground">{hostName}</p>
+									</div>
+								</div>
+								<p class="mt-3 text-xs text-muted-foreground">{hostWelcome}</p>
 							</div>
 						</div>
 
-						{#if reservation.dressCode}
+						<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
+							<p class="text-xs uppercase tracking-wide text-muted-foreground">Table</p>
+							<p class="mt-2 text-sm font-medium">{reservation.tableType}</p>
+						</div>
+
+						<div class="grid gap-3 sm:grid-cols-2">
 							<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Dress code</p>
-								<p class="mt-1 text-sm">{reservation.dressCode}</p>
+								<p class="text-xs uppercase tracking-wide text-muted-foreground">What to expect</p>
+								<div class="mt-3 space-y-2">
+									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
+										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+											<Shirt class="h-3.5 w-3.5" />
+											Dress code
+										</span>
+										<span class="text-xs font-medium text-foreground">
+											{reservation.dressCode || 'Nightlife attire'}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
+										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+											<Clock3 class="h-3.5 w-3.5" />
+											Arrival window
+										</span>
+										<span class="text-xs font-medium text-foreground">Around start time</span>
+									</div>
+									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
+										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+											<ShieldCheck class="h-3.5 w-3.5" />
+											Entry policy
+										</span>
+										<span class="text-xs font-medium text-foreground">Valid photo ID</span>
+									</div>
+									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
+										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+											<Music class="h-3.5 w-3.5" />
+											Music
+										</span>
+										<span class="text-xs font-medium text-foreground">Club set / open format</span>
+									</div>
+								</div>
 							</div>
-						{/if}
+
+							<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
+								<p class="text-xs uppercase tracking-wide text-muted-foreground">Night timeline</p>
+								<div class="mt-3 space-y-3">
+									{#each eventTimeline as item (item.id)}
+										<div class="flex gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
+											<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill border border-primary/35 bg-primary/15 text-primary">
+												<Sparkles class="h-3.5 w-3.5" />
+											</span>
+											<div class="min-w-0 flex-1">
+												<div class="flex items-center justify-between gap-2">
+													<p class="text-xs font-semibold text-foreground">{item.label}</p>
+													<p class="text-xs text-primary">{timelineTimeFormatter.format(item.time)}</p>
+												</div>
+												<p class="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						</div>
 					</CardContent>
 				</Card>
 
@@ -505,9 +926,6 @@
 				<Card>
 					<CardHeader>
 						<CardTitle>Join the guestlist</CardTitle>
-						<CardDescription>
-							Public details are visible before login. RSVP requires authentication and syncs instantly.
-						</CardDescription>
 					</CardHeader>
 					<CardContent class="space-y-4">
 						<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
@@ -524,6 +942,12 @@
 								<Button size="sm" variant="outline" onclick={copyInviteLink}>Copy link</Button>
 							</div>
 						</div>
+
+						{#if lowSpotsWarning}
+							<div class="rounded-2xl border border-primary/35 bg-primary/12 px-4 py-3 text-sm text-primary-foreground">
+								Only {spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left.
+							</div>
+						{/if}
 
 						{#if !$currentUser}
 							<p class="text-sm text-muted-foreground">
@@ -563,9 +987,29 @@
 							</div>
 
 							{#if blocksNewAcceptance}
-								<p class="state-panel-muted border-destructive/30 bg-destructive/10 text-destructive-foreground">
-									This guest list is at capacity. New accepts are currently paused.
-								</p>
+								<div class="space-y-3 rounded-2xl border border-destructive/35 bg-destructive/12 p-4">
+									<p class="text-sm font-medium text-destructive-foreground">
+										This guest list is full right now.
+									</p>
+									<p class="text-xs text-muted-foreground">
+										Join the waitlist to stay on standby if a spot opens.
+									</p>
+									<Button
+										size="sm"
+										variant={waitlistJoined ? 'success' : 'outline'}
+										onclick={joinWaitlist}
+										disabled={waitlistSubmitting}
+									>
+										{waitlistSubmitting
+											? 'Saving...'
+											: waitlistJoined
+												? 'On waitlist'
+												: 'Join waitlist'}
+									</Button>
+									{#if waitlistError}
+										<p class="text-xs text-destructive-foreground">{waitlistError}</p>
+									{/if}
+								</div>
 							{/if}
 
 							<div class="grid gap-3 sm:grid-cols-2">
@@ -676,13 +1120,9 @@
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Reservation snapshot</CardTitle>
+						<CardTitle>Share link</CardTitle>
 					</CardHeader>
 					<CardContent class="space-y-4 text-sm text-muted-foreground">
-						<div class="space-y-2">
-							<p>{spotsText}</p>
-							<p>Table: {reservation.tableType}</p>
-						</div>
 						<div class="rounded-2xl border border-border/75 bg-secondary/20 p-3">
 							<p class="text-xs uppercase tracking-wide text-muted-foreground">Guest link</p>
 							<p class="mt-2 break-all text-xs">{guestInviteLink}</p>
@@ -690,10 +1130,99 @@
 					</CardContent>
 				</Card>
 
+				<Card>
+					<CardHeader>
+						<CardTitle>Activity</CardTitle>
+						<CardDescription>Live updates and comments for this invite.</CardDescription>
+					</CardHeader>
+					<CardContent class="space-y-3">
+						{#if loadingComments}
+							<div class="state-panel-muted">Loading updates...</div>
+						{:else if comments.length === 0}
+							<div class="state-panel-muted">No updates yet. Be the first to post.</div>
+						{:else}
+							<div class="space-y-2">
+								{#each comments as comment (comment.id)}
+									<div class="rounded-xl border border-border/80 bg-secondary/20 px-3 py-2">
+										<div class="flex items-center justify-between gap-2">
+											<p class="text-xs font-semibold text-foreground">{comment.displayName}</p>
+											<p class="text-xs text-muted-foreground">{formatCommentTime(comment.createdAt)}</p>
+										</div>
+										<p class="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">
+											{comment.text}
+										</p>
+									</div>
+								{/each}
+							</div>
+						{/if}
+
+						<div class="space-y-2 rounded-2xl border border-border/80 bg-secondary/20 p-3">
+							<p class="text-xs text-muted-foreground">Share a quick update or comment.</p>
+							<Textarea
+								rows={3}
+								placeholder="Set times changed, line is moving fast, dress code reminder..."
+								bind:value={commentDraft}
+								maxlength={maxCommentLength}
+								disabled={postingComment}
+							/>
+							<div class="flex items-center justify-between gap-3">
+								<p class="text-xs text-muted-foreground">{commentDraft.trim().length}/{maxCommentLength}</p>
+								{#if $currentUser}
+									<Button
+										size="sm"
+										onclick={handlePostComment}
+										disabled={postingComment || commentDraft.trim().length === 0}
+									>
+										{postingComment ? 'Posting...' : 'Post update'}
+									</Button>
+								{:else}
+									<Button size="sm" variant="outline" onclick={openGuestSignIn}>Sign in to comment</Button>
+								{/if}
+							</div>
+							{#if commentError}
+								<p class="text-xs text-destructive-foreground">{commentError}</p>
+							{/if}
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader>
+						<CardTitle>FAQ</CardTitle>
+						<CardDescription>Quick answers before you RSVP.</CardDescription>
+					</CardHeader>
+					<CardContent class="space-y-2">
+						{#each faqItems as item (item.id)}
+							<details class="group rounded-2xl border border-border/75 bg-secondary/20">
+								<summary class="faq-summary flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-foreground">
+									<span>{item.question}</span>
+									<span class="inline-flex h-6 w-6 items-center justify-center rounded-pill border border-border/80 bg-background/30 text-muted-foreground">
+										<ChevronDown class="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180" />
+									</span>
+								</summary>
+								<p class="px-4 pb-4 text-sm text-muted-foreground">{item.answer}</p>
+							</details>
+						{/each}
+					</CardContent>
+				</Card>
+
 				{#if publicGuestListVisible}
 					<Card>
 						<CardHeader>
-							<CardTitle>Who&apos;s going</CardTitle>
+							<div class="flex items-center justify-between gap-3">
+								<CardTitle>Who&apos;s going</CardTitle>
+								{#if publicAttendees.length > 0}
+									<Button
+										size="sm"
+										variant="ghost"
+										onclick={() => {
+											guestListDialogOpen = true;
+										}}
+									>
+										View all
+									</Button>
+								{/if}
+							</div>
 							<CardDescription>Accepted attendees shown in first-name format.</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -717,3 +1246,64 @@
 		</section>
 	{/if}
 </main>
+
+{#if reservation && !hostViewOnly}
+	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/94 backdrop-blur">
+		<div class="app-shell py-3">
+			<div class="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
+				<div class="min-w-0">
+					{#if isCapacityFull}
+						<p class="text-sm font-medium text-destructive-foreground">
+							{waitlistJoined ? 'You are on the waitlist' : 'Guest list is currently full'}
+						</p>
+					{:else}
+						<p class="text-sm font-medium text-foreground">
+							{spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left
+						</p>
+					{/if}
+					<p class="text-xs text-muted-foreground">
+						{$currentUser ? 'Update your RSVP any time.' : 'Sign in to respond and save your spot.'}
+					</p>
+				</div>
+				{#if !$currentUser}
+					<Button size="sm" onclick={joinGuestlist}>Join Guestlist</Button>
+				{:else}
+					<Button size="sm" onclick={submitRsvp} disabled={submitting || hostRoleChecking}>
+						{submitting ? 'Saving...' : guest ? 'Update RSVP' : 'Save RSVP'}
+					</Button>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<style>
+	:global(.faq-summary::-webkit-details-marker) {
+		display: none;
+	}
+</style>
+
+<Dialog
+	open={guestListDialogOpen}
+	on:openChange={(event) => {
+		guestListDialogOpen = event.detail;
+	}}
+>
+	<DialogHeader>
+		<DialogTitle>Guest list</DialogTitle>
+		<DialogDescription>
+			Accepted attendees shown in first-name format.
+		</DialogDescription>
+	</DialogHeader>
+	<div class="mt-4 space-y-2">
+		{#if publicAttendees.length === 0}
+			<div class="state-panel-muted">No accepted guests to show yet.</div>
+		{:else}
+			{#each publicAttendees as attendee (attendee.uid)}
+				<p class="rounded-2xl border border-border/70 bg-secondary/25 px-3 py-2 text-sm">
+					{attendee.namePublic}
+				</p>
+			{/each}
+		{/if}
+	</div>
+</Dialog>
