@@ -5,11 +5,15 @@ export const buttonVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+				default:
+					'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_hsl(212_95%_58%/0.3)]',
+				glow: 'bg-primary text-primary-foreground shadow-[0_0_20px_hsl(212_95%_58%/0.25)] hover:shadow-[0_0_30px_hsl(212_95%_58%/0.4)] hover:bg-primary/95',
 				secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/85',
-				outline: 'border border-border bg-transparent text-foreground hover:bg-accent/60',
+				outline:
+					'border border-primary/25 bg-primary/5 text-foreground backdrop-blur-sm hover:bg-primary/10 hover:border-primary/40',
 				ghost: 'text-foreground hover:bg-accent/50',
-				success: 'bg-success text-success-foreground hover:bg-success/90',
+				success:
+					'bg-success text-success-foreground hover:bg-success/90 hover:shadow-[0_0_20px_hsl(150_80%_45%/0.3)]',
 				destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
 			},
 			size: {

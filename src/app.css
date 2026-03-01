@@ -7,17 +7,17 @@
 		--foreground: 210 23% 94%;
 		--muted: 217 17% 11%;
 		--muted-foreground: 214 12% 72%;
-		--card: 220 16% 8%;
+		--card: 220 18% 9%;
 		--card-foreground: 210 22% 95%;
 		--border: 216 16% 18%;
 		--input: 216 16% 16%;
-		--primary: 212 90% 56%;
+		--primary: 212 95% 58%;
 		--primary-foreground: 210 100% 98%;
 		--secondary: 220 14% 14%;
 		--secondary-foreground: 210 20% 90%;
 		--accent: 220 22% 17%;
 		--accent-foreground: 210 100% 96%;
-		--success: 150 75% 40%;
+		--success: 150 80% 45%;
 		--success-foreground: 145 70% 96%;
 		--destructive: 0 70% 46%;
 		--destructive-foreground: 0 0% 98%;
@@ -36,6 +36,17 @@
 		--motion-slow: 230ms;
 		--motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
 		--motion-ease-gentle: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+		/* Glow effects */
+		--glow-primary: 0 0 20px hsl(212 95% 58% / 0.35), 0 0 40px hsl(212 95% 58% / 0.15);
+		--glow-primary-intense: 0 0 20px hsl(212 95% 58% / 0.5), 0 0 60px hsl(212 95% 58% / 0.25);
+		--glow-success: 0 0 20px hsl(150 80% 45% / 0.35), 0 0 40px hsl(150 80% 45% / 0.15);
+		--glow-success-intense: 0 0 20px hsl(150 80% 45% / 0.5), 0 0 60px hsl(150 80% 45% / 0.2);
+
+		/* Glass effect variables */
+		--glass-blur-sm: 8px;
+		--glass-blur-md: 16px;
+		--glass-blur-lg: 24px;
 	}
 
 	* {
@@ -49,9 +60,10 @@
 	body {
 		@apply min-h-full bg-background text-foreground antialiased;
 		background-image:
-			radial-gradient(85rem 40rem at 20% -10%, hsl(213 60% 18% / 0.2), transparent 55%),
-			radial-gradient(65rem 35rem at 100% 0%, hsl(216 45% 16% / 0.13), transparent 60%),
-			linear-gradient(to bottom, hsl(var(--background)), hsl(220 16% 4%));
+			radial-gradient(100rem 50rem at 15% -15%, hsl(212 70% 22% / 0.28), transparent 50%),
+			radial-gradient(80rem 40rem at 90% 5%, hsl(270 55% 20% / 0.18), transparent 55%),
+			radial-gradient(60rem 30rem at 50% 100%, hsl(185 60% 15% / 0.12), transparent 45%),
+			linear-gradient(to bottom, hsl(var(--background)), hsl(220 18% 3%));
 		background-attachment: fixed;
 	}
 
@@ -70,6 +82,55 @@
 	.surface {
 		@apply rounded-3xl border border-border/90 bg-card/75 backdrop-blur-sm;
 		box-shadow: var(--shadow-surface);
+	}
+
+	/* Enhanced glass surface for futuristic look */
+	.glass-surface {
+		@apply rounded-3xl border bg-card/60;
+		border-color: hsl(var(--primary) / 0.15);
+		backdrop-filter: blur(var(--glass-blur-md));
+		-webkit-backdrop-filter: blur(var(--glass-blur-md));
+		box-shadow:
+			inset 0 1px 0 0 hsl(var(--foreground) / 0.05),
+			var(--shadow-surface);
+	}
+
+	/* Glass inset for nested elements */
+	.glass-inset {
+		@apply rounded-2xl border border-border/50 bg-secondary/25;
+		backdrop-filter: blur(var(--glass-blur-sm));
+		-webkit-backdrop-filter: blur(var(--glass-blur-sm));
+	}
+
+	/* Glow effect classes */
+	.glow-primary {
+		box-shadow: var(--glow-primary);
+	}
+
+	.glow-primary-intense {
+		box-shadow: var(--glow-primary-intense);
+	}
+
+	.glow-success {
+		box-shadow: var(--glow-success);
+	}
+
+	.glow-success-intense {
+		box-shadow: var(--glow-success-intense);
+	}
+
+	/* Animated pulse glow */
+	.glow-pulse {
+		animation: glow-pulse 2s ease-in-out infinite;
+	}
+
+	/* Text glow effects */
+	.text-glow-primary {
+		text-shadow: 0 0 10px hsl(var(--primary) / 0.5), 0 0 30px hsl(var(--primary) / 0.25);
+	}
+
+	.text-glow-success {
+		text-shadow: 0 0 10px hsl(var(--success) / 0.5), 0 0 30px hsl(var(--success) / 0.25);
 	}
 
 	.section-title {
@@ -190,6 +251,16 @@
 	to {
 		opacity: 1;
 		transform: scale(1);
+	}
+}
+
+@keyframes glow-pulse {
+	0%,
+	100% {
+		box-shadow: var(--glow-primary);
+	}
+	50% {
+		box-shadow: var(--glow-primary-intense);
 	}
 }
 

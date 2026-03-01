@@ -14,7 +14,7 @@
 
 	type EventTab = 'events' | 'tickets';
 	type EventCardState = 'tonight' | 'upcoming' | 'past';
-	type EventCardBadgeVariant = 'default' | 'success' | 'outline' | 'destructive';
+	type EventCardBadgeVariant = 'default' | 'success' | 'live' | 'outline' | 'destructive';
 
 	const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
 	const dateLineFormatter = new Intl.DateTimeFormat('en-US', {
@@ -110,7 +110,7 @@
 
 	function eventCardStateVariant(state: EventCardState): EventCardBadgeVariant {
 		if (state === 'tonight') {
-			return 'success';
+			return 'live';
 		}
 
 		if (state === 'past') {
@@ -310,7 +310,7 @@
 						{#each sortedEvents as event (event.id)}
 							<a
 								href={`/event/${event.id}`}
-								class="group block overflow-hidden rounded-2xl border border-border/70 bg-card/35 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+								class="group block overflow-hidden rounded-2xl border border-border/70 bg-card/40 no-underline backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_0_30px_hsl(212_95%_58%/0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
 								aria-label={`Open ${event.title}`}
 							>
 								<div class={cn('relative min-h-[360px] p-4 sm:min-h-[390px]', event.posterImageUrl ? '' : event.posterClass)}>
@@ -405,7 +405,7 @@
 									{#each sortedPurchases as purchase (purchase.purchaseId)}
 										<a
 											href={`/event/${purchase.eventId}`}
-											class="block rounded-2xl border border-border/70 bg-card/40 p-4 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+											class="block rounded-2xl border border-border/70 bg-card/40 p-4 no-underline backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_0_25px_hsl(212_95%_58%/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
 											aria-label={`View ${purchase.eventTitle} tickets`}
 										>
 											<div class="flex items-start justify-between gap-3">
@@ -440,7 +440,7 @@
 									{#each sortedTickets as ticket (ticket.reservationId)}
 										<a
 											href={`/r/${ticket.reservationId}`}
-											class="block rounded-2xl border border-border/70 bg-card/40 p-4 no-underline transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+											class="block rounded-2xl border border-border/70 bg-card/40 p-4 no-underline backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_0_25px_hsl(212_95%_58%/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
 											aria-label={`Open RSVP for ${ticket.clubName}`}
 										>
 											<p class="text-xs uppercase tracking-[0.18em] text-muted-foreground">Active ticket</p>

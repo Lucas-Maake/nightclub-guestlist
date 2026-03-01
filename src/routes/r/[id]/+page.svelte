@@ -845,13 +845,13 @@
 					<CardContent class="space-y-6 p-6 sm:p-7">
 						<div
 							class={cn(
-								'relative min-h-[220px] overflow-hidden rounded-2xl border border-border/75 p-5 sm:min-h-[260px] sm:p-6',
+								'relative min-h-[220px] overflow-hidden rounded-2xl border border-primary/20 p-5 sm:min-h-[260px] sm:p-6',
 								heroPosterClass
 							)}
 						>
-							<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/12 via-black/36 to-black/68"></div>
-							<div class="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-pill bg-white/10 blur-3xl"></div>
-							<div class="pointer-events-none absolute -right-10 bottom-0 h-44 w-44 rounded-pill bg-primary/25 blur-3xl"></div>
+							<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/40 to-black/72"></div>
+							<div class="pointer-events-none absolute -left-10 -top-10 h-48 w-48 rounded-pill bg-white/12 blur-[60px]"></div>
+							<div class="pointer-events-none absolute -right-10 bottom-0 h-52 w-52 rounded-pill bg-primary/30 blur-[70px]"></div>
 							<div class="relative z-10 flex h-full flex-col justify-end gap-2">
 								<p class="text-xs uppercase tracking-[0.2em] text-white/82">Guest invite</p>
 								<h2 class="max-w-xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
@@ -867,9 +867,18 @@
 						</div>
 
 						<div class="grid gap-3 sm:grid-cols-[1.2fr_1fr]">
-							<div class="rounded-2xl border border-border/80 bg-secondary/25 p-4">
+							<div
+								class={cn(
+									'rounded-2xl border bg-secondary/25 p-4 backdrop-blur-sm transition-all',
+									eventState === 'live'
+										? 'border-success/40 shadow-[0_0_25px_hsl(150_80%_45%/0.2)]'
+										: 'border-border/80'
+								)}
+							>
 								<p class="text-xs uppercase tracking-wide text-muted-foreground">Countdown</p>
-								<p class="mt-2 text-lg font-semibold text-foreground">{countdownHeadline}</p>
+								<p class={cn('mt-2 text-lg font-semibold', eventState === 'live' ? 'text-glow-success text-success-foreground' : 'text-foreground')}>
+									{countdownHeadline}
+								</p>
 								<p class="mt-1 text-xs text-muted-foreground">{countdownSubline}</p>
 							</div>
 							<div class="rounded-2xl border border-border/80 bg-secondary/25 p-4">
@@ -1061,10 +1070,10 @@
 									aria-pressed={status === 'accepted'}
 									disabled={blocksNewAcceptance}
 									class={cn(
-										'rounded-2xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+										'rounded-2xl border p-4 text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
 										status === 'accepted'
-											? 'border-success/45 bg-success/15'
-											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35'
+											? 'border-success/50 bg-success/18 shadow-[0_0_20px_hsl(150_80%_45%/0.15)]'
+											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35 hover:border-primary/25'
 									)}
 									onclick={() => {
 										status = 'accepted';
@@ -1080,10 +1089,10 @@
 									type="button"
 									aria-pressed={status === 'declined'}
 									class={cn(
-										'rounded-2xl border p-4 text-left transition-colors',
+										'rounded-2xl border p-4 text-left transition-all duration-200',
 										status === 'declined'
 											? 'border-destructive/45 bg-destructive/14'
-											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35'
+											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35 hover:border-primary/25'
 									)}
 									onclick={() => {
 										status = 'declined';
@@ -1303,7 +1312,8 @@
 </main>
 
 {#if reservation && !hostViewOnly}
-	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/94 backdrop-blur">
+	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-background/85 backdrop-blur-xl">
+		<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 		<div class="app-shell py-3">
 			<div class="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
 				<div class="min-w-0">

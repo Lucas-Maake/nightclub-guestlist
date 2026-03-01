@@ -12,7 +12,9 @@
 
 <div
 	class={cn(
-		'motion-surface rounded-3xl border border-border/80 bg-card/80 text-card-foreground shadow-surface backdrop-blur-sm',
+		'motion-surface rounded-3xl border border-primary/10 bg-card/65 text-card-foreground backdrop-blur-md transition-all duration-300',
+		'shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.04),var(--shadow-surface)]',
+		'hover:border-primary/20',
 		className
 	)}
 	{...rest}

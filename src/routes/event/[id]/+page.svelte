@@ -277,7 +277,14 @@
 				<div class="space-y-3 border-b border-border/70 pb-5">
 					<p class="text-sm font-semibold text-foreground">Admission</p>
 					{#each eventRecord.ticketTiers as tier (tier.id)}
-						<div class="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-secondary/20 px-3 py-3">
+						<div
+							class={cn(
+								'flex items-center justify-between gap-3 rounded-xl border px-3 py-3 backdrop-blur-sm transition-all duration-200',
+								(quantities[tier.id] ?? 0) > 0
+									? 'border-primary/40 bg-primary/10 shadow-[0_0_15px_hsl(212_95%_58%/0.15)]'
+									: 'border-border/80 bg-secondary/20'
+							)}
+						>
 							<div>
 								<p class="text-sm font-medium">{tier.label}</p>
 								<p class="text-xs text-muted-foreground">{formatPrice(tier.priceCents)}</p>
@@ -352,7 +359,8 @@
 </main>
 
 {#if eventRecord}
-	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur">
+	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-background/85 backdrop-blur-xl">
+		<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
 		<div class="mx-auto w-full max-w-[520px] px-4 py-3">
 			{#if tableBookingClosed}
 				<p class="state-panel-error mb-2 text-sm" aria-live="polite">
@@ -364,6 +372,7 @@
 			<Button
 				class="w-full"
 				size="lg"
+				variant={selectedTicketCount > 0 ? 'glow' : 'default'}
 				onclick={selectedTicketCount > 0 ? openPurchaseModal : handleBookTable}
 				disabled={tableBookingClosed}
 			>
