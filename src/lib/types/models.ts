@@ -120,3 +120,45 @@ export interface ReservationCommentRecord {
 	text: string;
 	createdAt: Timestamp;
 }
+
+// Ticket Purchase Types
+export interface TicketPurchaseItem {
+	tierId: string;
+	tierLabel: string;
+	priceCents: number;
+	quantity: number;
+}
+
+export interface TicketPurchaseRecord {
+	purchaseId: string;
+	eventId: string;
+	eventTitle: string;
+	eventVenue: string;
+	eventStartAt: Timestamp;
+	uid: string;
+	displayName: string;
+	phone: string;
+	items: TicketPurchaseItem[];
+	subtotalCents: number;
+	status: 'completed' | 'refunded';
+	createdAt: Timestamp;
+}
+
+export interface CreatePurchaseInput {
+	eventId: string;
+	items: Array<{ tierId: string; quantity: number }>;
+	displayName: string;
+	phone?: string;
+}
+
+export interface UserTicketPurchaseRecord {
+	purchaseId: string;
+	eventId: string;
+	eventTitle: string;
+	eventVenue: string;
+	eventStartAt: Timestamp;
+	items: TicketPurchaseItem[];
+	subtotalCents: number;
+	ticketCount: number;
+	createdAt: Timestamp;
+}

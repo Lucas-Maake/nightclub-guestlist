@@ -64,6 +64,7 @@ service cloud.firestore {
 		}
 
 		match /reservationDebug/{reservationId} {
+			// Hash is readable for token verification; mitigated by SHA-256 + no list + hostname gating
 			allow get: if true;
 			allow list: if false;
 			allow create: if signedIn() && request.resource.data.hostUid == request.auth.uid;
@@ -103,17 +104,16 @@ service cloud.firestore {
 
 			match /comments/{commentId} {
 				allow get, list: if true;
-				allow create: if signedIn() &&
-					request.resource.data.keys().hasOnly(['uid', 'displayName', 'text', 'createdAt']) &&
-					request.resource.data.uid == request.auth.uid &&
-					request.resource.data.displayName is string &&
-					request.resource.data.displayName.size() > 0 &&
-					request.resource.data.displayName.size() <= 48 &&
-					request.resource.data.text is string &&
-					request.resource.data.text.size() > 0 &&
-					request.resource.data.text.size() <= 280;
-				allow update, delete: if false;
+				// Direct writes blocked - use postComment callable for rate limiting
+				allow create, update, delete: if false;
 			}
+		}
+
+		match /ticketPurchases/{purchaseId} {
+			// Users can only read their own purchases
+			allow read: if signedIn() && resource.data.uid == request.auth.uid;
+			// All writes through Cloud Function only
+			allow write: if false;
 		}
 
 		match /users/{uid} {

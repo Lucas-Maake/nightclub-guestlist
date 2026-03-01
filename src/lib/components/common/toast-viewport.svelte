@@ -25,6 +25,17 @@
 					{#if toast.description}
 						<p class="text-xs text-muted-foreground">{toast.description}</p>
 					{/if}
+					{#if toast.action}
+						<button
+							class="mt-1 text-xs font-medium text-primary underline underline-offset-2 transition-colors hover:text-primary/80"
+							onclick={() => {
+								toast.action?.onClick();
+								dismissToast(toast.id);
+							}}
+						>
+							{toast.action.label}
+						</button>
+					{/if}
 				</div>
 				<button
 					class="inline-flex h-7 w-7 items-center justify-center rounded-pill text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"

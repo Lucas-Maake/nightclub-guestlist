@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run deploy:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd dummy ticket purchase system and UX improvements\n\nTicket Purchase System:\n- Add createTicketPurchase Cloud Function with server-side price validation\n- Add ticketPurchases Firestore collection with security rules\n- Create purchase modal with order summary, name input, and success animation\n- Integrate purchase flow into event detail page with dynamic CTA button\n- Display purchased tickets in Events page Tickets tab\n\nSecurity & Backend:\n- Add comment rate limiting via postComment Cloud Function \\(5/hour per user\\)\n- Block direct comment writes in Firestore rules\n\nUX Improvements:\n- Add toast action button support for undo functionality\n- Add check-in undo with success toast on checkin page\n- Add error auto-clearing on RSVP form inputs\n- Add plus-ones counter with live parsing feedback\n- Add copy button state feedback \\(\"Copied!\"\\)\n- Add loading skeletons to events and host dashboard pages\n\nAlso adds CLAUDE.md documentation for the repository.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

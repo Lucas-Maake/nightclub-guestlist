@@ -230,3 +230,154 @@ exports.toggleGuestCheckIn = onCall(async (request) => {
 
 	return { ok: true };
 });
+
+const COMMENT_RATE_LIMIT = 5; // max comments per user per reservation per hour
+const COMMENT_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+exports.postComment = onCall(async (request) => {
+	const uid = requireAuth(request);
+	const reservationId = toNonEmptyString(request.data?.reservationId, 'reservationId', 120);
+	const displayName = toNonEmptyString(request.data?.displayName, 'displayName', 48);
+	const text = toNonEmptyString(request.data?.text, 'text', 280);
+
+	// Verify reservation exists
+	const publicRef = db.collection('reservationPublic').doc(reservationId);
+	const publicSnapshot = await publicRef.get();
+	if (!publicSnapshot.exists) {
+		throw new HttpsError('not-found', 'Reservation was not found.');
+	}
+
+	// Rate limit: check recent comments by this user on this reservation
+	// Simple query by uid only (no composite index needed), filter by time in memory
+	const commentsRef = db
+		.collection('reservations')
+		.doc(reservationId)
+		.collection('comments');
+
+	const oneHourAgo = Date.now() - COMMENT_RATE_WINDOW_MS;
+	const userCommentsQuery = commentsRef.where('uid', '==', uid);
+	const userComments = await userCommentsQuery.get();
+
+	const recentCount = userComments.docs.filter((doc) => {
+		const createdAt = doc.get('createdAt');
+		if (!createdAt || !createdAt.toMillis) return false;
+		return createdAt.toMillis() >= oneHourAgo;
+	}).length;
+
+	if (recentCount >= COMMENT_RATE_LIMIT) {
+		throw new HttpsError(
+			'resource-exhausted',
+			'COMMENT_RATE_LIMITED'
+		);
+	}
+
+	// Create the comment
+	await commentsRef.add({
+		uid,
+		displayName,
+		text,
+		createdAt: FieldValue.serverTimestamp()
+	});
+
+	return { ok: true };
+});
+
+// Ticket Purchase
+function generatePurchaseId() {
+	const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+	let result = '';
+	for (let i = 0; i < 12; i++) {
+		result += chars[Math.floor(Math.random() * chars.length)];
+	}
+	return result;
+}
+
+exports.createTicketPurchase = onCall(async (request) => {
+	const uid = requireAuth(request);
+	const eventId = toNonEmptyString(request.data?.eventId, 'eventId', 120);
+	const displayName = toNonEmptyString(request.data?.displayName, 'displayName', 80);
+	const phone = toOptionalString(request.data?.phone, 'phone', 40);
+	const items = request.data?.items;
+
+	// Validate items array
+	if (!Array.isArray(items) || items.length === 0) {
+		throw new HttpsError('invalid-argument', 'At least one ticket item is required.');
+	}
+	if (items.length > 10) {
+		throw new HttpsError('invalid-argument', 'Too many ticket types in one order.');
+	}
+
+	// Validate each item
+	const validatedItems = items.map((item, index) => {
+		if (!item || typeof item !== 'object') {
+			throw new HttpsError('invalid-argument', `items[${index}] must be an object.`);
+		}
+		const tierId = toNonEmptyString(item.tierId, `items[${index}].tierId`, 60);
+		const quantity = Number(item.quantity);
+		if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+			throw new HttpsError('invalid-argument', `items[${index}].quantity must be 1-10.`);
+		}
+		return { tierId, quantity };
+	});
+
+	// Fetch event data from Firestore
+	const eventRef = db.collection('events').doc(eventId);
+	const eventSnapshot = await eventRef.get();
+
+	if (!eventSnapshot.exists) {
+		throw new HttpsError('not-found', 'Event was not found.');
+	}
+
+	const eventData = eventSnapshot.data();
+	if (eventData.published !== true) {
+		throw new HttpsError('failed-precondition', 'Event is not available for purchase.');
+	}
+
+	// Fetch ticket tiers
+	const tiersSnapshot = await eventRef.collection('ticketTiers').get();
+	const tierMap = new Map();
+	tiersSnapshot.docs.forEach((doc) => {
+		tierMap.set(doc.id, { id: doc.id, ...doc.data() });
+	});
+
+	// Build purchase items with prices from server
+	let subtotalCents = 0;
+	const purchaseItems = validatedItems.map((item) => {
+		const tier = tierMap.get(item.tierId);
+		if (!tier) {
+			throw new HttpsError('invalid-argument', `Ticket tier ${item.tierId} not found.`);
+		}
+		if (item.quantity > (tier.maxPerOrder || 4)) {
+			throw new HttpsError('invalid-argument', `Exceeds max quantity for ${tier.label}.`);
+		}
+		const lineTotalCents = tier.priceCents * item.quantity;
+		subtotalCents += lineTotalCents;
+		return {
+			tierId: item.tierId,
+			tierLabel: tier.label,
+			priceCents: tier.priceCents,
+			quantity: item.quantity
+		};
+	});
+
+	// Generate purchase ID
+	const purchaseId = generatePurchaseId();
+
+	// Create purchase record
+	await db.collection('ticketPurchases').doc(purchaseId).set({
+		purchaseId,
+		eventId,
+		eventTitle: eventData.title || 'Event',
+		eventVenue: eventData.venue || '',
+		eventStartAt: eventData.startAt,
+		uid,
+		displayName,
+		phone: phone || '',
+		items: purchaseItems,
+		subtotalCents,
+		status: 'completed',
+		createdAt: FieldValue.serverTimestamp()
+	});
+
+	return { ok: true, purchaseId };
+});

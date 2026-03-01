@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
+	import PurchaseModal from '$lib/components/purchase/purchase-modal.svelte';
 	import { MapPinned } from 'lucide-svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { QuantitySelect } from '$lib/components/ui/quantity-select';
@@ -32,6 +33,8 @@
 
 	let eventRecord = $state<EventCatalogItem | null>(null);
 	let loadingEvent = $state(true);
+	let bookTableError = $state('');
+	let purchaseModalOpen = $state(false);
 
 	let quantities = $state<Record<string, number>>({});
 
@@ -60,6 +63,14 @@
 		}
 
 		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+	});
+	const tableBookingClosed = $derived.by(() => {
+		if (!eventRecord) {
+			return false;
+		}
+
+		const eventEnd = new Date(eventRecord.endAt).getTime();
+		return Number.isFinite(eventEnd) ? eventEnd < Date.now() : false;
 	});
 
 	function startDate(): Date | null {
@@ -112,7 +123,12 @@
 	}
 
 	async function handleBookTable(): Promise<void> {
+		bookTableError = '';
 		if (!eventRecord) {
+			return;
+		}
+		if (tableBookingClosed) {
+			bookTableError = 'This event has ended. Table booking is closed.';
 			return;
 		}
 
@@ -120,6 +136,7 @@
 			const returnTo = `${$page.url.pathname}${$page.url.search}`;
 			const authResult = await openAuthModal({ returnTo, source: 'event-detail-book' });
 			if (authResult !== 'authenticated') {
+				bookTableError = 'Sign in required to book a table.';
 				return;
 			}
 		}
@@ -143,6 +160,36 @@
 		});
 	}
 
+	function openPurchaseModal(): void {
+		if (selectedTicketCount === 0) {
+			pushToast({
+				title: 'Select tickets',
+				description: 'Choose at least one ticket before checkout.',
+				variant: 'default'
+			});
+			return;
+		}
+		purchaseModalOpen = true;
+	}
+
+	function handlePurchaseSuccess(purchaseId: string): void {
+		void purchaseId;
+		purchaseModalOpen = false;
+		quantities = {};
+
+		pushToast({
+			title: 'Tickets confirmed!',
+			description: 'View your tickets in the Events page.',
+			variant: 'success',
+			action: {
+				label: 'View tickets',
+				onClick: () => {
+					void goto('/event?tab=tickets');
+				}
+			}
+		});
+	}
+
 	async function loadEventById(id: string): Promise<void> {
 		loadingEvent = true;
 		try {
@@ -162,10 +209,12 @@
 		if (!eventId) {
 			eventRecord = null;
 			loadingEvent = false;
+			bookTableError = '';
 			quantities = {};
 			return;
 		}
 
+		bookTableError = '';
 		quantities = {};
 		void loadEventById(eventId);
 	});
@@ -305,8 +354,38 @@
 {#if eventRecord}
 	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 backdrop-blur">
 		<div class="mx-auto w-full max-w-[520px] px-4 py-3">
-			<Button class="w-full" size="lg" onclick={handleBookTable}>Book a table</Button>
+			{#if tableBookingClosed}
+				<p class="state-panel-error mb-2 text-sm" aria-live="polite">
+					This event has ended. Table booking is closed.
+				</p>
+			{:else if bookTableError}
+				<p class="state-panel-error mb-2 text-sm" aria-live="polite">{bookTableError}</p>
+			{/if}
+			<Button
+				class="w-full"
+				size="lg"
+				onclick={selectedTicketCount > 0 ? openPurchaseModal : handleBookTable}
+				disabled={tableBookingClosed}
+			>
+				{#if tableBookingClosed}
+					Booking closed
+				{:else if selectedTicketCount > 0}
+					Get {selectedTicketCount} Ticket{selectedTicketCount === 1 ? '' : 's'} &ndash; {formatPrice(subtotalCents)}
+				{:else}
+					Book a table
+				{/if}
+			</Button>
 		</div>
 	</div>
+
+	<PurchaseModal
+		open={purchaseModalOpen}
+		event={eventRecord}
+		{quantities}
+		onClose={() => {
+			purchaseModalOpen = false;
+		}}
+		onSuccess={handlePurchaseSuccess}
+	/>
 {/if}
 

@@ -15,6 +15,7 @@
 	import { rsvpSchema } from '$lib/schemas/reservation';
 	import { authReady, currentUser, signInAnonymouslyForDebug, waitForAuthReady } from '$lib/firebase/auth';
 	import {
+		isCommentRateLimitedError,
 		isHostForReservation,
 		listenToGuest,
 		listenToPublicAttendees,
@@ -81,6 +82,21 @@
 	let displayName = $state('');
 	let status = $state<'accepted' | 'declined'>('accepted');
 	let plusOneLines = $state('');
+
+	// Derived: parsed plus-ones for live feedback
+	const parsedPlusOnes = $derived(
+		plusOneLines
+			.split('\n')
+			.map((entry) => entry.trim())
+			.filter(Boolean)
+			.slice(0, 4)
+	);
+
+	// Clear errors when user interacts with form
+	function clearFormErrors() {
+		errorMessage = '';
+		waitlistError = '';
+	}
 
 	let reservationUnsubscribe: Unsubscribe | null = null;
 	let guestUnsubscribe: Unsubscribe | null = null;
@@ -421,19 +437,22 @@
 		}
 	}
 
-	async function joinGuestlist(): Promise<void> {
+	async function joinGuestlist(): Promise<boolean> {
 		const destination = `${$page.url.pathname}${$page.url.search}`;
 		if (!$currentUser) {
 			const authResult = await openAuthModal({ returnTo: destination, source: 'guest-join' });
 			if (authResult !== 'authenticated') {
-				return;
+				errorMessage = 'Sign in is required to save your RSVP.';
+				return false;
 			}
 
 			await waitForAuthReady();
 			if (!$currentUser) {
-				return;
+				errorMessage = 'Sign in is required to save your RSVP.';
+				return false;
 			}
 		}
+		errorMessage = '';
 
 		if (!displayName) {
 			displayName = $currentUser.displayName ?? '';
@@ -441,11 +460,18 @@
 				displayName = $currentUser.phoneNumber;
 			}
 		}
+
+		return true;
 	}
 
 	async function openGuestSignIn(): Promise<void> {
 		const destination = `${$page.url.pathname}${$page.url.search}`;
-		await openAuthModal({ returnTo: destination, source: 'guest-signin' });
+		const authResult = await openAuthModal({ returnTo: destination, source: 'guest-signin' });
+		if (authResult !== 'authenticated') {
+			errorMessage = 'Sign in is required to save your RSVP.';
+			return;
+		}
+		errorMessage = '';
 	}
 
 	function parsePlusOnes(value: string): Array<{ name: string }> {
@@ -463,7 +489,10 @@
 		}
 
 		if (!$currentUser) {
-			await joinGuestlist();
+			const joined = await joinGuestlist();
+			if (!joined) {
+				return;
+			}
 			return;
 		}
 
@@ -530,6 +559,7 @@
 		if (!$currentUser) {
 			await joinGuestlist();
 			if (!$currentUser) {
+				waitlistError = 'Sign in is required to join the waitlist.';
 				return;
 			}
 		}
@@ -648,8 +678,12 @@
 				description: 'Your comment is now visible on this invite.',
 				variant: 'success'
 			});
-		} catch {
-			commentError = 'Could not post your update right now. Please try again.';
+		} catch (error) {
+			if (isCommentRateLimitedError(error)) {
+				commentError = "You're posting too quickly. Please wait a bit before commenting again.";
+			} else {
+				commentError = 'Could not post your update right now. Please try again.';
+			}
 		} finally {
 			postingComment = false;
 		}
@@ -953,6 +987,9 @@
 							<p class="text-sm text-muted-foreground">
 								Sign in with phone verification to respond and reserve your spot.
 							</p>
+							{#if errorMessage}
+								<p class="state-panel-error text-sm" aria-live="polite">{errorMessage}</p>
+							{/if}
 							<div class="flex flex-wrap gap-3">
 								<Button onclick={joinGuestlist}>Join Guestlist</Button>
 								<button
@@ -983,7 +1020,13 @@
 						{:else}
 							<div class="space-y-2">
 								<Label for="displayName">Display name</Label>
-								<Input id="displayName" bind:value={displayName} placeholder="Your full name" />
+								<Input
+									id="displayName"
+									bind:value={displayName}
+									placeholder="Your full name"
+									oninput={clearFormErrors}
+								/>
+								<p class="text-xs text-muted-foreground">This name appears on the guest list</p>
 							</div>
 
 							{#if blocksNewAcceptance}
@@ -1025,6 +1068,7 @@
 									)}
 									onclick={() => {
 										status = 'accepted';
+										clearFormErrors();
 									}}
 								>
 									<p class="text-sm font-semibold">I&apos;m in</p>
@@ -1043,6 +1087,7 @@
 									)}
 									onclick={() => {
 										status = 'declined';
+										clearFormErrors();
 									}}
 								>
 									<p class="text-sm font-semibold">Can&apos;t make it</p>
@@ -1053,13 +1098,22 @@
 							</div>
 
 							<div class="space-y-2">
-								<Label for="plusOnes">Plus-ones (optional)</Label>
+								<div class="flex items-baseline justify-between gap-2">
+									<Label for="plusOnes">Plus-ones (optional)</Label>
+									<span class="text-xs text-muted-foreground">{parsedPlusOnes.length}/4</span>
+								</div>
 								<Textarea
 									id="plusOnes"
 									rows={4}
 									bind:value={plusOneLines}
 									placeholder="One name per line, max 4"
+									oninput={clearFormErrors}
 								/>
+								{#if parsedPlusOnes.length > 0}
+									<p class="text-xs text-muted-foreground">
+										Adding: {parsedPlusOnes.join(', ')}
+									</p>
+								{/if}
 							</div>
 
 							{#if errorMessage}
@@ -1164,6 +1218,7 @@
 								bind:value={commentDraft}
 								maxlength={maxCommentLength}
 								disabled={postingComment}
+								oninput={() => { commentError = ''; }}
 							/>
 							<div class="flex items-center justify-between gap-3">
 								<p class="text-xs text-muted-foreground">{commentDraft.trim().length}/{maxCommentLength}</p>

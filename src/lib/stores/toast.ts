@@ -2,11 +2,17 @@ import { writable } from 'svelte/store';
 
 export type ToastVariant = 'default' | 'success' | 'destructive';
 
+export interface ToastAction {
+	label: string;
+	onClick: () => void;
+}
+
 export interface ToastItem {
 	id: string;
 	title: string;
 	description?: string;
 	variant?: ToastVariant;
+	action?: ToastAction;
 }
 
 const toastsStore = writable<ToastItem[]>([]);

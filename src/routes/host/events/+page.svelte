@@ -24,6 +24,13 @@
 	let loadError = $state('');
 	let search = $state('');
 	let copyingReservationId = $state<string | null>(null);
+	let copiedReservationId = $state<string | null>(null);
+
+	function copyButtonText(reservationId: string): string {
+		if (copyingReservationId === reservationId) return 'Copying...';
+		if (copiedReservationId === reservationId) return 'Copied!';
+		return 'Copy invite';
+	}
 
 	function reservationDateLine(value: HostReservationListItem): string {
 		return formatReservationDate(value.startAt.toDate());
@@ -118,6 +125,7 @@
 		}
 
 		copyingReservationId = reservationId;
+		copiedReservationId = null;
 		try {
 			if (!navigator.clipboard?.writeText) {
 				throw new Error('Clipboard unavailable');
@@ -125,11 +133,17 @@
 
 			const url = inviteUrl(reservationId);
 			await navigator.clipboard.writeText(url);
+			copiedReservationId = reservationId;
 			pushToast({
 				title: 'Invite copied',
 				description: url,
 				variant: 'success'
 			});
+			setTimeout(() => {
+				if (copiedReservationId === reservationId) {
+					copiedReservationId = null;
+				}
+			}, 2000);
 		} catch {
 			pushToast({
 				title: 'Copy failed',
@@ -204,11 +218,27 @@
 		</div>
 
 		{#if loading}
-			<Card>
-				<CardContent class="p-6">
-					<p class="state-panel-muted" aria-live="polite">Loading your host events...</p>
-				</CardContent>
-			</Card>
+			<div class="space-y-4" aria-live="polite" aria-busy="true">
+				{#each [1, 2] as _}
+					<Card class="animate-pulse">
+						<CardHeader class="space-y-2">
+							<div class="flex items-center gap-2">
+								<div class="h-5 w-16 rounded-full bg-secondary/50"></div>
+							</div>
+							<div class="h-6 w-2/3 rounded bg-secondary/60"></div>
+							<div class="h-4 w-1/3 rounded bg-secondary/50"></div>
+						</CardHeader>
+						<CardContent class="space-y-3">
+							<div class="h-4 w-1/2 rounded bg-secondary/50"></div>
+							<div class="flex gap-2">
+								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
+								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
+								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
+							</div>
+						</CardContent>
+					</Card>
+				{/each}
+			</div>
 		{:else if !$currentUser}
 			<Card>
 				<CardHeader>
@@ -234,9 +264,12 @@
 					<div class="state-panel-muted">
 						<p class="font-medium text-foreground">No hosted events yet.</p>
 						<p class="mt-1 text-sm">Create your first event to start managing guests and check-in.</p>
-						<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'mt-4')} href="/create">
-							Create event
-						</a>
+						<div class="mt-4 flex flex-wrap gap-2">
+							<a class={cn(buttonVariants({ size: 'sm' }))} href="/event">Browse events</a>
+							<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href="/create">
+								Create event
+							</a>
+						</div>
 					</div>
 				</CardContent>
 			</Card>
@@ -312,7 +345,7 @@
 												disabled={copyingReservationId === reservation.reservationId}
 												onclick={() => copyInvite(reservation.reservationId)}
 											>
-												{copyingReservationId === reservation.reservationId ? 'Copying...' : 'Copy invite'}
+												{copyButtonText(reservation.reservationId)}
 											</Button>
 										</div>
 									</article>
@@ -364,7 +397,7 @@
 												disabled={copyingReservationId === reservation.reservationId}
 												onclick={() => copyInvite(reservation.reservationId)}
 											>
-												{copyingReservationId === reservation.reservationId ? 'Copying...' : 'Copy invite'}
+												{copyButtonText(reservation.reservationId)}
 											</Button>
 										</div>
 									</article>
@@ -416,7 +449,7 @@
 												disabled={copyingReservationId === reservation.reservationId}
 												onclick={() => copyInvite(reservation.reservationId)}
 											>
-												{copyingReservationId === reservation.reservationId ? 'Copying...' : 'Copy invite'}
+												{copyButtonText(reservation.reservationId)}
 											</Button>
 										</div>
 									</article>

@@ -39,6 +39,7 @@
 	let search = $state('');
 	let filter = $state<FilterTab>('all');
 	let guestListVisibilityPending = $state(false);
+	let inviteCopied = $state(false);
 
 	let publicUnsubscribe: Unsubscribe | null = null;
 	let guestsUnsubscribe: Unsubscribe | null = null;
@@ -203,11 +204,15 @@
 	async function copyInvite(): Promise<void> {
 		try {
 			await navigator.clipboard.writeText(inviteUrl(reservationId));
+			inviteCopied = true;
 			pushToast({
 				title: 'Invite copied',
 				description: inviteUrl(reservationId),
 				variant: 'success'
 			});
+			setTimeout(() => {
+				inviteCopied = false;
+			}, 2000);
 		} catch {
 			pushToast({
 				title: 'Copy failed',
@@ -270,7 +275,7 @@
 				<p class="section-lead">Search, filter, and monitor confirmations in real time.</p>
 			</div>
 			<div class="flex flex-wrap gap-2">
-				<Button variant="outline" onclick={copyInvite}>Copy invite link</Button>
+				<Button variant="outline" onclick={copyInvite}>{inviteCopied ? 'Copied!' : 'Copy invite link'}</Button>
 				<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href={`/r/${reservationId}/checkin`}>
 					Open check-in
 				</a>

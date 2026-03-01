@@ -23,6 +23,7 @@ import { httpsCallable } from 'firebase/functions';
 import type { EventCatalogItem, EventTicketTier } from '$lib/data/events';
 import { findEventById, listEventsSortedAsc } from '$lib/data/events';
 import type {
+	CreatePurchaseInput,
 	CreateReservationInput,
 	DebugReservationRecord,
 	GuestRecord,
@@ -32,7 +33,9 @@ import type {
 	ReservationPublicRecord,
 	ReservationRecord,
 	RsvpInput,
+	TicketPurchaseItem,
 	UserActiveTicketRecord,
+	UserTicketPurchaseRecord,
 	WaitlistRequestRecord
 } from '$lib/types/models';
 import { generateDebugToken, sha256 } from '$lib/utils/security';
@@ -72,6 +75,25 @@ const toggleGuestCheckInCallable = httpsCallable<
 	},
 	{ ok: true }
 >(functions, 'toggleGuestCheckIn');
+
+const postCommentCallable = httpsCallable<
+	{
+		reservationId: string;
+		displayName: string;
+		text: string;
+	},
+	{ ok: true }
+>(functions, 'postComment');
+
+const createTicketPurchaseCallable = httpsCallable<
+	{
+		eventId: string;
+		displayName: string;
+		phone?: string;
+		items: Array<{ tierId: string; quantity: number }>;
+	},
+	{ ok: true; purchaseId: string }
+>(functions, 'createTicketPurchase');
 
 function coerceTimestamp(value: unknown): Timestamp | null {
 	if (value instanceof Timestamp) {
@@ -697,16 +719,24 @@ export async function postReservationComment(
 	payload: Pick<ReservationCommentRecord, 'displayName' | 'text'>
 ): Promise<void> {
 	const text = payload.text.trim().slice(0, 280);
+	const displayName = payload.displayName.trim().slice(0, 48) || 'Guest';
 	if (!reservationId || !uid || !text) {
 		throw new Error('INVALID_RESERVATION_COMMENT');
 	}
 
-	await addDoc(reservationCommentsCollectionRef(reservationId), {
-		uid,
-		displayName: payload.displayName.trim().slice(0, 48) || 'Guest',
-		text,
-		createdAt: serverTimestamp()
+	await postCommentCallable({
+		reservationId,
+		displayName,
+		text
 	});
+}
+
+export function isCommentRateLimitedError(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		(error.message.includes('COMMENT_RATE_LIMITED') ||
+			error.message.includes('resource-exhausted'))
+	);
 }
 
 export function isRsvpCapacityFullError(error: unknown): boolean {
@@ -735,4 +765,60 @@ export async function toggleGuestCheckIn(
 		uid,
 		checkedIn
 	});
+}
+
+// Ticket Purchases
+export async function createTicketPurchase(
+	input: CreatePurchaseInput
+): Promise<{ purchaseId: string }> {
+	const result = await createTicketPurchaseCallable({
+		eventId: input.eventId,
+		displayName: input.displayName,
+		phone: input.phone,
+		items: input.items
+	});
+	return { purchaseId: result.data.purchaseId };
+}
+
+export async function listUserTicketPurchases(uid: string): Promise<UserTicketPurchaseRecord[]> {
+	if (!uid) {
+		return [];
+	}
+
+	try {
+		// Simple query by uid only, filter by time in memory to avoid composite index requirement
+		const purchasesQuery = query(
+			collection(db, 'ticketPurchases'),
+			where('uid', '==', uid),
+			limit(100)
+		);
+
+		const snapshot = await getDocs(purchasesQuery);
+		const nowMs = Date.now();
+
+		return snapshot.docs
+			.map((document) => {
+				const data = document.data();
+				const items = (data.items ?? []) as TicketPurchaseItem[];
+				const ticketCount = items.reduce((sum, item) => sum + item.quantity, 0);
+				const eventStartAt = coerceTimestamp(data.eventStartAt) ?? Timestamp.now();
+
+				return {
+					purchaseId: document.id,
+					eventId: data.eventId ?? '',
+					eventTitle: data.eventTitle ?? '',
+					eventVenue: data.eventVenue ?? '',
+					eventStartAt,
+					items,
+					subtotalCents: data.subtotalCents ?? 0,
+					ticketCount,
+					createdAt: coerceTimestamp(data.createdAt) ?? Timestamp.now()
+				};
+			})
+			.filter((purchase) => purchase.eventStartAt.toMillis() >= nowMs)
+			.sort((a, b) => a.eventStartAt.toMillis() - b.eventStartAt.toMillis());
+	} catch {
+		// Collection may not exist yet or other error
+		return [];
+	}
 }

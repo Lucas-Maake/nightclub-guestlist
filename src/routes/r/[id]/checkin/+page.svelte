@@ -188,7 +188,7 @@
 		return pending[guest.uid] !== undefined;
 	}
 
-	async function handleToggleCheckIn(guest: GuestWithId): Promise<void> {
+	async function handleToggleCheckIn(guest: GuestWithId, isUndo = false): Promise<void> {
 		if (!$currentUser) {
 			return;
 		}
@@ -206,7 +206,8 @@
 			return;
 		}
 
-		const nextValue = !isCheckedIn(guest);
+		const wasCheckedIn = isCheckedIn(guest);
+		const nextValue = !wasCheckedIn;
 		pending = { ...pending, [guest.uid]: nextValue };
 
 		try {
@@ -214,6 +215,29 @@
 			const clone = { ...pending };
 			delete clone[guest.uid];
 			pending = clone;
+
+			// Show success toast with undo action (skip for undo actions to avoid loops)
+			if (!isUndo) {
+				const guestName = guest.displayName || 'Guest';
+				pushToast(
+					{
+						title: nextValue ? 'Checked in' : 'Check-in removed',
+						description: guestName,
+						variant: 'success',
+						action: {
+							label: 'Undo',
+							onClick: () => {
+								// Find the updated guest from current state
+								const updatedGuest = guests.find((g) => g.uid === guest.uid);
+								if (updatedGuest) {
+									void handleToggleCheckIn(updatedGuest, true);
+								}
+							}
+						}
+					},
+					5000
+				);
+			}
 		} catch {
 			const clone = { ...pending };
 			delete clone[guest.uid];
