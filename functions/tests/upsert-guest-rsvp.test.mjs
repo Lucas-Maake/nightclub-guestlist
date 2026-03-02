@@ -93,7 +93,7 @@ describe('upsertGuestRsvp', () => {
 
     await expect(
       callFunction('upsertGuestRsvp', validPayload, token)
-    ).rejects.toMatchObject({ message: expect.stringContaining('RSVP_CAPACITY_FULL') });
+    ).rejects.toMatchObject({ status: 'FAILED_PRECONDITION', message: expect.stringContaining('RSVP_CAPACITY_FULL') });
   });
 
   it('stores plus-ones in guest doc', async () => {
