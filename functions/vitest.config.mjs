@@ -9,6 +9,7 @@ export default defineConfig({
     testTimeout: 15000,
     hookTimeout: 60000,
     pool: 'forks',
-    forks: { singleFork: true }
+    maxWorkers: 1,
+    isolate: false
   }
 });
