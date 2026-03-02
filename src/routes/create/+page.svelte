@@ -16,7 +16,7 @@ import ReservationPreviewCard from '$lib/components/common/reservation-preview-c
 	import { TextSelect } from '$lib/components/ui/text-select';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { createReservationSchema } from '$lib/schemas/reservation';
-	import { createReservation, getReservationPublic } from '$lib/firebase/firestore';
+	import { createReservation, getPublishedEventById, getReservationPublic } from '$lib/firebase/firestore';
 	import {
 		getCurrentUser,
 		signInAnonymouslyForDebug,
@@ -293,13 +293,45 @@ let appliedPrefillSignature = $state('');
 		form.capacity = Number.isFinite(parsedCapacity) ? clampCapacity(Math.round(parsedCapacity)) : 1;
 	}
 
+	async function ensureCreateRouteAccess(): Promise<boolean> {
+		const params = $page.url.searchParams;
+		const reservationId = trimBounded(params.get('reservationId'), 120);
+		if (reservationId) {
+			return true;
+		}
+
+		const eventId = trimBounded(params.get('eventId'), 120);
+		if (!eventId) {
+			await goto('/event', { replaceState: true });
+			return false;
+		}
+
+		const event = await getPublishedEventById(eventId);
+		if (!event) {
+			await goto('/event', { replaceState: true });
+			return false;
+		}
+
+		return true;
+	}
+
 	onMount(async () => {
+		const allowed = await ensureCreateRouteAccess();
+		if (!allowed) {
+			return;
+		}
+
 		await waitForAuthReady();
 		applyCreatePrefillFromUrl();
 		await hydrateShareState();
 	});
 
 	afterNavigate(async () => {
+		const allowed = await ensureCreateRouteAccess();
+		if (!allowed) {
+			return;
+		}
+
 		applyCreatePrefillFromUrl();
 		await hydrateShareState();
 	});
@@ -534,9 +566,7 @@ $effect(() => {
 	{#if shareReservationId}
 		<section class="space-y-6">
 			<div class="space-y-2">
-				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Share Screen</p>
 				<h1 class="section-title">Invite is live</h1>
-				<p class="section-lead">Copy the guest link and send it to your guests now.</p>
 			</div>
 
 			{#if shareLoading}
@@ -593,7 +623,7 @@ $effect(() => {
 					<div class="space-y-4">
 						<CapacityMeter
 							capacity={shareReservation.capacity}
-							accepted={shareReservation.acceptedCount}
+							accepted={shareReservation.claimedCount}
 							declined={shareReservation.declinedCount}
 						/>
 						<Card>
@@ -636,8 +666,8 @@ $effect(() => {
 									Open door check-in
 								</a>
 								<Separator class="my-1" />
-								<a class={cn(buttonVariants({ variant: 'ghost', size: 'md' }), 'w-full')} href="/create">
-									Create another reservation
+								<a class={cn(buttonVariants({ variant: 'ghost', size: 'md' }), 'w-full')} href="/event">
+									Browse events
 								</a>
 							</CardContent>
 						</Card>
@@ -647,9 +677,9 @@ $effect(() => {
 				<Card>
 					<CardContent class="p-6">
 						<div class="state-panel-muted">
-							<p>Reservation not found. Create a new reservation to generate a share link.</p>
-							<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mt-3')} href="/create">
-								Create reservation
+							<p>Reservation not found. Open an event to book a table and start again.</p>
+							<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mt-3')} href="/event">
+								Browse events
 							</a>
 						</div>
 					</CardContent>
@@ -659,9 +689,7 @@ $effect(() => {
 	{:else}
 		<section class="mx-auto max-w-3xl space-y-6">
 			<div class="space-y-2">
-				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Host Flow</p>
 				<h1 class="section-title">Create a reservation</h1>
-				<p class="section-lead">Sign in to create reservations and manage your guest list.</p>
 			</div>
 
 			<Card>

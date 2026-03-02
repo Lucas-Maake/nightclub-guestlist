@@ -301,9 +301,7 @@
 <main class="app-shell py-4 sm:py-6">
 	<section class="motion-stagger space-y-4">
 		<div class="space-y-1">
-			<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Door Check-in</p>
 			<h1 class="section-title">Fast entry workflow</h1>
-			<p class="section-lead">Built for tablet use with large tap targets and minimal clicks.</p>
 		</div>
 
 		{#if loading}

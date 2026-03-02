@@ -18,7 +18,8 @@
 		isHostForReservation,
 		listenToGuests,
 		listenToReservationPublic,
-		setGuestListVisibility
+		setGuestListVisibility,
+		setPlusOnesEnabled
 	} from '$lib/firebase/firestore';
 	import type { GuestRecord, ReservationPublicRecord } from '$lib/types/models';
 	import { openAuthModal } from '$lib/stores/auth-modal';
@@ -39,6 +40,7 @@
 	let search = $state('');
 	let filter = $state<FilterTab>('all');
 	let guestListVisibilityPending = $state(false);
+	let plusOnesTogglePending = $state(false);
 	let inviteCopied = $state(false);
 
 	let publicUnsubscribe: Unsubscribe | null = null;
@@ -196,6 +198,7 @@
 	const checkedInCount = $derived(guests.filter((guest) => guest.checkedInAt).length);
 	const guestListVisibility = $derived(reservationPublic?.guestListVisibility ?? 'hidden');
 	const publicGuestListVisible = $derived(guestListVisibility === 'visible');
+	const plusOnesEnabled = $derived(reservationPublic?.plusOnesEnabled ?? true);
 	const hasActiveFilters = $derived(search.trim().length > 0 || filter !== 'all');
 	const filteredCountLabel = $derived(
 		`${filteredGuests.length} ${filteredGuests.length === 1 ? 'guest' : 'guests'} shown`
@@ -262,6 +265,46 @@
 			guestListVisibilityPending = false;
 		}
 	}
+
+	async function updatePlusOneAvailability(nextEnabled: boolean): Promise<void> {
+		if (!reservationPublic || plusOnesTogglePending) {
+			return;
+		}
+
+		const previousEnabled = reservationPublic.plusOnesEnabled ?? true;
+		if (previousEnabled === nextEnabled) {
+			return;
+		}
+
+		plusOnesTogglePending = true;
+		reservationPublic = {
+			...reservationPublic,
+			plusOnesEnabled: nextEnabled
+		};
+
+		try {
+			await setPlusOnesEnabled(reservationId, nextEnabled);
+			pushToast({
+				title: nextEnabled ? 'Plus-ones enabled' : 'Plus-ones disabled',
+				description: nextEnabled
+					? 'Guests can add plus-ones on the RSVP page.'
+					: 'Guests can no longer add plus-ones on the RSVP page.',
+				variant: 'success'
+			});
+		} catch {
+			reservationPublic = {
+				...reservationPublic,
+				plusOnesEnabled: previousEnabled
+			};
+			pushToast({
+				title: 'Update failed',
+				description: 'Could not update plus-one settings. Try again.',
+				variant: 'destructive'
+			});
+		} finally {
+			plusOnesTogglePending = false;
+		}
+	}
 </script>
 
 <AppHeader />
@@ -270,9 +313,7 @@
 	<section class="motion-stagger space-y-6">
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="space-y-1">
-				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Host Hub</p>
 				<h1 class="section-title">Reservation guest management</h1>
-				<p class="section-lead">Search, filter, and monitor confirmations in real time.</p>
 			</div>
 			<div class="flex flex-wrap gap-2">
 				<Button variant="outline" onclick={copyInvite}>{inviteCopied ? 'Copied!' : 'Copy invite link'}</Button>
@@ -436,8 +477,8 @@
 							</CardDescription>
 						</CardHeader>
 						<CardContent class="space-y-4">
-							<div class="flex items-center justify-between gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
-								<div class="space-y-1">
+							<div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
+								<div class="min-w-0 space-y-1">
 									<p class="text-sm font-medium text-foreground">
 										{publicGuestListVisible ? 'Visible on invite page' : 'Hidden from invite page'}
 									</p>
@@ -448,6 +489,7 @@
 									</p>
 								</div>
 								<Switch
+									class="shrink-0"
 									checked={publicGuestListVisible}
 									disabled={guestListVisibilityPending}
 									on:toggle={(event) => {
@@ -455,8 +497,31 @@
 									}}
 								/>
 							</div>
+							<div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
+								<div class="min-w-0 space-y-1">
+									<p class="text-sm font-medium text-foreground">
+										{plusOnesEnabled ? 'Plus-ones allowed' : 'Plus-ones disabled'}
+									</p>
+									<p class="text-xs text-muted-foreground">
+										{plusOnesEnabled
+											? 'Guests can add plus-one names before saving RSVP.'
+											: 'Guest RSVP page hides plus-one entry and blocks new plus-ones.'}
+									</p>
+								</div>
+								<Switch
+									class="shrink-0"
+									checked={plusOnesEnabled}
+									disabled={plusOnesTogglePending}
+									on:toggle={(event) => {
+										void updatePlusOneAvailability(event.detail);
+									}}
+								/>
+							</div>
 							{#if guestListVisibilityPending}
 								<p class="text-xs text-muted-foreground">Saving visibility setting...</p>
+							{/if}
+							{#if plusOnesTogglePending}
+								<p class="text-xs text-muted-foreground">Saving plus-one setting...</p>
 							{/if}
 						</CardContent>
 					</Card>
@@ -464,7 +529,7 @@
 					{#if reservationPublic}
 						<CapacityMeter
 							capacity={reservationPublic.capacity}
-							accepted={reservationPublic.acceptedCount}
+							accepted={reservationPublic.claimedCount}
 							declined={reservationPublic.declinedCount}
 						/>
 					{/if}

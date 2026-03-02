@@ -152,12 +152,12 @@
 		await goto(`/create?${params.toString()}`);
 	}
 
-	function handleRequestTablePlaceholder(): void {
-		pushToast({
-			title: 'Table requests',
-			description: 'Use the Book a table button below to continue.',
-			variant: 'default'
-		});
+	async function handleRequestTable(): Promise<void> {
+		if (!eventRecord) {
+			return;
+		}
+
+		await goto(`/event/${eventRecord.id}/request-table`);
 	}
 
 	function openPurchaseModal(): void {
@@ -253,13 +253,19 @@
 						<img
 							src={eventRecord.posterImageUrl}
 							alt={`Poster for ${eventRecord.title}`}
-							class="absolute inset-0 h-full w-full object-cover"
+							class="absolute inset-0 h-full w-full object-cover brightness-[0.9] contrast-[1.04] saturate-[0.92]"
 							loading="lazy"
 							decoding="async"
 						/>
 					{/if}
-					<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
-					<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 text-left">
+					{#if eventRecord.posterImageUrl}
+						<div class="pointer-events-none absolute inset-0 bg-black/20"></div>
+						<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/16 via-black/30 to-black/88"></div>
+						<div class="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-black/45 backdrop-blur-[2px]"></div>
+					{:else}
+						<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
+					{/if}
+					<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 rounded-xl border border-white/10 bg-black/38 px-3 py-3 text-left shadow-[0_14px_32px_rgba(0,0,0,0.35)] backdrop-blur-[2px]">
 						<p class="text-xs uppercase tracking-[0.2em] text-white/75">{eventRecord.venue}</p>
 						<p class="text-5xl font-black uppercase leading-[0.85] tracking-tight text-white/88">
 							{eventRecord.posterHeadline}
@@ -279,7 +285,7 @@
 					{#each eventRecord.ticketTiers as tier (tier.id)}
 						<div
 							class={cn(
-								'flex items-center justify-between gap-3 rounded-xl border px-3 py-3 backdrop-blur-sm transition-all duration-200',
+								'relative z-0 flex items-center justify-between gap-3 rounded-xl border px-3 py-3 backdrop-blur-sm transition-all duration-200 focus-within:z-20',
 								(quantities[tier.id] ?? 0) > 0
 									? 'border-primary/40 bg-primary/10 shadow-[0_0_15px_hsl(212_95%_58%/0.15)]'
 									: 'border-border/80 bg-secondary/20'
@@ -314,7 +320,7 @@
 							<p class="text-sm font-semibold text-foreground">Looking for a VIP table?</p>
 							<p class="text-xs text-muted-foreground">Send us a custom table request.</p>
 						</div>
-						<Button size="sm" onclick={handleRequestTablePlaceholder}>Request</Button>
+						<Button size="sm" onclick={handleRequestTable}>Request</Button>
 					</div>
 				</div>
 
@@ -397,4 +403,3 @@
 		onSuccess={handlePurchaseSuccess}
 	/>
 {/if}
-

@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import { Timestamp, type Unsubscribe } from 'firebase/firestore';
-	import { ChevronDown, Clock3, Music, ShieldCheck, Shirt, Sparkles } from 'lucide-svelte';
+	import { ChevronDown } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
 	import StatusChip from '$lib/components/common/status-chip.svelte';
@@ -38,7 +38,6 @@
 	import { pushToast } from '$lib/stores/toast';
 	import { cn } from '$lib/utils/cn';
 	import { formatLastUpdated, formatReservationDate } from '$lib/utils/format';
-	import { inviteUrl } from '$lib/utils/links';
 	import { toUserSafeRsvpMessage } from '$lib/utils/messages';
 	import { canUseDebugMode, isProductionLikeRuntime } from '$lib/utils/security';
 
@@ -62,7 +61,6 @@
 	let publicAttendees = $state<Array<PublicAttendeeRecord & { uid: string }>>([]);
 	let loadingReservation = $state(true);
 	let submitting = $state(false);
-	let sharing = $state(false);
 	let hostViewOnly = $state(false);
 	let hostRoleChecking = $state(true);
 	let celebrateAccepted = $state(false);
@@ -84,13 +82,17 @@
 	let plusOneLines = $state('');
 
 	// Derived: parsed plus-ones for live feedback
-	const parsedPlusOnes = $derived(
-		plusOneLines
+	const parsedPlusOnes = $derived.by(() => {
+		if ((reservation?.plusOnesEnabled ?? true) === false) {
+			return [];
+		}
+
+		return plusOneLines
 			.split('\n')
 			.map((entry) => entry.trim())
 			.filter(Boolean)
-			.slice(0, 4)
-	);
+			.slice(0, 4);
+	});
 
 	// Clear errors when user interacts with form
 	function clearFormErrors() {
@@ -309,6 +311,12 @@
 	});
 
 	$effect(() => {
+		if ((reservation?.plusOnesEnabled ?? true) === false && plusOneLines.length > 0) {
+			plusOneLines = '';
+		}
+	});
+
+	$effect(() => {
 		if (debugAttempted || !reservation) {
 			return;
 		}
@@ -502,7 +510,7 @@
 		const payload: RsvpInput = {
 			status,
 			displayName: displayName.trim(),
-			plusOnes: parsePlusOnes(plusOneLines)
+			plusOnes: (reservation?.plusOnesEnabled ?? true) ? parsePlusOnes(plusOneLines) : []
 		};
 
 		const parsed = rsvpSchema.safeParse(payload);
@@ -567,7 +575,7 @@
 		const payload: RsvpInput = {
 			status: 'declined',
 			displayName: displayName.trim(),
-			plusOnes: parsePlusOnes(plusOneLines)
+			plusOnes: (reservation?.plusOnesEnabled ?? true) ? parsePlusOnes(plusOneLines) : []
 		};
 
 		const parsed = rsvpSchema.safeParse(payload);
@@ -593,50 +601,6 @@
 			waitlistError = 'We could not save your waitlist request right now. Please try again.';
 		} finally {
 			waitlistSubmitting = false;
-		}
-	}
-
-	async function copyInviteLink(): Promise<void> {
-		try {
-			await navigator.clipboard.writeText(guestInviteLink);
-			pushToast({
-				title: 'Invite copied',
-				description: guestInviteLink,
-				variant: 'success'
-			});
-		} catch {
-			pushToast({
-				title: 'Copy failed',
-				description: 'Could not copy invite link. Try again.',
-				variant: 'destructive'
-			});
-		}
-	}
-
-	async function shareInvite(): Promise<void> {
-		if (!reservation) {
-			return;
-		}
-
-		if (!canNativeShare) {
-			await copyInviteLink();
-			return;
-		}
-
-		sharing = true;
-		try {
-			await navigator.share({
-				title: `${reservation.clubName} guest invite`,
-				text: `Join us at ${reservation.clubName}.`,
-				url: guestInviteLink
-			});
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') {
-				return;
-			}
-			await copyInviteLink();
-		} finally {
-			sharing = false;
 		}
 	}
 
@@ -690,7 +654,7 @@
 	}
 
 	const spotsRemaining = $derived(
-		reservation ? Math.max(0, reservation.capacity - reservation.acceptedCount) : 0
+		reservation ? Math.max(0, reservation.capacity - reservation.claimedCount) : 0
 	);
 	const lowSpotsWarning = $derived(spotsRemaining > 0 && spotsRemaining <= 3);
 	const startsAtText = $derived(
@@ -758,39 +722,10 @@
 			? `Welcome in. Keep your RSVP updated so your spot and plus-ones stay locked.`
 			: ''
 	);
-	const eventTimeline = $derived.by(() => {
-		if (!startDate) {
-			return [];
-		}
-
-		return [
-			{
-				id: 'doors',
-				label: 'Doors open',
-				detail: 'Guest check-in and entry begin.',
-				time: startDate
-			},
-			{
-				id: 'peak',
-				label: 'Peak set',
-				detail: 'Main room energy usually ramps up here.',
-				time: new Date(startDate.getTime() + 90 * 60 * 1000)
-			},
-			{
-				id: 'last-entry',
-				label: 'Last entry',
-				detail: 'Late entry may close after this window.',
-				time: new Date(startDate.getTime() + 180 * 60 * 1000)
-			}
-		];
-	});
-	const guestInviteLink = $derived(reservationId ? inviteUrl(reservationId) : '');
-	const canNativeShare = $derived(
-		typeof navigator !== 'undefined' && typeof navigator.share === 'function'
-	);
 	const isCapacityFull = $derived(
-		reservation ? reservation.acceptedCount >= reservation.capacity : false
+		reservation ? reservation.claimedCount >= reservation.capacity : false
 	);
+	const plusOnesEnabled = $derived((reservation?.plusOnesEnabled ?? true) === true);
 	const isCurrentlyAccepted = $derived(guest?.status === 'accepted');
 	const blocksNewAcceptance = $derived(isCapacityFull && !isCurrentlyAccepted);
 	const publicGuestListVisible = $derived((reservation?.guestListVisibility ?? 'hidden') === 'visible');
@@ -832,9 +767,6 @@
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="flex flex-wrap gap-3">
-				<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href="/create">
-					Create reservation
-				</a>
 				<a class={cn(buttonVariants({ variant: 'outline', size: 'md' }))} href="/">Back to home</a>
 			</CardContent>
 		</Card>
@@ -899,64 +831,6 @@
 							<p class="text-xs uppercase tracking-wide text-muted-foreground">Table</p>
 							<p class="mt-2 text-sm font-medium">{reservation.tableType}</p>
 						</div>
-
-						<div class="grid gap-3 sm:grid-cols-2">
-							<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">What to expect</p>
-								<div class="mt-3 space-y-2">
-									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
-										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
-											<Shirt class="h-3.5 w-3.5" />
-											Dress code
-										</span>
-										<span class="text-xs font-medium text-foreground">
-											{reservation.dressCode || 'Nightlife attire'}
-										</span>
-									</div>
-									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
-										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
-											<Clock3 class="h-3.5 w-3.5" />
-											Arrival window
-										</span>
-										<span class="text-xs font-medium text-foreground">Around start time</span>
-									</div>
-									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
-										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
-											<ShieldCheck class="h-3.5 w-3.5" />
-											Entry policy
-										</span>
-										<span class="text-xs font-medium text-foreground">Valid photo ID</span>
-									</div>
-									<div class="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
-										<span class="inline-flex items-center gap-2 text-xs text-muted-foreground">
-											<Music class="h-3.5 w-3.5" />
-											Music
-										</span>
-										<span class="text-xs font-medium text-foreground">Club set / open format</span>
-									</div>
-								</div>
-							</div>
-
-							<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Night timeline</p>
-								<div class="mt-3 space-y-3">
-									{#each eventTimeline as item (item.id)}
-										<div class="flex gap-3 rounded-xl border border-border/70 bg-background/20 px-3 py-2">
-											<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-pill border border-primary/35 bg-primary/15 text-primary">
-												<Sparkles class="h-3.5 w-3.5" />
-											</span>
-											<div class="min-w-0 flex-1">
-												<div class="flex items-center justify-between gap-2">
-													<p class="text-xs font-semibold text-foreground">{item.label}</p>
-													<p class="text-xs text-primary">{timelineTimeFormatter.format(item.time)}</p>
-												</div>
-												<p class="mt-1 text-xs text-muted-foreground">{item.detail}</p>
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-						</div>
 					</CardContent>
 				</Card>
 
@@ -971,21 +845,6 @@
 						<CardTitle>Join the guestlist</CardTitle>
 					</CardHeader>
 					<CardContent class="space-y-4">
-						<div class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-							<p class="text-xs uppercase tracking-wide text-muted-foreground">Share invite</p>
-							<p class="mt-2 text-xs text-muted-foreground">
-								{canNativeShare
-									? 'On mobile, share opens your device share sheet.'
-									: 'Native sharing is unavailable in this browser, so copy link is used.'}
-							</p>
-							<div class="mt-3 flex flex-wrap gap-2">
-								<Button size="sm" onclick={shareInvite} disabled={sharing}>
-									{sharing ? 'Opening...' : canNativeShare ? 'Share invite' : 'Copy invite link'}
-								</Button>
-								<Button size="sm" variant="outline" onclick={copyInviteLink}>Copy link</Button>
-							</div>
-						</div>
-
 						{#if lowSpotsWarning}
 							<div class="rounded-2xl border border-primary/35 bg-primary/12 px-4 py-3 text-sm text-primary-foreground">
 								Only {spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left.
@@ -1106,24 +965,30 @@
 								</button>
 							</div>
 
-							<div class="space-y-2">
-								<div class="flex items-baseline justify-between gap-2">
-									<Label for="plusOnes">Plus-ones (optional)</Label>
-									<span class="text-xs text-muted-foreground">{parsedPlusOnes.length}/4</span>
+							{#if plusOnesEnabled}
+								<div class="space-y-2">
+									<div class="flex items-baseline justify-between gap-2">
+										<Label for="plusOnes">Plus-ones (optional)</Label>
+										<span class="text-xs text-muted-foreground">{parsedPlusOnes.length}/4</span>
+									</div>
+									<Textarea
+										id="plusOnes"
+										rows={4}
+										bind:value={plusOneLines}
+										placeholder="One name per line, max 4"
+										oninput={clearFormErrors}
+									/>
+									{#if parsedPlusOnes.length > 0}
+										<p class="text-xs text-muted-foreground">
+											Adding: {parsedPlusOnes.join(', ')}
+										</p>
+									{/if}
 								</div>
-								<Textarea
-									id="plusOnes"
-									rows={4}
-									bind:value={plusOneLines}
-									placeholder="One name per line, max 4"
-									oninput={clearFormErrors}
-								/>
-								{#if parsedPlusOnes.length > 0}
-									<p class="text-xs text-muted-foreground">
-										Adding: {parsedPlusOnes.join(', ')}
-									</p>
-								{/if}
-							</div>
+							{:else}
+								<p class="text-xs text-muted-foreground">
+									The host has disabled plus-ones for this invite.
+								</p>
+							{/if}
 
 							{#if errorMessage}
 								<p class="state-panel-error" aria-live="polite">
@@ -1177,21 +1042,9 @@
 			<div class="space-y-4">
 				<CapacityMeter
 					capacity={reservation.capacity}
-					accepted={reservation.acceptedCount}
+					accepted={reservation.claimedCount}
 					declined={reservation.declinedCount}
 				/>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Share link</CardTitle>
-					</CardHeader>
-					<CardContent class="space-y-4 text-sm text-muted-foreground">
-						<div class="rounded-2xl border border-border/75 bg-secondary/20 p-3">
-							<p class="text-xs uppercase tracking-wide text-muted-foreground">Guest link</p>
-							<p class="mt-2 break-all text-xs">{guestInviteLink}</p>
-						</div>
-					</CardContent>
-				</Card>
 
 				<Card>
 					<CardHeader>

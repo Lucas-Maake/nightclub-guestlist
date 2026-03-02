@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { Card, CardContent } from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
 	import type { ReservationPublicRecord } from '$lib/types/models';
 	import { formatReservationDate } from '$lib/utils/format';
 
 	export let reservation: ReservationPublicRecord;
-	export let showBadge = true;
 
 	$: startsAt =
 		reservation.startAt && 'toDate' in reservation.startAt
@@ -40,13 +38,6 @@
 			<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
 				<p class="text-xs uppercase tracking-wide text-muted-foreground">Dress code</p>
 				<p class="mt-1 text-sm">{reservation.dressCode}</p>
-			</div>
-		{/if}
-
-		{#if showBadge}
-			<div class="flex flex-wrap gap-2">
-				<Badge>Premium Access</Badge>
-				<Badge variant="outline">Mobile Ready</Badge>
 			</div>
 		{/if}
 	</CardContent>

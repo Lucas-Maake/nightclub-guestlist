@@ -13,6 +13,7 @@
 		confirmPhoneOtp,
 		currentUser,
 		sendPhoneOtp,
+		signInOrCreateWithEmail,
 		setupRecaptcha
 	} from '$lib/firebase/auth';
 	import { completeAuthModal, authModalState, closeAuthModal } from '$lib/stores/auth-modal';
@@ -29,11 +30,14 @@
 
 	let panelElement = $state<HTMLDivElement | null>(null);
 	let phoneInput = $state<HTMLInputElement | null>(null);
+	let emailInput = $state<HTMLInputElement | null>(null);
 
 	let phone = $state('');
 	let otp = $state('');
+	let email = $state('');
+	let password = $state('');
 	let loading = $state(false);
-	let currentStep = $state<'phone' | 'code'>('phone');
+	let currentStep = $state<'phone' | 'code' | 'email'>('phone');
 	let confirmationResult = $state<ConfirmationResult | null>(null);
 	let errorMessage = $state('');
 	let authIssue = $state<AuthIssue>(null);
@@ -41,7 +45,25 @@
 	let openSnapshot = $state(false);
 	let interactionToken = $state(0);
 
-	const stepLabel = $derived(currentStep === 'phone' ? 'Step 1 of 2' : 'Step 2 of 2');
+	const stepLabel = $derived.by(() => {
+		if (currentStep === 'phone') {
+			return 'Step 1 of 2';
+		}
+
+		if (currentStep === 'code') {
+			return 'Step 2 of 2';
+		}
+
+		return 'Email sign in';
+	});
+
+	const stepDescription = $derived.by(() => {
+		if (currentStep === 'email') {
+			return 'Use your email and password to sign in. A new account is created automatically if needed.';
+		}
+
+		return 'Use your phone number to log in or create an account.';
+	});
 
 	function parseAuthError(error: unknown): { message: string; issue: AuthIssue } {
 		return {
@@ -71,6 +93,8 @@
 	function resetModalState(): void {
 		phone = '';
 		otp = '';
+		email = '';
+		password = '';
 		loading = false;
 		currentStep = 'phone';
 		confirmationResult = null;
@@ -170,6 +194,28 @@
 		trapFocus(event);
 	}
 
+	function switchToPhoneStep(): void {
+		currentStep = 'phone';
+		otp = '';
+		confirmationResult = null;
+		errorMessage = '';
+		authIssue = null;
+		void tick().then(() => {
+			phoneInput?.focus();
+		});
+	}
+
+	function switchToEmailStep(): void {
+		currentStep = 'email';
+		otp = '';
+		confirmationResult = null;
+		errorMessage = '';
+		authIssue = null;
+		void tick().then(() => {
+			emailInput?.focus();
+		});
+	}
+
 	async function handleSendOtp(): Promise<void> {
 		errorMessage = '';
 		authIssue = null;
@@ -261,12 +307,51 @@
 		}
 	}
 
-	function handleEmailPlaceholder(): void {
-		pushToast({
-			title: 'Coming soon',
-			description: 'Email sign-in is not available yet.',
-			variant: 'default'
-		});
+	async function handleEmailSignIn(): Promise<void> {
+		errorMessage = '';
+		authIssue = null;
+
+		const normalizedEmail = email.trim().toLowerCase();
+		const normalizedPassword = password.trim();
+
+		if (!normalizedEmail || !normalizedEmail.includes('@') || !normalizedEmail.includes('.')) {
+			errorMessage = 'Enter a valid email address and try again.';
+			return;
+		}
+
+		if (normalizedPassword.length < 6) {
+			errorMessage = 'Password must be at least 6 characters.';
+			return;
+		}
+
+		loading = true;
+		const token = interactionToken;
+
+		try {
+			const result = await signInOrCreateWithEmail(normalizedEmail, normalizedPassword);
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			pushToast({
+				title: result.mode === 'signup' ? 'Account created' : 'Logged in',
+				description: 'You are signed in and can continue.',
+				variant: 'success'
+			});
+			await finalizeAuthenticated();
+		} catch (error) {
+			if (!$authModalState.open || token !== interactionToken) {
+				return;
+			}
+
+			const parsed = parseAuthError(error);
+			errorMessage = parsed.message;
+			authIssue = parsed.issue;
+		} finally {
+			if ($authModalState.open && token === interactionToken) {
+				loading = false;
+			}
+		}
 	}
 
 	$effect(() => {
@@ -339,9 +424,7 @@
 				<h2 id="auth-modal-title" class="mt-4 text-[2rem] font-semibold leading-none tracking-tight text-[#20242a]">
 					Sign In / Sign Up
 				</h2>
-				<p class="mt-3 text-base leading-snug text-[#666c75]">
-					Use your phone number to log in or create an account.
-				</p>
+				<p class="mt-3 text-base leading-snug text-[#666c75]">{stepDescription}</p>
 				<p class="mt-3 text-xs uppercase tracking-[0.18em] text-[#9ca3af]">{stepLabel}</p>
 			</div>
 
@@ -361,7 +444,7 @@
 						/>
 					</div>
 				</div>
-			{:else}
+			{:else if currentStep === 'code'}
 				<div class="mt-6 space-y-2">
 					<label for="otp" class="text-sm font-medium text-[#414853]">Verification code</label>
 					<input
@@ -374,6 +457,33 @@
 						bind:value={otp}
 					/>
 					<p class="text-xs text-[#777d87]">Enter the 6-digit code that was sent to your phone.</p>
+				</div>
+			{:else}
+				<div class="mt-6 space-y-4">
+					<div class="space-y-2">
+						<label for="email" class="text-sm font-medium text-[#414853]">Email</label>
+						<input
+							bind:this={emailInput}
+							id="email"
+							type="email"
+							inputmode="email"
+							autocomplete="email"
+							placeholder="you@example.com"
+							class="h-14 w-full rounded-xl border border-[#d7dbe2] bg-white px-4 text-base text-[#1f2328] outline-none placeholder:text-[#a6acb5]"
+							bind:value={email}
+						/>
+					</div>
+					<div class="space-y-2">
+						<label for="password" class="text-sm font-medium text-[#414853]">Password</label>
+						<input
+							id="password"
+							type="password"
+							autocomplete="current-password"
+							placeholder="At least 6 characters"
+							class="h-14 w-full rounded-xl border border-[#d7dbe2] bg-white px-4 text-base text-[#1f2328] outline-none placeholder:text-[#a6acb5]"
+							bind:value={password}
+						/>
+					</div>
 				</div>
 			{/if}
 
@@ -420,11 +530,12 @@
 					<button
 						type="button"
 						class="mx-auto block text-base font-semibold text-[#3173e5] transition-colors hover:text-[#1f5ec9]"
-						onclick={handleEmailPlaceholder}
+						onclick={switchToEmailStep}
+						disabled={loading}
 					>
 						Use Email Instead
 					</button>
-				{:else}
+				{:else if currentStep === 'code'}
 					<button
 						type="button"
 						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#23262b] text-lg font-semibold text-white transition-colors hover:bg-[#17191d] disabled:cursor-not-allowed disabled:opacity-50"
@@ -436,15 +547,26 @@
 					<button
 						type="button"
 						class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-[#d7dbe2] bg-transparent text-sm font-medium text-[#39404a] transition-colors hover:bg-[#f5f7fa]"
-						onclick={() => {
-							currentStep = 'phone';
-							otp = '';
-							confirmationResult = null;
-							errorMessage = '';
-							authIssue = null;
-						}}
+						onclick={switchToPhoneStep}
 					>
 						Edit phone
+					</button>
+				{:else}
+					<button
+						type="button"
+						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#23262b] text-lg font-semibold text-white transition-colors hover:bg-[#17191d] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={handleEmailSignIn}
+						disabled={loading || email.trim().length < 3 || password.trim().length < 6}
+					>
+						{loading ? 'Signing in...' : 'Sign In with Email'}
+					</button>
+					<button
+						type="button"
+						class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-[#d7dbe2] bg-transparent text-sm font-medium text-[#39404a] transition-colors hover:bg-[#f5f7fa] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={switchToPhoneStep}
+						disabled={loading}
+					>
+						Use phone instead
 					</button>
 				{/if}
 			</div>

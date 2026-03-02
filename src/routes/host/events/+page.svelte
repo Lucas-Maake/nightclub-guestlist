@@ -210,11 +210,8 @@
 	<section class="mx-auto w-full max-w-5xl space-y-6">
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="space-y-1">
-				<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Host Flow</p>
 				<h1 class="section-title">My Events</h1>
-				<p class="section-lead">Track event status, jump into operations, and share invites quickly.</p>
 			</div>
-			<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href="/create">Create event</a>
 		</div>
 
 		{#if loading}
@@ -263,12 +260,11 @@
 				<CardContent class="p-6">
 					<div class="state-panel-muted">
 						<p class="font-medium text-foreground">No hosted events yet.</p>
-						<p class="mt-1 text-sm">Create your first event to start managing guests and check-in.</p>
+						<p class="mt-1 text-sm">
+							Open an event card and book a table to create your first hosted event.
+						</p>
 						<div class="mt-4 flex flex-wrap gap-2">
 							<a class={cn(buttonVariants({ size: 'sm' }))} href="/event">Browse events</a>
-							<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href="/create">
-								Create event
-							</a>
 						</div>
 					</div>
 				</CardContent>

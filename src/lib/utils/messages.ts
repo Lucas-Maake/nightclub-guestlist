@@ -2,6 +2,12 @@ export type AuthIssue =
 	| 'invalid-app-credential'
 	| 'captcha-check-failed'
 	| 'invalid-phone-number'
+	| 'invalid-email'
+	| 'invalid-credential'
+	| 'user-not-found'
+	| 'email-already-in-use'
+	| 'weak-password'
+	| 'network-request-failed'
 	| 'too-many-requests'
 	| 'billing-not-enabled'
 	| null;
@@ -14,30 +20,68 @@ function messageFromError(error: unknown): string {
 	return error.message;
 }
 
-export function detectAuthIssue(error: unknown): AuthIssue {
+function codeFromError(error: unknown): string {
+	if (
+		error &&
+		typeof error === 'object' &&
+		typeof (error as { code?: unknown }).code === 'string'
+	) {
+		return (error as { code: string }).code;
+	}
+
 	const message = messageFromError(error);
-	if (!message) {
+	const match = message.match(/auth\/[a-z-]+/);
+	return match?.[0] ?? '';
+}
+
+export function detectAuthIssue(error: unknown): AuthIssue {
+	const code = codeFromError(error);
+	if (!code) {
 		return null;
 	}
 
-	if (message.includes('auth/too-many-requests')) {
+	if (code === 'auth/too-many-requests') {
 		return 'too-many-requests';
 	}
 
-	if (message.includes('auth/invalid-app-credential')) {
+	if (code === 'auth/invalid-app-credential') {
 		return 'invalid-app-credential';
 	}
 
-	if (message.includes('auth/captcha-check-failed')) {
+	if (code === 'auth/captcha-check-failed') {
 		return 'captcha-check-failed';
 	}
 
-	if (message.includes('auth/invalid-phone-number')) {
+	if (code === 'auth/invalid-phone-number') {
 		return 'invalid-phone-number';
 	}
 
-	if (message.includes('auth/billing-not-enabled')) {
+	if (code === 'auth/billing-not-enabled') {
 		return 'billing-not-enabled';
+	}
+
+	if (code === 'auth/invalid-email') {
+		return 'invalid-email';
+	}
+
+	if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+		return 'invalid-credential';
+	}
+
+	if (code === 'auth/user-not-found') {
+		return 'user-not-found';
+	}
+
+	if (code === 'auth/email-already-in-use') {
+		return 'email-already-in-use';
+	}
+
+	if (code === 'auth/weak-password') {
+		return 'weak-password';
+	}
+
+	if (code === 'auth/network-request-failed') {
+		return 'network-request-failed';
 	}
 
 	return null;
@@ -69,9 +113,33 @@ export function toUserSafeAuthMessage(error: unknown, productionLike: boolean): 
 			: 'Phone verification is unavailable in this environment right now.';
 	}
 
+	if (issue === 'invalid-email') {
+		return 'Enter a valid email address and try again.';
+	}
+
+	if (issue === 'invalid-credential') {
+		return 'Email or password is incorrect.';
+	}
+
+	if (issue === 'user-not-found') {
+		return 'No account was found for this email.';
+	}
+
+	if (issue === 'email-already-in-use') {
+		return 'This email is already in use. Try signing in instead.';
+	}
+
+	if (issue === 'weak-password') {
+		return 'Password must be at least 6 characters.';
+	}
+
+	if (issue === 'network-request-failed') {
+		return 'Network connection issue. Please try again.';
+	}
+
 	return productionLike
-		? 'We could not complete phone verification. Please try again.'
-		: 'We could not verify this phone number right now. Please try again.';
+		? 'We could not complete sign in right now. Please try again.'
+		: 'We could not sign you in right now. Please try again.';
 }
 
 export function toUserSafeCreateMessage(error: unknown, productionLike: boolean): string {
@@ -181,4 +249,45 @@ export function toUserSafePurchaseMessage(error: unknown): string {
 	}
 
 	return 'Purchase could not be completed. Please try again.';
+}
+
+export function toUserSafeTableRequestMessage(error: unknown): string {
+	const message = messageFromError(error);
+	if (!message) {
+		return 'Table request could not be submitted. Please try again.';
+	}
+
+	const lower = message.toLowerCase();
+
+	if (message.includes('Event was not found') || message.includes('Event is not available for table requests')) {
+		return 'This event is no longer accepting table requests.';
+	}
+
+	if (message.includes('firstName is required') || message.includes('lastName is required')) {
+		return 'Enter your full name to continue.';
+	}
+
+	if (message.includes('email must be a valid email address')) {
+		return 'Enter a valid email address.';
+	}
+
+	if (message.includes('phone must be a valid US phone number')) {
+		return 'Enter a valid US phone number.';
+	}
+
+	if (lower.includes('unauthenticated') || lower.includes('authentication is required')) {
+		return 'Sign in is required to submit a table request.';
+	}
+
+	if (
+		lower.includes('timed out') ||
+		lower.includes('deadline') ||
+		lower.includes('network') ||
+		lower.includes('failed to fetch') ||
+		lower.includes('unavailable')
+	) {
+		return 'Network connection issue. Please try again.';
+	}
+
+	return 'Table request could not be submitted. Please try again.';
 }

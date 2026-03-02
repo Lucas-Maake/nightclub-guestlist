@@ -55,6 +55,7 @@ const seedCatalog = [
 		startAt: '2026-03-07T23:00:00-05:00',
 		endAt: '2026-03-08T04:00:00-05:00',
 		posterHeadline: 'VOID',
+		posterImageUrl: '/images/events/monarch.jpg',
 		posterClass:
 			'bg-[radial-gradient(circle_at_20%_10%,rgba(0,209,255,0.26),transparent_38%),radial-gradient(circle_at_84%_10%,rgba(235,93,255,0.3),transparent_44%),linear-gradient(180deg,#102334_0%,#111118_61%,#08090d_100%)]',
 		description:

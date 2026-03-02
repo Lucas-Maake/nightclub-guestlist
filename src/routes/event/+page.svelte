@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import { Button } from '$lib/components/ui/button';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import { listPublishedEvents, listUserActiveTickets, listUserTicketPurchases } from '$lib/firebase/firestore';
@@ -167,10 +167,6 @@
 		activeTab = 'events';
 	}
 
-	async function handleCreateEvent(): Promise<void> {
-		await goto('/create');
-	}
-
 	async function loadTicketsFor(uid: string): Promise<void> {
 		loadingTickets = true;
 		ticketsError = '';
@@ -303,7 +299,6 @@
 							<p>No published events yet.</p>
 							<div class="mt-3 flex flex-wrap gap-2">
 								<Button size="sm" variant="outline" onclick={loadEvents}>Refresh</Button>
-								<a class={cn(buttonVariants({ size: 'sm' }))} href="/create">Create event</a>
 							</div>
 						</div>
 					{:else}
@@ -318,12 +313,18 @@
 										<img
 											src={event.posterImageUrl}
 											alt={`Poster for ${event.title}`}
-											class="absolute inset-0 h-full w-full object-cover"
+											class="absolute inset-0 h-full w-full object-cover brightness-[0.9] contrast-[1.04] saturate-[0.92]"
 											loading="lazy"
 											decoding="async"
 										/>
 									{/if}
-									<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
+									{#if event.posterImageUrl}
+										<div class="pointer-events-none absolute inset-0 bg-black/20"></div>
+										<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/16 via-black/30 to-black/88"></div>
+										<div class="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-black/45 backdrop-blur-[2px]"></div>
+									{:else}
+										<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/12 to-black/75"></div>
+									{/if}
 									<div class="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
 										<Badge variant={eventCardStateVariant(eventCardState(event))}>
 											{eventCardStateLabel(eventCardState(event))}
@@ -340,7 +341,7 @@
 											</p>
 										</div>
 									</div>
-									<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 text-left">
+									<div class="absolute bottom-4 left-4 right-4 z-10 space-y-2 rounded-xl border border-white/10 bg-black/38 px-3 py-3 text-left shadow-[0_14px_32px_rgba(0,0,0,0.35)] backdrop-blur-[2px]">
 										<p class="text-[0.72rem] uppercase tracking-[0.2em] text-white/75">{event.venue}</p>
 										<p class="text-4xl font-black uppercase leading-[0.9] tracking-tight text-white/88">
 											{event.posterHeadline}
@@ -394,7 +395,6 @@
 							</p>
 							<div class="mt-3 flex flex-wrap gap-2">
 								<Button size="sm" onclick={openEventsTab}>Browse events</Button>
-								<Button size="sm" variant="outline" onclick={handleCreateEvent}>Host an event</Button>
 							</div>
 						</div>
 					{:else}

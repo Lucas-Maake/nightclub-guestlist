@@ -23,6 +23,7 @@ import { httpsCallable } from 'firebase/functions';
 import type { EventCatalogItem, EventTicketTier } from '$lib/data/events';
 import { findEventById, listEventsSortedAsc } from '$lib/data/events';
 import type {
+	CreateTableRequestInput,
 	CreatePurchaseInput,
 	CreateReservationInput,
 	DebugReservationRecord,
@@ -67,6 +68,14 @@ const setGuestListVisibilityCallable = httpsCallable<
 	{ ok: true }
 >(functions, 'setGuestListVisibility');
 
+const setPlusOnesEnabledCallable = httpsCallable<
+	{
+		reservationId: string;
+		enabled: boolean;
+	},
+	{ ok: true }
+>(functions, 'setPlusOnesEnabled');
+
 const toggleGuestCheckInCallable = httpsCallable<
 	{
 		reservationId: string;
@@ -94,6 +103,17 @@ const createTicketPurchaseCallable = httpsCallable<
 	},
 	{ ok: true; purchaseId: string }
 >(functions, 'createTicketPurchase');
+
+const submitTableRequestCallable = httpsCallable<
+	{
+		eventId: string;
+		firstName: string;
+		lastName: string;
+		email: string;
+		phone: string;
+	},
+	{ ok: true; requestId: string }
+>(functions, 'submitTableRequest');
 
 function coerceTimestamp(value: unknown): Timestamp | null {
 	if (value instanceof Timestamp) {
@@ -232,9 +252,16 @@ export function reservationPublicAttendeesCollectionRef(reservationId: string) {
 }
 
 function normalizeReservationPublicRecord(data: ReservationPublicRecord): ReservationPublicRecord {
+	const acceptedCount = Math.max(0, coerceNumber(data.acceptedCount, 0));
+	const claimedCount = Math.max(0, coerceNumber((data as { claimedCount?: unknown }).claimedCount, acceptedCount));
+	const declinedCount = Math.max(0, coerceNumber(data.declinedCount, 0));
 	return {
 		...data,
-		guestListVisibility: data.guestListVisibility === 'visible' ? 'visible' : 'hidden'
+		guestListVisibility: data.guestListVisibility === 'visible' ? 'visible' : 'hidden',
+		acceptedCount,
+		claimedCount,
+		declinedCount,
+		plusOnesEnabled: (data as { plusOnesEnabled?: unknown }).plusOnesEnabled !== false
 	};
 }
 
@@ -281,7 +308,9 @@ export async function createReservation(
 		dressCode: input.dressCode ?? '',
 		debugEnabled: input.debugEnabled,
 		guestListVisibility: 'hidden',
+		plusOnesEnabled: true,
 		acceptedCount: 0,
+		claimedCount: 0,
 		declinedCount: 0,
 		updatedAt: serverTimestamp()
 	});
@@ -753,6 +782,13 @@ export async function setGuestListVisibility(
 	});
 }
 
+export async function setPlusOnesEnabled(reservationId: string, enabled: boolean): Promise<void> {
+	await setPlusOnesEnabledCallable({
+		reservationId,
+		enabled
+	});
+}
+
 export async function toggleGuestCheckIn(
 	reservationId: string,
 	uid: string,
@@ -778,6 +814,19 @@ export async function createTicketPurchase(
 		items: input.items
 	});
 	return { purchaseId: result.data.purchaseId };
+}
+
+export async function submitTableRequest(
+	input: CreateTableRequestInput
+): Promise<{ requestId: string }> {
+	const result = await submitTableRequestCallable({
+		eventId: input.eventId,
+		firstName: input.firstName,
+		lastName: input.lastName,
+		email: input.email,
+		phone: input.phone
+	});
+	return { requestId: result.data.requestId };
 }
 
 export async function listUserTicketPurchases(uid: string): Promise<UserTicketPurchaseRecord[]> {

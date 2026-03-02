@@ -78,7 +78,7 @@
 	});
 </script>
 
-<div bind:this={rootElement} class={cn('relative', className)} {...rest}>
+<div bind:this={rootElement} class={cn('relative', open && 'z-50', className)} {...rest}>
 	<button
 		type="button"
 		class="inline-flex h-9 min-w-[72px] items-center justify-between gap-2 rounded-lg border border-border bg-background/30 px-3 text-sm font-medium text-foreground transition hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
@@ -101,7 +101,7 @@
 	{#if open}
 		<div
 			class={cn(
-				'absolute top-[calc(100%+0.35rem)] z-30 min-w-[72px] overflow-hidden rounded-lg border border-border/80 bg-background/95 shadow-[0_16px_42px_-22px_rgba(0,0,0,0.9)] backdrop-blur',
+				'absolute top-[calc(100%+0.35rem)] z-50 min-w-[72px] overflow-hidden rounded-lg border border-border/80 bg-background/95 shadow-[0_16px_42px_-22px_rgba(0,0,0,0.9)] backdrop-blur',
 				menuAlign === 'left' ? 'left-0' : 'right-0'
 			)}
 		>

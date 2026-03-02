@@ -1,5 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { toUserSafePurchaseMessage, toUserSafeRsvpMessage } from './messages';
+import {
+	toUserSafeAuthMessage,
+	toUserSafePurchaseMessage,
+	toUserSafeRsvpMessage,
+	toUserSafeTableRequestMessage
+} from './messages';
+
+describe('toUserSafeAuthMessage', () => {
+	it('maps invalid email errors', () => {
+		expect(toUserSafeAuthMessage(new Error('auth/invalid-email'), true)).toBe(
+			'Enter a valid email address and try again.'
+		);
+	});
+
+	it('maps invalid credential errors', () => {
+		expect(toUserSafeAuthMessage(new Error('auth/invalid-credential'), true)).toBe(
+			'Email or password is incorrect.'
+		);
+	});
+
+	it('maps weak password errors', () => {
+		expect(toUserSafeAuthMessage(new Error('auth/weak-password'), true)).toBe(
+			'Password must be at least 6 characters.'
+		);
+	});
+
+	it('maps network errors', () => {
+		expect(toUserSafeAuthMessage(new Error('auth/network-request-failed'), true)).toBe(
+			'Network connection issue. Please try again.'
+		);
+	});
+});
 
 describe('toUserSafePurchaseMessage', () => {
 	it('maps missing ticket selection error', () => {
@@ -38,6 +69,28 @@ describe('toUserSafePurchaseMessage', () => {
 		expect(toUserSafePurchaseMessage(new Error('something unexpected'))).toBe(
 			'Purchase could not be completed. Please try again.'
 		);
+	});
+});
+
+describe('toUserSafeTableRequestMessage', () => {
+	it('maps unavailable event errors', () => {
+		expect(
+			toUserSafeTableRequestMessage(
+				new Error('failed-precondition: Event is not available for table requests.')
+			)
+		).toBe('This event is no longer accepting table requests.');
+	});
+
+	it('maps invalid email errors', () => {
+		expect(
+			toUserSafeTableRequestMessage(new Error('invalid-argument: email must be a valid email address.'))
+		).toBe('Enter a valid email address.');
+	});
+
+	it('maps invalid phone errors', () => {
+		expect(
+			toUserSafeTableRequestMessage(new Error('invalid-argument: phone must be a valid US phone number.'))
+		).toBe('Enter a valid US phone number.');
 	});
 });
 

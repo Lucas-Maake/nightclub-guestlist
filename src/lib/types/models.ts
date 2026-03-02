@@ -29,7 +29,9 @@ export interface ReservationPublicRecord {
 	dressCode?: string;
 	debugEnabled: boolean;
 	guestListVisibility: 'hidden' | 'visible';
+	plusOnesEnabled: boolean;
 	acceptedCount: number;
+	claimedCount: number;
 	declinedCount: number;
 	updatedAt: Timestamp;
 }
@@ -149,6 +151,14 @@ export interface CreatePurchaseInput {
 	items: Array<{ tierId: string; quantity: number }>;
 	displayName: string;
 	phone?: string;
+}
+
+export interface CreateTableRequestInput {
+	eventId: string;
+	firstName: string;
+	lastName: string;
+	email: string;
+	phone: string;
 }
 
 export interface UserTicketPurchaseRecord {

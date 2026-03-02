@@ -1,9 +1,11 @@
 import { browser } from '$app/environment';
 import {
 	RecaptchaVerifier,
+	createUserWithEmailAndPassword,
 	onAuthStateChanged,
 	signOut,
 	signInAnonymously,
+	signInWithEmailAndPassword,
 	signInWithPhoneNumber,
 	type ConfirmationResult,
 	type User
@@ -104,6 +106,117 @@ export async function sendPhoneOtp(
 	verifier: RecaptchaVerifier
 ): Promise<ConfirmationResult> {
 	return signInWithPhoneNumber(auth, phoneNumber, verifier);
+}
+
+function normalizeEmail(value: string): string {
+	return value.trim().toLowerCase();
+}
+
+function normalizePassword(value: string): string {
+	return value.trim();
+}
+
+function codeFromAuthError(error: unknown): string {
+	if (
+		error &&
+		typeof error === 'object' &&
+		typeof (error as { code?: unknown }).code === 'string'
+	) {
+		return (error as { code: string }).code;
+	}
+
+	if (error instanceof Error) {
+		const match = error.message.match(/auth\/[a-z-]+/);
+		return match?.[0] ?? '';
+	}
+
+	return '';
+}
+
+function isUserNotFoundError(error: unknown): boolean {
+	return codeFromAuthError(error) === 'auth/user-not-found';
+}
+
+function isInvalidCredentialError(error: unknown): boolean {
+	return codeFromAuthError(error) === 'auth/invalid-credential';
+}
+
+function isEmailAlreadyInUseError(error: unknown): boolean {
+	return codeFromAuthError(error) === 'auth/email-already-in-use';
+}
+
+async function tryCreateAfterUnknownEmail(
+	email: string,
+	password: string,
+	originalError: unknown
+): Promise<{ user: User; mode: 'signup' }> {
+	try {
+		const user = await createEmailAccount(email, password);
+		return { user, mode: 'signup' };
+	} catch (createError) {
+		// Existing account + wrong password can surface as invalid-credential on sign-in.
+		// If create says email is already in use, preserve the original sign-in error.
+		if (isEmailAlreadyInUseError(createError)) {
+			throw originalError;
+		}
+
+		throw createError;
+	}
+}
+
+function hasUnknownAccountError(error: unknown): boolean {
+	if (
+		error &&
+		typeof error === 'object' &&
+		typeof (error as { code?: unknown }).code === 'string' &&
+		(error as { code: string }).code === 'auth/user-not-found'
+	) {
+		return true;
+	}
+
+	return (
+		(error instanceof Error && error.message.includes('auth/user-not-found')) ||
+		isInvalidCredentialError(error)
+	);
+}
+
+export async function signInWithEmailCredentials(email: string, password: string): Promise<User> {
+	const credentials = await signInWithEmailAndPassword(
+		auth,
+		normalizeEmail(email),
+		normalizePassword(password)
+	);
+	return credentials.user;
+}
+
+export async function createEmailAccount(email: string, password: string): Promise<User> {
+	const credentials = await createUserWithEmailAndPassword(
+		auth,
+		normalizeEmail(email),
+		normalizePassword(password)
+	);
+	return credentials.user;
+}
+
+export async function signInOrCreateWithEmail(
+	email: string,
+	password: string
+): Promise<{ user: User; mode: 'signin' | 'signup' }> {
+	try {
+		const user = await signInWithEmailCredentials(email, password);
+		return { user, mode: 'signin' };
+	} catch (error) {
+		if (isUserNotFoundError(error)) {
+			const user = await createEmailAccount(email, password);
+			return { user, mode: 'signup' };
+		}
+
+		if (!hasUnknownAccountError(error)) {
+			throw error;
+		}
+
+		return tryCreateAfterUnknownEmail(email, password, error);
+	}
 }
 
 export async function confirmPhoneOtp(

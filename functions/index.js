@@ -44,6 +44,27 @@ function toOptionalString(value, fieldName, maxLength) {
 	return trimmed;
 }
 
+function toEmailAddress(value, fieldName, maxLength) {
+	const email = toNonEmptyString(value, fieldName, maxLength).toLowerCase();
+	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	if (!emailPattern.test(email)) {
+		throw new HttpsError('invalid-argument', `${fieldName} must be a valid email address.`);
+	}
+	return email;
+}
+
+function toUsPhoneNumber(value, fieldName) {
+	const phone = toNonEmptyString(value, fieldName, 40);
+	const digits = phone.replace(/\D/g, '');
+	if (digits.length === 10) {
+		return `+1${digits}`;
+	}
+	if (digits.length === 11 && digits.startsWith('1')) {
+		return `+${digits}`;
+	}
+	throw new HttpsError('invalid-argument', `${fieldName} must be a valid US phone number.`);
+}
+
 function toStatus(value) {
 	if (value !== 'accepted' && value !== 'declined') {
 		throw new HttpsError('invalid-argument', 'Status must be accepted or declined.');
@@ -68,6 +89,22 @@ function toPlusOnes(value) {
 		const name = toNonEmptyString(entry.name, `plusOnes[${index}].name`, 60);
 		return { name };
 	});
+}
+
+function toStoredPlusOnes(value) {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value
+		.map((entry) => {
+			if (!entry || typeof entry !== 'object') {
+				return null;
+			}
+			const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+			return name ? { name } : null;
+		})
+		.filter(Boolean);
 }
 
 function formatPublicGuestName(name) {
@@ -115,7 +152,7 @@ exports.upsertGuestRsvp = onCall(async (request) => {
 	const status = toStatus(request.data?.status);
 	const displayName = toNonEmptyString(request.data?.displayName, 'displayName', 80);
 	const phone = toOptionalString(request.data?.phone, 'phone', 40);
-	const plusOnes = toPlusOnes(request.data?.plusOnes ?? []);
+	const requestedPlusOnes = toPlusOnes(request.data?.plusOnes ?? []);
 
 	const publicRef = db.collection('reservationPublic').doc(reservationId);
 	const guestRef = db.collection('reservations').doc(reservationId).collection('guests').doc(uid);
@@ -134,14 +171,21 @@ exports.upsertGuestRsvp = onCall(async (request) => {
 		const publicData = publicSnapshot.data() || {};
 		const capacity = Number(publicData.capacity ?? 0);
 		const previousStatus = guestSnapshot.exists ? guestSnapshot.get('status') ?? 'invited' : 'invited';
+		const previousPlusOnes = guestSnapshot.exists ? toStoredPlusOnes(guestSnapshot.get('plusOnes')) : [];
+		const plusOnesEnabled = publicData.plusOnesEnabled !== false;
+		const plusOnes = plusOnesEnabled ? requestedPlusOnes : [];
 		const acceptedCountRaw = Number(publicData.acceptedCount ?? 0);
+		const claimedCountRaw = Number(publicData.claimedCount ?? publicData.acceptedCount ?? 0);
 		const declinedCountRaw = Number(publicData.declinedCount ?? 0);
 
 		let acceptedCount = Number.isFinite(acceptedCountRaw) ? acceptedCountRaw : 0;
+		let claimedCount = Number.isFinite(claimedCountRaw) ? claimedCountRaw : 0;
 		let declinedCount = Number.isFinite(declinedCountRaw) ? declinedCountRaw : 0;
 
-		const isNewAcceptance = previousStatus !== 'accepted' && status === 'accepted';
-		if (isNewAcceptance && acceptedCount >= capacity) {
+		const previousClaimedSeats = previousStatus === 'accepted' ? 1 + previousPlusOnes.length : 0;
+		const nextClaimedSeats = status === 'accepted' ? 1 + plusOnes.length : 0;
+		const claimedSeatDelta = nextClaimedSeats - previousClaimedSeats;
+		if (claimedSeatDelta > 0 && claimedCount + claimedSeatDelta > capacity) {
 			throw new HttpsError('failed-precondition', RSVP_CAPACITY_FULL_ERROR);
 		}
 
@@ -159,6 +203,7 @@ exports.upsertGuestRsvp = onCall(async (request) => {
 		}
 
 		acceptedCount = Math.max(0, acceptedCount);
+		claimedCount = Math.max(0, claimedCount + claimedSeatDelta);
 		declinedCount = Math.max(0, declinedCount);
 
 		const guestPayload = {
@@ -182,6 +227,7 @@ exports.upsertGuestRsvp = onCall(async (request) => {
 		});
 		transaction.update(publicRef, {
 			acceptedCount,
+			claimedCount,
 			declinedCount,
 			updatedAt: FieldValue.serverTimestamp()
 		});
@@ -204,6 +250,26 @@ exports.setGuestListVisibility = onCall(async (request) => {
 		.doc(reservationId)
 		.update({
 			guestListVisibility: visibility,
+			updatedAt: FieldValue.serverTimestamp()
+		});
+
+	return { ok: true };
+});
+
+exports.setPlusOnesEnabled = onCall(async (request) => {
+	const uid = requireAuth(request);
+	const reservationId = toNonEmptyString(request.data?.reservationId, 'reservationId', 120);
+	if (typeof request.data?.enabled !== 'boolean') {
+		throw new HttpsError('invalid-argument', 'enabled must be a boolean.');
+	}
+	const enabled = request.data.enabled;
+
+	await assertHostReservationAccess(reservationId, uid);
+	await db
+		.collection('reservationPublic')
+		.doc(reservationId)
+		.update({
+			plusOnesEnabled: enabled,
 			updatedAt: FieldValue.serverTimestamp()
 		});
 
@@ -380,4 +446,45 @@ exports.createTicketPurchase = onCall(async (request) => {
 	});
 
 	return { ok: true, purchaseId };
+});
+
+exports.submitTableRequest = onCall(async (request) => {
+	const uid = requireAuth(request);
+	const eventId = toNonEmptyString(request.data?.eventId, 'eventId', 120);
+	const firstName = toNonEmptyString(request.data?.firstName, 'firstName', 40);
+	const lastName = toNonEmptyString(request.data?.lastName, 'lastName', 40);
+	const email = toEmailAddress(request.data?.email, 'email', 120);
+	const phone = toUsPhoneNumber(request.data?.phone, 'phone');
+
+	const eventRef = db.collection('events').doc(eventId);
+	const eventSnapshot = await eventRef.get();
+	if (!eventSnapshot.exists) {
+		throw new HttpsError('not-found', 'Event was not found.');
+	}
+
+	const eventData = eventSnapshot.data() || {};
+	if (eventData.published !== true) {
+		throw new HttpsError('failed-precondition', 'Event is not available for table requests.');
+	}
+
+	const requestRef = db.collection('tableRequests').doc();
+	await requestRef.set({
+		requestId: requestRef.id,
+		uid,
+		eventId,
+		eventTitle: eventData.title || '',
+		eventVenue: eventData.venue || '',
+		eventStartAt: eventData.startAt || null,
+		firstName,
+		lastName,
+		fullName: `${firstName} ${lastName}`.trim(),
+		email,
+		phone,
+		status: 'submitted',
+		source: 'event-detail-request',
+		createdAt: FieldValue.serverTimestamp(),
+		updatedAt: FieldValue.serverTimestamp()
+	});
+
+	return { ok: true, requestId: requestRef.id };
 });

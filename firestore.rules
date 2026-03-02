@@ -39,7 +39,9 @@ service cloud.firestore {
 		function validReservationPublicCreate(reservationId) {
 			return request.resource.data.reservationId == reservationId &&
 				request.resource.data.acceptedCount == 0 &&
+				request.resource.data.claimedCount == 0 &&
 				request.resource.data.declinedCount == 0 &&
+				request.resource.data.plusOnesEnabled == true &&
 				request.resource.data.guestListVisibility == 'hidden';
 		}
 
