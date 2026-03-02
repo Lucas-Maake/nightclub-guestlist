@@ -171,6 +171,19 @@ function coerceEventTicketTier(value: unknown): (EventTicketTier & { sortOrder: 
 	};
 }
 
+function normalizeEventPosterUrl(value: string): string {
+	if (!value) {
+		return '';
+	}
+
+	const normalized = value.trim();
+	return normalized
+		.replace('/images/events/den.jpg', '/images/events/den.png')
+		.replace('/images/events/decca.jpg', '/images/events/decca.png')
+		.replace('/images/events/mission.jpg', '/images/events/mission.png')
+		.replace('/images/events/monarch.jpg', '/images/events/monarch.png');
+}
+
 function mapEventFromDoc(
 	eventId: string,
 	value: unknown,
@@ -192,7 +205,7 @@ function mapEventFromDoc(
 	if (!title || !venue) {
 		return null;
 	}
-	const posterImageUrl = coerceString(source.posterImageUrl).trim();
+	const posterImageUrl = normalizeEventPosterUrl(coerceString(source.posterImageUrl));
 
 	return {
 		id: eventId,
