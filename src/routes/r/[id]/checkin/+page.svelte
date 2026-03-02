@@ -18,6 +18,12 @@
 	import type { GuestRecord } from '$lib/types/models';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
+	import {
+		clearPendingGuest,
+		createUndoCheckInToast,
+		isGuestEligibleForCheckIn,
+		resolveGuestCheckInState
+	} from '$lib/utils/checkin';
 	import { cn } from '$lib/utils/cn';
 	import { formatPhone } from '$lib/utils/format';
 
@@ -173,15 +179,11 @@
 	});
 
 	function isCheckedIn(guest: GuestWithId): boolean {
-		if (pending[guest.uid] !== undefined) {
-			return pending[guest.uid];
-		}
-
-		return Boolean(guest.checkedInAt);
+		return resolveGuestCheckInState(guest.uid, guest.checkedInAt, pending);
 	}
 
 	function isEligibleForCheckIn(guest: GuestWithId): boolean {
-		return guest.status === 'accepted';
+		return isGuestEligibleForCheckIn(guest.status);
 	}
 
 	function isPending(guest: GuestWithId): boolean {
@@ -212,36 +214,24 @@
 
 		try {
 			await toggleGuestCheckIn(reservationId, guest.uid, nextValue, $currentUser.uid);
-			const clone = { ...pending };
-			delete clone[guest.uid];
-			pending = clone;
+			pending = clearPendingGuest(pending, guest.uid);
 
 			// Show success toast with undo action (skip for undo actions to avoid loops)
 			if (!isUndo) {
-				const guestName = guest.displayName || 'Guest';
+				const guestName = guest.displayName;
 				pushToast(
-					{
-						title: nextValue ? 'Checked in' : 'Check-in removed',
-						description: guestName,
-						variant: 'success',
-						action: {
-							label: 'Undo',
-							onClick: () => {
-								// Find the updated guest from current state
-								const updatedGuest = guests.find((g) => g.uid === guest.uid);
-								if (updatedGuest) {
-									void handleToggleCheckIn(updatedGuest, true);
-								}
-							}
+					createUndoCheckInToast(nextValue, guestName, () => {
+						// Find the updated guest from current state
+						const updatedGuest = guests.find((g) => g.uid === guest.uid);
+						if (updatedGuest) {
+							void handleToggleCheckIn(updatedGuest, true);
 						}
-					},
+					}),
 					5000
 				);
 			}
 		} catch {
-			const clone = { ...pending };
-			delete clone[guest.uid];
-			pending = clone;
+			pending = clearPendingGuest(pending, guest.uid);
 
 			pushToast({
 				title: 'Check-in failed',

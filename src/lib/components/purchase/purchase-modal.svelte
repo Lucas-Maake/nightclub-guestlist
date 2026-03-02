@@ -7,6 +7,7 @@
 	import { createTicketPurchase } from '$lib/firebase/firestore';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import type { EventCatalogItem } from '$lib/data/events';
+	import { toUserSafePurchaseMessage } from '$lib/utils/messages';
 
 	type Props = {
 		open: boolean;
@@ -95,8 +96,8 @@
 			setTimeout(() => {
 				onSuccess(result.purchaseId);
 			}, 1500);
-		} catch {
-			errorMessage = 'Purchase could not be completed. Please try again.';
+		} catch (error) {
+			errorMessage = toUserSafePurchaseMessage(error);
 			processing = false;
 		}
 	}

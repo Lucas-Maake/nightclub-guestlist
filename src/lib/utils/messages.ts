@@ -138,3 +138,47 @@ export function toUserSafeRsvpMessage(error: unknown, productionLike: boolean): 
 
 	return 'We could not save your RSVP right now. Please try again.';
 }
+
+export function toUserSafePurchaseMessage(error: unknown): string {
+	const message = messageFromError(error);
+	if (!message) {
+		return 'Purchase could not be completed. Please try again.';
+	}
+
+	if (message.includes('At least one ticket item is required')) {
+		return 'Select at least one ticket before checkout.';
+	}
+
+	if (message.includes('Too many ticket types in one order')) {
+		return 'Too many ticket types selected. Please reduce your order and try again.';
+	}
+
+	if (message.includes('Event was not found') || message.includes('Event is not available for purchase')) {
+		return 'This event is no longer available for ticket purchases.';
+	}
+
+	if (message.includes('Ticket tier') && message.includes('not found')) {
+		return 'One or more selected tickets are no longer available. Refresh and try again.';
+	}
+
+	if (message.includes('Exceeds max quantity')) {
+		return 'Selected quantity exceeds the ticket limit for this tier.';
+	}
+
+	const lower = message.toLowerCase();
+	if (lower.includes('unauthenticated') || lower.includes('authentication is required')) {
+		return 'Sign in is required to complete your purchase.';
+	}
+
+	if (
+		lower.includes('timed out') ||
+		lower.includes('deadline') ||
+		lower.includes('network') ||
+		lower.includes('failed to fetch') ||
+		lower.includes('unavailable')
+	) {
+		return 'Network connection issue. Please try again.';
+	}
+
+	return 'Purchase could not be completed. Please try again.';
+}
