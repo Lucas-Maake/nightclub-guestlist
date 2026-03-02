@@ -3,12 +3,16 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
 const PROJECT_ID = 'nightclub-guestlist';
-const FUNCTIONS_BASE = `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`;
-const FIRESTORE_EMULATOR = `http://127.0.0.1:8080`;
+const AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+const FIRESTORE_EMULATOR_HOST_ADDR = '127.0.0.1:8080';
+const FUNCTIONS_EMULATOR_HOST = '127.0.0.1:5001';
 
 // Must be set before initializeApp is called
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = AUTH_EMULATOR_HOST;
+process.env.FIRESTORE_EMULATOR_HOST = FIRESTORE_EMULATOR_HOST_ADDR;
+
+const FUNCTIONS_BASE = `http://${FUNCTIONS_EMULATOR_HOST}/${PROJECT_ID}/us-central1`;
+const FIRESTORE_EMULATOR = `http://${FIRESTORE_EMULATOR_HOST_ADDR}`;
 
 let _app;
 
@@ -40,7 +44,7 @@ export async function clearFirestore() {
 export async function getIdToken(uid) {
   const customToken = await getAuth(adminApp()).createCustomToken(uid);
   const res = await fetch(
-    `http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=test`,
+    `http://${AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=test`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
