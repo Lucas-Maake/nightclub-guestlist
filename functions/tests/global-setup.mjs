@@ -35,9 +35,9 @@ export async function setup() {
 
   startedByUs = true;
 
-  await new Promise((resolve, reject) => {
+  await new Promise((resolvePromise, rejectPromise) => {
     const timeout = setTimeout(() => {
-      reject(new Error('Firebase emulators did not start within 90s'));
+      rejectPromise(new Error('Firebase emulators did not start within 90s'));
     }, 90000);
 
     emulatorProcess.stdout.on('data', (data) => {
@@ -45,7 +45,7 @@ export async function setup() {
       process.stdout.write(`[emulator] ${text}`);
       if (text.includes('All emulators ready!')) {
         clearTimeout(timeout);
-        resolve();
+        resolvePromise();
       }
     });
 
@@ -55,13 +55,13 @@ export async function setup() {
 
     emulatorProcess.on('error', (err) => {
       clearTimeout(timeout);
-      reject(err);
+      rejectPromise(err);
     });
 
     emulatorProcess.on('exit', (code) => {
       if (code !== 0 && code !== null) {
         clearTimeout(timeout);
-        reject(new Error(`Emulator process exited with code ${code}`));
+        rejectPromise(new Error(`Emulator process exited with code ${code}`));
       }
     });
   });
