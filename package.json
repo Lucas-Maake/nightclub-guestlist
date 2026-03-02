@@ -15,6 +15,7 @@
 		"test:watch": "vitest",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
+		"test:functions": "vitest run --config functions/vitest.config.mjs --reporter verbose",
 		"firebase:emulators": "firebase emulators:start --only auth,firestore,functions",
 		"firebase:deploy": "firebase deploy --only firestore:rules,firestore:indexes,functions",
 		"firebase:seed:events": "node scripts/seed-events.mjs"
