@@ -73,6 +73,12 @@ export async function teardown() {
   if (startedByUs && emulatorProcess) {
     console.log('[test] Stopping emulators...');
     emulatorProcess.kill('SIGTERM');
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => {
+      const timeout = setTimeout(r, 5000);
+      emulatorProcess.once('exit', () => {
+        clearTimeout(timeout);
+        r();
+      });
+    });
   }
 }

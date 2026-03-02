@@ -68,7 +68,13 @@ export async function callFunction(name, data, idToken) {
     body: JSON.stringify({ data })
   });
 
-  const json = await res.json();
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(`callFunction(${name}) returned non-JSON HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
 
   if (json.error) {
     const err = new Error(json.error.message);
