@@ -9,13 +9,7 @@
 	import type { EventCatalogItem } from '$lib/data/events';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import type { UserActiveTicketRecord, UserTicketPurchaseRecord } from '$lib/types/models';
-	import { animate as motionAnimate, stagger, type DOMKeyframesDefinition, type AnimationOptions } from 'motion';
-
-	function animate(el: Element | Element[] | NodeListOf<Element> | string, kf: DOMKeyframesDefinition, opts?: AnimationOptions) {
-		return (motionAnimate as (el: Element | Element[] | NodeListOf<Element> | string, kf: DOMKeyframesDefinition, opts?: AnimationOptions) => void)(el, kf, opts);
-	}
-
-	type MainView = 'events' | 'tickets';
+type MainView = 'events' | 'tickets';
 	type GenreFilter = 'all' | 'techno' | 'house' | 'dnb' | 'trance';
 
 	const shortDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
@@ -191,15 +185,7 @@
 		void loadTicketsFor(uid);
 	});
 
-	$effect(() => {
-		if (mainView !== 'events' || loadingEvents || filteredEvents.length === 0) return;
 
-		requestAnimationFrame(() => {
-			const cards = document.querySelectorAll('[data-event-card]');
-			if (cards.length === 0) return;
-			animate(cards, { opacity: [0, 1], y: [20, 0] }, { duration: 0.35, delay: stagger(0.07), ease: [0.22, 1, 0.36, 1] });
-		});
-	});
 </script>
 
 <div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
@@ -291,6 +277,7 @@
 		</section>
 
 		{#if mainView === 'events'}
+			<div in:fly={{ y: 16, duration: 300, easing: cubicOut }} class="flex flex-col gap-6">
 			{#if loadingEvents}
 				<section class="mx-5 grid overflow-hidden rounded-2xl border border-zinc-800 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="min-h-[190px] skeleton-shimmer"></div>
@@ -308,7 +295,8 @@
 					</div>
 				</section>
 			{:else if !eventsError && featuredEvent}
-				<section in:fly={{ y: 14, duration: 320, easing: cubicOut }} class="mx-5 grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+				{#key genreFilter}
+				<section in:fly={{ y: 12, duration: 260, easing: cubicOut }} class="mx-5 grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="h-[220px] lg:h-auto lg:min-h-full">
 						{#if eventPosterImage(featuredEvent)}
 							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
@@ -326,6 +314,7 @@
 						</div>
 					</div>
 				</section>
+				{/key}
 			{/if}
 
 			<section class="grid gap-4 px-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12">
@@ -351,9 +340,10 @@
 							{/if}
 						</section>
 					{:else}
-						<div class="grid gap-4 sm:grid-cols-2">
+						{#key genreFilter}
+						<div in:fly={{ y: 12, duration: 260, easing: cubicOut }} class="grid gap-4 sm:grid-cols-2">
 							{#each filteredEvents.slice(1) as event, index (event.id)}
-								<a href={`/event/${event.id}`} data-event-card class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 opacity-0 transition hover:-translate-y-0.5 hover:border-blue-500/60">
+								<a href={`/event/${event.id}`} class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-0.5 hover:border-blue-500/60">
 									<div class="absolute inset-0">
 										{#if eventPosterImage(event)}
 											<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Poster for ${event.title}`} loading="lazy" decoding="async" />
@@ -376,6 +366,7 @@
 								</a>
 							{/each}
 						</div>
+						{/key}
 					{/if}
 				</div>
 
@@ -417,6 +408,7 @@
 					{/if}
 				</aside>
 			</section>
+			</div>
 		{:else}
 			<section in:fly={{ y: 16, duration: 300, easing: cubicOut }} class="px-5 sm:px-8 lg:px-12">
 				{#if !$currentUser}
