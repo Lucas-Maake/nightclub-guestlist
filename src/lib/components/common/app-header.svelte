@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
+	import { Menu, X } from 'lucide-svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { authReady, currentUser, signOutCurrentUser } from '$lib/firebase/auth';
 	import { openAuthModal } from '$lib/stores/auth-modal';
@@ -11,13 +12,16 @@
 	};
 
 	let { compact = false }: Props = $props();
+	let mobileMenuOpen = $state(false);
 
 	async function handleSignOut(): Promise<void> {
+		mobileMenuOpen = false;
 		await signOutCurrentUser();
 		await goto('/');
 	}
 
 	async function handleSignIn(): Promise<void> {
+		mobileMenuOpen = false;
 		const returnTo = `${$page.url.pathname}${$page.url.search}`;
 		await openAuthModal({ returnTo, source: 'app-header' });
 	}
@@ -30,7 +34,8 @@
 			<span class="text-sm font-black uppercase tracking-widest text-white" style="font-family: 'Manrope', sans-serif;">Apollo HQ</span>
 		</a>
 
-		<nav class="flex items-center gap-6">
+		<!-- Desktop nav -->
+		<nav class="hidden items-center gap-6 sm:flex">
 			{#if $authReady}
 				<div in:fade={{ duration: 300 }} class="flex items-center gap-6">
 					<a href="/event" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">Browse</a>
@@ -43,5 +48,41 @@
 				</div>
 			{/if}
 		</nav>
+
+		<!-- Mobile hamburger -->
+		{#if $authReady}
+			<div class="relative sm:hidden">
+				<button
+					type="button"
+					class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:text-white"
+					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+					aria-label="Toggle menu"
+				>
+					{#if mobileMenuOpen}
+						<X class="h-5 w-5" />
+					{:else}
+						<Menu class="h-5 w-5" />
+					{/if}
+				</button>
+
+				{#if mobileMenuOpen}
+					<div
+						in:fly={{ y: -6, duration: 180 }}
+						class="absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl backdrop-blur-xl"
+					>
+						<nav class="flex flex-col p-1.5">
+							<a href="/event" onclick={() => (mobileMenuOpen = false)} class="rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-200 no-underline transition hover:bg-white/[0.07] hover:text-white">Browse</a>
+							<a href="/host/events" onclick={() => (mobileMenuOpen = false)} class="rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-200 no-underline transition hover:bg-white/[0.07] hover:text-white">My Events</a>
+							<div class="my-1 h-px bg-white/[0.06]"></div>
+							{#if $currentUser}
+								<button type="button" class="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-400 transition hover:bg-white/[0.07] hover:text-zinc-200" onclick={handleSignOut}>Sign out</button>
+							{:else}
+								<button type="button" class="rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-white transition hover:bg-white/[0.07]" onclick={handleSignIn}>Sign in</button>
+							{/if}
+						</nav>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</div>
 </header>

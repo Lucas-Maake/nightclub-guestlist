@@ -615,16 +615,21 @@ $effect(() => {
 <main class="app-shell py-6 sm:py-10">
 	{#if shareReservationId}
 		<section class="mx-auto w-full max-w-[1440px] space-y-6 text-white">
+			{#if !shareLoading && shareReservation}
 			<div class="flex items-center gap-2 bg-[linear-gradient(90deg,rgba(77,171,254,0.12)_0%,rgba(5,5,7,0)_100%)] px-5 py-3 sm:px-8 lg:px-10">
 				<span class="h-2.5 w-2.5 rounded-full bg-sky-400"></span>
 				<p class="text-xs font-bold uppercase tracking-[0.2em] text-sky-400" style="font-family: 'Space Mono', monospace;">
 					Invite is live
 				</p>
 			</div>
+			{/if}
 
 			{#if shareLoading}
-				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-10 text-sm text-zinc-400">
-					Loading invite preview...
+				<div class="flex min-h-[60vh] items-center justify-center">
+					<div class="relative h-10 w-10">
+						<div class="absolute inset-0 rounded-full border-2 border-zinc-800"></div>
+						<div class="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-400" style="animation-duration: 700ms;"></div>
+					</div>
 				</div>
 			{:else if shareReservation}
 				<div class="space-y-1 px-5 sm:px-8 lg:px-10">
@@ -638,46 +643,38 @@ $effect(() => {
 				</div>
 
 				<div class="px-5 sm:px-8 lg:px-10">
-					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-7">
-						<div class="grid gap-4 md:grid-cols-3">
-							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
-								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Starts</p>
-								<div class="flex items-center gap-2.5">
-									<Calendar class="h-4 w-4 text-blue-400" />
-									<p class="text-sm font-semibold text-white">{shareStartLine}</p>
-								</div>
-							</div>
-							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
-								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Table</p>
-								<div class="flex items-center gap-2.5">
-									<LayoutGrid class="h-4 w-4 text-cyan-400" />
-									<p class="text-sm font-semibold text-white">{shareReservation.tableType}</p>
-								</div>
-							</div>
-							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
-								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Capacity</p>
-								<div class="flex items-center gap-2.5">
-									<Users class="h-4 w-4 text-sky-400" />
-									<p class="text-sm font-semibold text-white">{shareReservation.capacity} guests</p>
-								</div>
-							</div>
+					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] divide-y divide-zinc-800/70">
+						<div class="flex items-center gap-3.5 px-5 py-3.5">
+							<Calendar class="h-4 w-4 shrink-0 text-blue-400" />
+							<span class="min-w-[72px] text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Starts</span>
+							<span class="text-sm font-semibold text-white">{shareStartLine}</span>
 						</div>
-						<div class="mt-4 space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
-							<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Dress code</p>
-							<div class="flex items-center gap-2.5">
-								<Shirt class="h-4 w-4 text-pink-400" />
-								<p class="text-sm font-semibold text-white">{shareDressCodeLine}</p>
-							</div>
+						<div class="flex items-center gap-3.5 px-5 py-3.5">
+							<LayoutGrid class="h-4 w-4 shrink-0 text-cyan-400" />
+							<span class="min-w-[72px] text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Table</span>
+							<span class="text-sm font-semibold text-white">{shareReservation.tableType}</span>
+						</div>
+						<div class="flex items-center gap-3.5 px-5 py-3.5">
+							<Users class="h-4 w-4 shrink-0 text-sky-400" />
+							<span class="min-w-[72px] text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Capacity</span>
+							<span class="text-sm font-semibold text-white">{shareReservation.capacity} guests</span>
+						</div>
+						<div class="flex items-center gap-3.5 px-5 py-3.5">
+							<Shirt class="h-4 w-4 shrink-0 text-pink-400" />
+							<span class="min-w-[72px] text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Dress</span>
+							<span class="text-sm font-semibold text-white">{shareDressCodeLine}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="grid gap-6 px-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-10">
-					<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-7">
-						<h2 class="text-2xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Share links</h2>
-						<p class="mt-1 text-sm text-zinc-400">Send this link to your guests.</p>
+					<section class="rounded-2xl border border-zinc-800 bg-[#14141A]">
+						<div class="px-6 pt-6 pb-5">
+							<h2 class="text-2xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Share links</h2>
+							<p class="mt-1 text-sm text-zinc-400">Send this link to your guests.</p>
+						</div>
 
-						<div class="mt-4 space-y-4 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+						<div class="border-t border-zinc-800 px-6 py-4 space-y-3">
 							<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Guest invite</p>
 							<p class="break-all text-sm text-white" style="font-family: 'Space Mono', monospace;">{invite}</p>
 							<button
@@ -691,7 +688,7 @@ $effect(() => {
 						</div>
 
 						{#if debugInvite}
-							<div class="mt-4 space-y-3 rounded-xl border border-blue-500/35 bg-blue-500/10 px-5 py-4">
+							<div class="border-t border-blue-500/20 bg-blue-500/5 px-6 py-4 space-y-3 rounded-b-2xl">
 								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-300" style="font-family: 'Space Mono', monospace;">Test access</p>
 								<p class="break-all text-xs text-zinc-200" style="font-family: 'Space Mono', monospace;">{debugInvite}</p>
 								<button

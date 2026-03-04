@@ -25,11 +25,11 @@
 				<div class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2">
 					<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400"></span>
 					<span class="text-[11px] uppercase tracking-[0.12em] text-blue-300" style="font-family: 'Space Mono', monospace;">
-						the best nightlife in america
+						The Most Trusted Nightlife Gateway
 					</span>
 				</div>
 
-				<h1 class="mt-8 max-w-[820px] text-6xl font-black uppercase leading-none tracking-tight text-white sm:text-7xl lg:text-8xl" style="font-family: 'Manrope', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+				<h1 class="mt-8 max-w-[820px] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-6xl lg:text-8xl" style="font-family: 'Manrope', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
 					Your night starts here
 				</h1>
 

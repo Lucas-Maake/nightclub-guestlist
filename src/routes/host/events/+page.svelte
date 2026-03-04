@@ -205,12 +205,6 @@
 				<h1 class="font-display text-[28px] font-extrabold uppercase tracking-[0.05em] text-white">
 					MY EVENTS
 				</h1>
-				<a
-					href="/event"
-					class="font-display inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_16px_rgba(77,171,254,0.35)]"
-				>
-					Browse events
-				</a>
 			</div>
 
 			{#if loading}
@@ -252,12 +246,6 @@
 					<p class="mt-2 text-sm text-zinc-400">
 						Open an event card and book a table to create your first hosted event.
 					</p>
-					<a
-						href="/event"
-						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(77,171,254,0.35)]"
-					>
-						Browse events
-					</a>
 				</div>
 			{:else}
 				<section class="space-y-6">

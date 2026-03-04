@@ -45,6 +45,7 @@
 		email: '',
 		phone: ''
 	});
+	let prefilled = $state(false);
 
 	const tableRequestClosed = $derived.by(() => {
 		if (!eventRecord) {
@@ -218,9 +219,11 @@
 	});
 
 	$effect(() => {
-		if (!$currentUser) {
+		if (!$currentUser || prefilled) {
 			return;
 		}
+
+		prefilled = true;
 
 		if (!form.email && $currentUser.email) {
 			form.email = $currentUser.email;
@@ -255,10 +258,29 @@
 			<section class="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
 				<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
 					<div class="order-2 space-y-5 lg:order-1">
-						<div class="h-40 rounded-2xl border border-zinc-800 skeleton-shimmer"></div>
-						<div class="h-28 rounded-2xl border border-zinc-800 skeleton-shimmer"></div>
+						<div class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
+							<div class="h-8 w-48 rounded-lg skeleton-shimmer"></div>
+							<div class="mt-3 h-4 w-full rounded skeleton-shimmer"></div>
+							<div class="mt-2 h-4 w-5/6 rounded skeleton-shimmer"></div>
+							<div class="mt-2 h-4 w-2/3 rounded skeleton-shimmer"></div>
+							<div class="mt-2 h-3.5 w-1/2 rounded skeleton-shimmer"></div>
+						</div>
+						<div class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4">
+							<div class="h-3 w-28 rounded skeleton-shimmer"></div>
+							<div class="mt-3 h-3.5 w-3/4 rounded skeleton-shimmer"></div>
+							<div class="mt-2 h-3.5 w-2/3 rounded skeleton-shimmer"></div>
+							<div class="mt-2 h-3.5 w-1/2 rounded skeleton-shimmer"></div>
+						</div>
 					</div>
-					<div class="order-1 h-[420px] rounded-2xl border border-zinc-800 skeleton-shimmer lg:order-2"></div>
+					<div class="order-1 rounded-2xl border border-zinc-800 bg-zinc-900/88 p-4 sm:p-5 lg:order-2">
+						{#each [1, 2, 3, 4] as _}
+							<div class="mb-4 space-y-2">
+								<div class="h-3.5 w-20 rounded skeleton-shimmer"></div>
+								<div class="h-12 w-full rounded-lg skeleton-shimmer"></div>
+							</div>
+						{/each}
+						<div class="mt-2 h-11 w-full rounded-lg skeleton-shimmer"></div>
+					</div>
 				</div>
 			</section>
 		{:else if !eventRecord}
@@ -423,21 +445,10 @@
 		{/if}
 	</main>
 
-	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
-		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Apollo HQ</p>
-					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
-				</div>
-			</div>
-			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">Browse Events</a>
-			</div>
-			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-				<span>(c) 2026 Apollo HQ. All rights reserved.</span>
-			</div>
+	<footer class="relative z-10 w-full border-t border-zinc-800/50 bg-[#0e0e12]">
+		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+			<span class="text-xs text-zinc-500">(c) 2026 Apollo HQ</span>
+			<span class="text-xs text-zinc-600">All rights reserved.</span>
 		</div>
 	</footer>
 </div>

@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
+	import { Calendar, ChevronDown, ChevronRight, MapPin, Sparkles, Ticket } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import { listPublishedEvents, listUserActiveTickets, listUserTicketPurchases } from '$lib/firebase/firestore';
@@ -43,6 +43,15 @@
 
 	let mainView = $state<MainView>('events');
 	let genreFilter = $state<GenreFilter>('all');
+	let genreDropdownOpen = $state(false);
+
+	const genreLabels: Record<GenreFilter, string> = {
+		all: 'All Events',
+		techno: 'Techno',
+		house: 'House',
+		dnb: 'DnB',
+		trance: 'Trance'
+	};
 	let events = $state<EventCatalogItem[]>([]);
 	let loadingEvents = $state(true);
 	let eventsError = $state('');
@@ -226,7 +235,7 @@
 				<h1 in:fly={{ y: 12, duration: 300, delay: 60, easing: cubicOut }} class="text-[28px] font-extrabold uppercase leading-tight tracking-[-0.03em] sm:text-[36px] lg:text-[44px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
 				<p in:fly={{ y: 12, duration: 300, delay: 110, easing: cubicOut }} class="max-w-[560px] text-sm text-zinc-400">Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.</p>
 
-				<div in:fly={{ y: 12, duration: 300, delay: 160, easing: cubicOut }} class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
+				<div in:fly={{ y: 12, duration: 300, delay: 160, easing: cubicOut }} class="flex w-full items-center gap-2">
 					<div class="relative inline-flex shrink-0 rounded-full border border-white/[0.1] bg-white/[0.06] p-1 backdrop-blur-xl" role="tablist" aria-label="Main view">
 						<div
 							class="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -242,13 +251,40 @@
 							<span>Tickets</span>
 						</button>
 					</div>
+
 					{#if mainView === 'events'}
-						<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
-						{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter, i}
-							<button in:fly={{ y: 8, duration: 220, delay: 160 + i * 40, easing: cubicOut }} type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-sky-400/50 bg-sky-400/10 text-sky-400' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
-								{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+						<!-- Mobile: dropdown -->
+						<div class="relative sm:hidden">
+							<button
+								type="button"
+								class={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter !== 'all' ? 'border-sky-400/50 bg-sky-400/10 text-sky-400' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300'}`}
+								onclick={() => (genreDropdownOpen = !genreDropdownOpen)}
+							>
+								{genreFilter === 'all' ? 'All' : genreLabels[genreFilter]}
+								<ChevronDown class="h-3 w-3" />
 							</button>
-						{/each}
+							{#if genreDropdownOpen}
+								<div class="absolute left-0 top-10 z-30 min-w-[130px] overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl">
+									{#each Object.entries(genreLabels) as [value, label]}
+										<button
+											type="button"
+											class={`flex w-full items-center px-3 py-2 text-xs font-semibold uppercase tracking-wide transition hover:bg-zinc-800 ${genreFilter === value ? 'text-sky-400' : 'text-zinc-300'}`}
+											onclick={() => { genreFilter = value as GenreFilter; genreDropdownOpen = false; }}
+										>{label}</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+
+						<!-- Desktop: pills -->
+						<div class="scrollbar-none hidden items-center gap-2 overflow-x-auto sm:flex">
+							<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
+							{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter, i}
+								<button in:fly={{ y: 8, duration: 220, delay: 160 + i * 40, easing: cubicOut }} type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-sky-400/50 bg-sky-400/10 text-sky-400' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
+									{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+								</button>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			{/if}
@@ -282,9 +318,8 @@
 						<p class="text-[11px] uppercase tracking-wider text-blue-300" style="font-family: 'Space Mono', monospace;">Featured event</p>
 						<h2 class="text-2xl font-bold leading-tight sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">{featuredEvent.title}</h2>
 						<p class="text-sm leading-6 text-zinc-300">{featuredEvent.description}</p>
-						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><Clock3 class="h-3.5 w-3.5" />{eventTimeLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
+						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><Calendar class="h-3.5 w-3.5" />{eventDateLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
 						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><MapPin class="h-3.5 w-3.5" />{featuredEvent.venue}</p>
-						<p class="text-xs text-zinc-400">{eventDateLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
 						<div class="flex flex-wrap gap-2 pt-1">
 							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(77,171,254,0.35)] transition duration-200 hover:shadow-[0_0_40px_rgba(77,171,254,0.65)] hover:scale-[1.03]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
 							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition duration-200 hover:border-blue-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(77,171,254,0.35)] hover:scale-[1.03]">Request Table</a>

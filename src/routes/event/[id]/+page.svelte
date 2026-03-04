@@ -346,11 +346,12 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 		<AppHeader />
 
 		{#if loadingEvent}
-			<section class="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12">
-				<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
-					<p class="font-semibold text-white">Loading event...</p>
+			<div class="flex flex-1 items-center justify-center">
+				<div class="relative h-10 w-10">
+					<div class="absolute inset-0 rounded-full border-2 border-zinc-800"></div>
+					<div class="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-400" style="animation-duration: 700ms;"></div>
 				</div>
-			</section>
+			</div>
 		{:else if !eventRecord}
 			<section class="mx-auto w-full max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12">
 				<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
@@ -758,21 +759,10 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 		{/if}
 	</main>
 
-	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
-		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Apollo HQ</p>
-					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
-				</div>
-			</div>
-			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">Browse Events</a>
-			</div>
-			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-				<span>(c) 2026 Apollo HQ. All rights reserved.</span>
-			</div>
+	<footer class="relative z-10 w-full border-t border-zinc-800/50 bg-[#0e0e12]">
+		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+			<span class="text-xs text-zinc-500">(c) 2026 Apollo HQ</span>
+			<span class="text-xs text-zinc-600">All rights reserved.</span>
 		</div>
 	</footer>
 </div>
