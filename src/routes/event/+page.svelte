@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
@@ -166,11 +165,6 @@
 	onMount(async () => {
 		await waitForAuthReady();
 		await loadEvents();
-	});
-
-	$effect(() => {
-		const tab = $page.url.searchParams.get('tab');
-		mainView = tab === 'tickets' ? 'tickets' : 'events';
 	});
 
 	$effect(() => {
@@ -439,7 +433,8 @@
 
 	</main>
 
-	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
+	<div class="pointer-events-none h-16 bg-gradient-to-b from-transparent to-[#0e0e12]"></div>
+	<footer class="relative z-10 w-full border-t border-zinc-800/50 bg-[#0e0e12]">
 		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
 			<span class="text-xs text-zinc-500">(c) 2026 Apollo HQ</span>
 			<span class="text-xs text-zinc-600">All rights reserved.</span>
