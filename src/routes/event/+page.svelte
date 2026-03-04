@@ -232,13 +232,6 @@
 						<span>Tickets</span>
 					</button>
 				</div>
-				<a
-					href="/host/events"
-					class="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/80 px-4 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white"
-					style="font-family: 'Space Grotesk', sans-serif;"
-				>
-					My events
-				</a>
 				{#if mainView === 'events'}
 					<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
 					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter}
