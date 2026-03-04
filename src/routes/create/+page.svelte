@@ -1,32 +1,28 @@
 <script lang="ts">
-import { afterNavigate, goto } from '$app/navigation';
-import { page } from '$app/stores';
-import { onDestroy, onMount } from 'svelte';
-import { Calendar, LayoutGrid, Minus, Plus, QrCode as QrCodeIcon, Shirt, Users } from 'lucide-svelte';
-import QRCode from 'qrcode';
-import AppHeader from '$lib/components/common/app-header.svelte';
+	import { afterNavigate, goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onDestroy, onMount } from 'svelte';
+	import {
+		Calendar,
+		LayoutGrid,
+		Minus,
+		Plus,
+		QrCode as QrCodeIcon,
+		Shirt,
+		Users
+	} from 'lucide-svelte';
+	import QRCode from 'qrcode';
+	import AppHeader from '$lib/components/common/app-header.svelte';
 	import { findEventById } from '$lib/data/events';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Input, Label } from '$lib/components/ui/input';
-	import { Switch } from '$lib/components/ui/switch';
-	import { TextSelect } from '$lib/components/ui/text-select';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import { createReservationSchema } from '$lib/schemas/reservation';
 	import { createReservation, getPublishedEventById, getReservationPublic } from '$lib/firebase/firestore';
-	import {
-		getCurrentUser,
-		signInAnonymouslyForDebug,
-		waitForAuthReady,
-		currentUser
-	} from '$lib/firebase/auth';
+	import { getCurrentUser, signInAnonymouslyForDebug, waitForAuthReady } from '$lib/firebase/auth';
 	import type { CreateReservationInput, ReservationPublicRecord } from '$lib/types/models';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
 	import { toUserSafeCreateMessage } from '$lib/utils/messages';
 	import { canUseDebugMode, isProductionLikeRuntime } from '$lib/utils/security';
 	import { inviteDebugUrl, inviteUrl } from '$lib/utils/links';
-	import { cn } from '$lib/utils/cn';
 
 type FormState = CreateReservationInput;
 type StartPreset = 'plus2h' | 'tonight' | 'tomorrow10';
@@ -51,7 +47,7 @@ const inviteTimeFormatter = new Intl.DateTimeFormat('en-US', {
 	minute: '2-digit'
 });
 
-	const defaultForm: FormState = {
+const defaultForm: FormState = {
 		clubName: '',
 		startAt: toDateTimeInput(now),
 		tableType: '',
@@ -65,6 +61,7 @@ const inviteTimeFormatter = new Intl.DateTimeFormat('en-US', {
 	let fieldErrors = $state<Partial<Record<keyof FormState, string>>>({});
 	let isSubmitting = $state(false);
 	let globalError = $state('');
+	let activeStartPreset = $state<StartPreset | null>(null);
 
 let shareReservationId = $state('');
 let shareDebugToken = $state('');
@@ -291,6 +288,18 @@ let appliedPrefillSignature = $state('');
 
 	function applyStartPreset(preset: StartPreset): void {
 		form.startAt = toDateTimeInput(startPresetDate(preset));
+		activeStartPreset = preset;
+	}
+
+	function startPresetButtonClass(preset: StartPreset): string {
+		const active = activeStartPreset === preset;
+		return [
+			'inline-flex h-9 items-center rounded-full border px-4 text-[11px] font-semibold uppercase tracking-[0.12em] transition',
+			'font-mono',
+			active
+				? 'border-violet-500/45 bg-violet-500/15 text-violet-300'
+				: 'border-zinc-800 bg-[#1A1A22] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+		].join(' ');
 	}
 
 	function clampCapacity(value: number): number {
@@ -400,11 +409,6 @@ let appliedPrefillSignature = $state('');
 
 		await waitForAuthReady();
 		return getCurrentUser()?.uid ?? null;
-	}
-
-	async function openCreateSignIn(): Promise<void> {
-		const returnTo = `${$page.url.pathname}${$page.url.search}`;
-		await openAuthModal({ returnTo, source: 'create-page' });
 	}
 
 	async function handleCreateReservation(event: SubmitEvent): Promise<void> {
@@ -788,178 +792,235 @@ $effect(() => {
 			{/if}
 		</section>
 	{:else}
-		<section class="mx-auto max-w-3xl space-y-6">
-			<div class="space-y-2">
-				<h1 class="section-title">Create a reservation</h1>
+		<section class="mx-auto w-full max-w-[920px]">
+			<div class="flex flex-col items-center gap-4 text-center">
+				<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-4 py-1.5">
+					<Plus class="h-3 w-3 text-violet-400" aria-hidden="true" />
+					<span class="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+						New reservation
+					</span>
+				</div>
+				<h1 class="font-display text-3xl font-extrabold text-white sm:text-4xl">Create a reservation</h1>
 			</div>
 
-			<Card>
-				<CardContent class="p-6 sm:p-7">
-					<form class="space-y-5" onsubmit={handleCreateReservation}>
-						<div class="grid gap-5 sm:grid-cols-2">
-							<div class="space-y-2 sm:col-span-2">
-								<Label for="clubName">Club name</Label>
-								<Input id="clubName" bind:value={form.clubName} placeholder="Nebula Room - Downtown" />
-								{#if fieldErrors.clubName}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.clubName}</p>
-								{/if}
-							</div>
+			<form
+				class="mt-7 space-y-6 rounded-[20px] border border-zinc-800 bg-[#14141A] p-5 sm:p-8"
+				onsubmit={handleCreateReservation}
+			>
+				<div class="space-y-2">
+					<label for="clubName" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+						Club name
+					</label>
+					<input
+						id="clubName"
+						type="text"
+						bind:value={form.clubName}
+						placeholder="Nebula Room - Downtown"
+						class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+					/>
+					{#if fieldErrors.clubName}
+						<p class="text-xs text-red-300">{fieldErrors.clubName}</p>
+					{/if}
+				</div>
 
-							<div class="space-y-2">
-								<Label for="startAt">Start at</Label>
-								<Input id="startAt" type="datetime-local" class="datetime-input" bind:value={form.startAt} />
-								<div class="flex flex-wrap gap-2">
-									<button
-										type="button"
-										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-										onclick={() => applyStartPreset('plus2h')}
-									>
-										+2 hours
-									</button>
-									<button
-										type="button"
-										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-										onclick={() => applyStartPreset('tonight')}
-									>
-										Tonight 10 PM
-									</button>
-									<button
-										type="button"
-										class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
-										onclick={() => applyStartPreset('tomorrow10')}
-									>
-										Tomorrow 10 PM
-									</button>
-								</div>
-								{#if startAtError}
-									<p class="text-xs text-destructive-foreground" aria-live="polite">{startAtError}</p>
-								{/if}
-							</div>
-
-							<div class="space-y-2">
-								<Label for="tableType">Table type</Label>
-								<TextSelect
-									id="tableType"
-									value={form.tableType}
-									options={[...TABLE_TYPE_OPTIONS]}
-									placeholder="Select a section"
-									ariaLabel="Select table type"
-									on:change={(event) => {
-										form.tableType = event.detail.value;
-									}}
-								/>
-								{#if fieldErrors.tableType}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.tableType}</p>
-								{/if}
-							</div>
-
-							<div class="space-y-2">
-								<Label for="capacity">Capacity</Label>
-								<div class="flex items-center gap-2">
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										onclick={() => stepCapacity(-1)}
-										disabled={form.capacity <= 1}
-										aria-label="Decrease capacity"
-									>
-										<Minus class="h-4 w-4" aria-hidden="true" />
-									</Button>
-									<Input
-										id="capacity"
-										type="number"
-										min={1}
-										max={100}
-										class="number-input-clean text-center tabular-nums"
-										bind:value={form.capacity}
-										onblur={normalizeCapacity}
-									/>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										onclick={() => stepCapacity(1)}
-										disabled={form.capacity >= 100}
-										aria-label="Increase capacity"
-									>
-										<Plus class="h-4 w-4" aria-hidden="true" />
-									</Button>
-								</div>
-								<p class="text-xs text-muted-foreground">Set a value between 1 and 100 guests.</p>
-								{#if fieldErrors.capacity}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.capacity}</p>
-								{/if}
-							</div>
-
-							<div class="space-y-2">
-								<Label for="dressCode">Dress code (optional)</Label>
-								<Input id="dressCode" bind:value={form.dressCode} placeholder="Upscale evening attire" />
-								{#if fieldErrors.dressCode}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.dressCode}</p>
-								{/if}
-							</div>
-
-							<div class="space-y-2 sm:col-span-2">
-								<Label for="notes">Notes</Label>
-								<Textarea
-									id="notes"
-									bind:value={form.notes}
-									placeholder="Arrival instructions, host notes, or welcome copy..."
-								/>
-								{#if fieldErrors.notes}
-									<p class="text-xs text-destructive-foreground">{fieldErrors.notes}</p>
-								{/if}
-							</div>
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="space-y-2">
+						<label for="startAt" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+							Start at
+						</label>
+						<div class="relative">
+							<input
+								id="startAt"
+								type="datetime-local"
+								class="datetime-input h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-violet-500/55"
+								bind:value={form.startAt}
+								oninput={() => {
+									activeStartPreset = null;
+								}}
+							/>
+							<Calendar
+								class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+								aria-hidden="true"
+							/>
 						</div>
-
-						{#if !productionLike}
-							<div class="rounded-2xl border border-border/75 bg-secondary/25 p-4">
-								<div class="flex items-start justify-between gap-4">
-									<div class="space-y-1">
-										<p class="text-sm font-medium text-foreground">Enable quick test access</p>
-										<p class="text-xs text-muted-foreground">
-											Adds a local test sign-in link on the share screen.
-										</p>
-									</div>
-									<Switch
-										checked={form.debugEnabled}
-										on:toggle={(event) => {
-											form.debugEnabled = event.detail;
-										}}
-									/>
-								</div>
-							</div>
+						{#if fieldErrors.startAt}
+							<p class="text-xs text-red-300" aria-live="polite">{fieldErrors.startAt}</p>
+						{:else if startAtError}
+							<p class="text-xs text-red-300" aria-live="polite">{startAtError}</p>
 						{/if}
+					</div>
 
-						{#if globalError}
-							<p class="state-panel-error" aria-live="polite">
-								{globalError}
-							</p>
-						{/if}
-
-						<div class="flex flex-wrap gap-3">
-							<Button type="submit" disabled={!canSubmitCreate}>
-								{isSubmitting ? 'Creating...' : canSubmitCreate ? 'Create reservation' : 'Complete required fields'}
-							</Button>
-							{#if !$currentUser}
-								<button
-									type="button"
-									class={cn(buttonVariants({ variant: 'outline', size: 'md' }))}
-									onclick={openCreateSignIn}
-								>
-									Sign in
-								</button>
-							{/if}
+					<div class="space-y-2">
+						<label for="tableType" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+							Table type
+						</label>
+						<div class="relative">
+							<select
+								id="tableType"
+								bind:value={form.tableType}
+								class="h-12 w-full appearance-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-violet-500/55"
+							>
+								<option value="" disabled>Select a section</option>
+								{#each TABLE_TYPE_OPTIONS as option}
+									<option value={option}>{option}</option>
+								{/each}
+							</select>
+							<LayoutGrid
+								class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+								aria-hidden="true"
+							/>
 						</div>
-						{#if !canSubmitCreate && !isSubmitting}
-							<p class="text-xs text-muted-foreground">
-								Fill all required fields to enable reservation creation.
-							</p>
+						{#if fieldErrors.tableType}
+							<p class="text-xs text-red-300">{fieldErrors.tableType}</p>
 						{/if}
-					</form>
-				</CardContent>
-			</Card>
+					</div>
+				</div>
+
+				<div class="flex flex-wrap gap-2.5">
+					<button
+						type="button"
+						class={startPresetButtonClass('plus2h')}
+						onclick={() => applyStartPreset('plus2h')}
+					>
+						+2 hours
+					</button>
+					<button
+						type="button"
+						class={startPresetButtonClass('tonight')}
+						onclick={() => applyStartPreset('tonight')}
+					>
+						Tonight 10 PM
+					</button>
+					<button
+						type="button"
+						class={startPresetButtonClass('tomorrow10')}
+						onclick={() => applyStartPreset('tomorrow10')}
+					>
+						Tomorrow 10 PM
+					</button>
+				</div>
+
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="space-y-2">
+						<label for="capacity" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+							Capacity
+						</label>
+						<div class="flex h-12 overflow-hidden rounded-xl border border-zinc-800 bg-[#1A1A22]">
+							<button
+								type="button"
+								class="inline-flex h-full w-12 items-center justify-center border-r border-zinc-800 text-violet-400 transition hover:text-violet-300 disabled:cursor-not-allowed disabled:text-zinc-600"
+								onclick={() => stepCapacity(-1)}
+								disabled={form.capacity <= 1}
+								aria-label="Decrease capacity"
+							>
+								<Minus class="h-4 w-4" aria-hidden="true" />
+							</button>
+							<input
+								id="capacity"
+								type="number"
+								min={1}
+								max={100}
+								bind:value={form.capacity}
+								onblur={normalizeCapacity}
+								class="number-input-clean h-full w-full bg-transparent px-3 text-center font-display text-lg font-bold text-white outline-none"
+							/>
+							<button
+								type="button"
+								class="inline-flex h-full w-12 items-center justify-center border-l border-zinc-800 text-violet-400 transition hover:text-violet-300 disabled:cursor-not-allowed disabled:text-zinc-600"
+								onclick={() => stepCapacity(1)}
+								disabled={form.capacity >= 100}
+								aria-label="Increase capacity"
+							>
+								<Plus class="h-4 w-4" aria-hidden="true" />
+							</button>
+						</div>
+						<p class="text-xs text-zinc-500">Set a value between 1 and 100 guests.</p>
+						{#if fieldErrors.capacity}
+							<p class="text-xs text-red-300">{fieldErrors.capacity}</p>
+						{/if}
+					</div>
+
+					<div class="space-y-2">
+						<label for="dressCode" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+							Dress code (optional)
+						</label>
+						<input
+							id="dressCode"
+							type="text"
+							bind:value={form.dressCode}
+							placeholder="Upscale nightlife attire"
+							class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+						/>
+						{#if fieldErrors.dressCode}
+							<p class="text-xs text-red-300">{fieldErrors.dressCode}</p>
+						{/if}
+					</div>
+				</div>
+
+				<div class="space-y-2">
+					<label for="notes" class="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+						Notes
+					</label>
+					<textarea
+						id="notes"
+						bind:value={form.notes}
+						placeholder="Arrival instructions, host notes, or welcome copy..."
+						class="h-28 w-full resize-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 py-3 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+					></textarea>
+					{#if fieldErrors.notes}
+						<p class="text-xs text-red-300">{fieldErrors.notes}</p>
+					{/if}
+				</div>
+
+				{#if !productionLike}
+					<div class="border-b border-zinc-800"></div>
+					<div class="flex items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+						<div class="min-w-0">
+							<p class="font-display text-sm font-semibold text-white">Enable quick test access</p>
+							<p class="mt-1 text-xs text-zinc-400">Adds a local test sign-in link on the share screen.</p>
+						</div>
+						<button
+							type="button"
+							role="switch"
+							aria-checked={form.debugEnabled}
+							aria-label="Toggle quick test access"
+							class={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+								form.debugEnabled
+									? 'border-violet-400/60 bg-violet-500/85'
+									: 'border-zinc-700 bg-zinc-600'
+							}`}
+							onclick={() => {
+								form.debugEnabled = !form.debugEnabled;
+							}}
+						>
+							<span
+								class={`h-[18px] w-[18px] rounded-full bg-white/90 transition-transform ${
+									form.debugEnabled ? 'translate-x-5' : 'translate-x-[2px]'
+								}`}
+							></span>
+						</button>
+					</div>
+				{/if}
+
+				{#if globalError}
+					<p class="state-panel-error" aria-live="polite">
+						{globalError}
+					</p>
+				{/if}
+
+				<div class="space-y-2">
+					<button
+						type="submit"
+						disabled={!canSubmitCreate}
+						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 font-display text-base font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
+					>
+						{isSubmitting ? 'Creating reservation...' : 'Create reservation'}
+					</button>
+					{#if !canSubmitCreate && !isSubmitting}
+						<p class="text-xs text-zinc-500">Fill all required fields to enable reservation creation.</p>
+					{/if}
+				</div>
+			</form>
 		</section>
 	{/if}
 </main>
