@@ -68,6 +68,10 @@
 		background-attachment: fixed;
 	}
 
+	button {
+		cursor: pointer;
+	}
+
 	a {
 		@apply text-primary transition-colors hover:text-primary/80;
 		transition-duration: var(--motion-fast);
