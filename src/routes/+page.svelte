@@ -69,8 +69,8 @@
 					</span>
 				</div>
 
-				<h1 class="mt-8 max-w-[820px] text-6xl font-extrabold uppercase leading-none tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
-					Your night starts here.
+				<h1 class="mt-8 max-w-[820px] text-6xl font-black uppercase leading-none tracking-tight text-white sm:text-7xl lg:text-8xl" style="font-family: 'Manrope', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+					Your night starts here
 				</h1>
 
 				<p class="mt-5 max-w-[480px] text-sm text-zinc-500">
