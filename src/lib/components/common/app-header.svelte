@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
-	import { currentUser, signOutCurrentUser } from '$lib/firebase/auth';
+	import { authReady, currentUser, signOutCurrentUser } from '$lib/firebase/auth';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 
 	type Props = {
@@ -32,14 +32,16 @@
 		<nav class="flex items-center gap-6">
 			<a href="/event" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">Browse</a>
 			<a href="/host/events" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">My Events</a>
-			{#if $currentUser}
-				<button type="button" class="text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-300" onclick={handleSignOut}>
-					Sign out
-				</button>
-			{:else}
-				<button type="button" class="inline-flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white backdrop-blur transition duration-150 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-300" onclick={handleSignIn}>
-					Sign in
-				</button>
+			{#if $authReady}
+				{#if $currentUser}
+					<button type="button" class="text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-300" onclick={handleSignOut}>
+						Sign out
+					</button>
+				{:else}
+					<button type="button" class="inline-flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white backdrop-blur transition duration-150 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-300" onclick={handleSignIn}>
+						Sign in
+					</button>
+				{/if}
 			{/if}
 		</nav>
 	</div>
