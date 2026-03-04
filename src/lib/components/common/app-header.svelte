@@ -25,7 +25,7 @@
 <header class="relative z-20 border-b border-zinc-800 bg-black/60 backdrop-blur">
 	<div class={`mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3 ${compact ? 'px-4 py-2.5 sm:px-6 lg:px-10' : 'px-5 py-3 sm:px-8 lg:px-12'}`}>
 		<div class="flex min-w-0 items-center gap-3">
-			<a href="/event" class="inline-flex min-w-0 items-center gap-2 text-base font-extrabold uppercase text-white no-underline sm:text-lg">
+			<a href="/" class="inline-flex min-w-0 items-center gap-2 text-base font-extrabold uppercase text-white no-underline sm:text-lg">
 				<BrandMark class="h-4 w-4 shrink-0" />
 				<span class="font-display truncate leading-none">APOLLO HQ</span>
 			</a>
