@@ -15,34 +15,48 @@
 		<AppHeader />
 	</div>
 
-	<main class="relative z-10 mx-auto flex min-h-[calc(100vh-68px)] w-full max-w-[1440px] items-center justify-center px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-		<section class="flex w-full max-w-[980px] flex-col items-center text-center">
-			<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2">
-				<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400"></span>
-				<span class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">
-					Best Nightlife In America
-				</span>
-			</div>
+	<main class="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
+		<div class="flex min-h-[calc(100vh-68px)] items-center justify-center py-20 lg:py-28">
+			<section class="flex w-full max-w-[900px] flex-col items-center text-center">
+				<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2">
+					<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400"></span>
+					<span class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">
+						Best Nightlife In America
+					</span>
+				</div>
 
-			<div class="mt-6 flex items-center justify-center gap-4">
-				<BrandMark class="h-12 w-12 shrink-0 sm:h-16 sm:w-16 lg:h-20 lg:w-20" />
-				<h1 class="text-5xl font-extrabold uppercase leading-none tracking-[-0.02em] text-white sm:text-6xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">Apollo HQ</h1>
-			</div>
+				<div class="mt-8 flex items-center justify-center gap-4">
+					<BrandMark class="h-10 w-10 shrink-0 sm:h-14 sm:w-14 lg:h-16 lg:w-16" />
+					<h1 class="text-5xl font-extrabold uppercase leading-none tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">
+						Apollo HQ
+					</h1>
+				</div>
 
-			<p class="mt-5 max-w-[560px] text-base text-zinc-400 sm:text-lg">
-				Curated events, reserved tables, and instant access — wherever the night takes you.
-			</p>
+				<p class="mt-5 max-w-[520px] text-lg font-medium text-zinc-300 sm:text-xl">
+					Your night starts here.
+				</p>
+				<p class="mt-2 max-w-[480px] text-sm text-zinc-500">
+					Curated events, reserved tables, and instant access — wherever the night takes you.
+				</p>
 
-			<div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-				<a
-					href="/event"
-					class="group inline-flex h-13 items-center justify-center gap-2.5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 px-8 text-base font-bold text-white shadow-[0_0_32px_rgba(168,85,247,0.45)] transition duration-200 hover:shadow-[0_0_52px_rgba(168,85,247,0.65)] hover:scale-[1.03]"
-					style="font-family: 'Space Grotesk', sans-serif;"
-				>
-					Explore Events
-					<ArrowRight class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-				</a>
-			</div>
-		</section>
+				<div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+					<a
+						href="/event"
+						class="group inline-flex h-12 items-center justify-center gap-2.5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 px-8 text-base font-bold text-white shadow-[0_0_32px_rgba(168,85,247,0.45)] transition duration-200 hover:scale-[1.03] hover:shadow-[0_0_52px_rgba(168,85,247,0.65)]"
+						style="font-family: 'Space Grotesk', sans-serif;"
+					>
+						Explore Events
+						<ArrowRight class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+					</a>
+					<a
+						href="#how-it-works"
+						class="inline-flex h-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/60 px-7 text-base font-semibold text-zinc-300 backdrop-blur transition duration-200 hover:border-zinc-500 hover:text-white"
+						style="font-family: 'Space Grotesk', sans-serif;"
+					>
+						How it works
+					</a>
+				</div>
+			</section>
+		</div>
 	</main>
 </div>
