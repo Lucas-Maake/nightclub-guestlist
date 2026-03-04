@@ -17,14 +17,11 @@
 		waitForAuthReady
 	} from '$lib/firebase/auth';
 	import {
-		isCommentRateLimitedError,
 		isHostForReservation,
 		listenToGuest,
 		listenToPublicAttendees,
-		listenToReservationComments,
 		listenToReservationPublic,
 		listenToWaitlistRequest,
-		postReservationComment,
 		upsertWaitlistRequest,
 		upsertGuestRsvp,
 		validateDebugToken
@@ -32,7 +29,6 @@
 	import type {
 		GuestRecord,
 		PublicAttendeeRecord,
-		ReservationCommentRecord,
 		ReservationPublicRecord,
 		RsvpInput
 	} from '$lib/types/models';
@@ -50,13 +46,6 @@
 		hour: 'numeric',
 		minute: '2-digit'
 	});
-	const commentTimeFormatter = new Intl.DateTimeFormat('en-US', {
-		month: 'short',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: '2-digit'
-	});
-	const maxCommentLength = 280;
 	const rsvpHeroImages = ['/images/events/den.png', '/images/events/decca.png', '/images/events/monarch.png'];
 	const fireworkParticleAngles = Array.from({ length: 14 }, (_, index) => index);
 
@@ -84,11 +73,6 @@
 	let waitlistJoined = $state(false);
 	let waitlistSubmitting = $state(false);
 	let waitlistError = $state('');
-	let comments = $state<Array<ReservationCommentRecord & { id: string }>>([]);
-	let loadingComments = $state(false);
-	let postingComment = $state(false);
-	let commentDraft = $state('');
-	let commentError = $state('');
 	let fireworkBursts = $state<FireworkBurst[]>([]);
 
 	let displayName = $state('');
@@ -118,7 +102,6 @@
 	let guestUnsubscribe: Unsubscribe | null = null;
 	let attendeesUnsubscribe: Unsubscribe | null = null;
 	let waitlistUnsubscribe: Unsubscribe | null = null;
-	let commentsUnsubscribe: Unsubscribe | null = null;
 	let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
 	let fireworksClearTimer: ReturnType<typeof setTimeout> | null = null;
 	let nextFireworkId = 1;
@@ -334,32 +317,6 @@
 	});
 
 	$effect(() => {
-		if (!reservationId) {
-			comments = [];
-			loadingComments = false;
-			commentDraft = '';
-			commentError = '';
-			commentsUnsubscribe?.();
-			commentsUnsubscribe = null;
-			return;
-		}
-
-		comments = [];
-		loadingComments = true;
-		commentError = '';
-		commentsUnsubscribe?.();
-		commentsUnsubscribe = listenToReservationComments(reservationId, (value) => {
-			comments = value;
-			loadingComments = false;
-		});
-
-		return () => {
-			commentsUnsubscribe?.();
-			commentsUnsubscribe = null;
-		};
-	});
-
-	$effect(() => {
 		if ((reservation?.plusOnesEnabled ?? true) === false && plusOneLines.length > 0) {
 			plusOneLines = '';
 		}
@@ -395,7 +352,6 @@
 		guestUnsubscribe?.();
 		attendeesUnsubscribe?.();
 		waitlistUnsubscribe?.();
-		commentsUnsubscribe?.();
 		if (countdownTicker) {
 			clearInterval(countdownTicker);
 			countdownTicker = null;
@@ -444,29 +400,6 @@
 		}
 
 		return parts.map((part) => part[0]?.toUpperCase() ?? '').join('');
-	}
-
-	function formatCommentTime(value: ReservationCommentRecord['createdAt']): string {
-		return commentTimeFormatter.format(value.toDate());
-	}
-
-	function commenterName(): string {
-		const currentName = $currentUser?.displayName?.trim();
-		if (currentName) {
-			return currentName.slice(0, 48);
-		}
-
-		const typedName = displayName.trim();
-		if (typedName) {
-			return typedName.slice(0, 48);
-		}
-
-		const digits = ($currentUser?.phoneNumber ?? '').replace(/\D/g, '');
-		if (digits.length >= 4) {
-			return `Guest ${digits.slice(-4)}`;
-		}
-
-		return 'Guest';
 	}
 
 	async function handleDebugToken(token: string): Promise<void> {
@@ -658,56 +591,6 @@
 			waitlistError = 'We could not save your waitlist request right now. Please try again.';
 		} finally {
 			waitlistSubmitting = false;
-		}
-	}
-
-	async function handlePostComment(): Promise<void> {
-		if (!reservationId || postingComment) {
-			return;
-		}
-
-		const text = commentDraft.trim().slice(0, maxCommentLength);
-		if (!text) {
-			commentError = 'Write a quick update before posting.';
-			return;
-		}
-
-		if (!$currentUser) {
-			const destination = `${$page.url.pathname}${$page.url.search}`;
-			const authResult = await openAuthModal({ returnTo: destination, source: 'guest-comment' });
-			if (authResult !== 'authenticated') {
-				return;
-			}
-			await waitForAuthReady();
-		}
-
-		const uid = $currentUser?.uid;
-		if (!uid) {
-			commentError = 'Sign in to post updates.';
-			return;
-		}
-
-		postingComment = true;
-		commentError = '';
-		try {
-			await postReservationComment(reservationId, uid, {
-				displayName: commenterName(),
-				text
-			});
-			commentDraft = '';
-			pushToast({
-				title: 'Update posted',
-				description: 'Your comment is now visible on this invite.',
-				variant: 'success'
-			});
-		} catch (error) {
-			if (isCommentRateLimitedError(error)) {
-				commentError = "You're posting too quickly. Please wait a bit before commenting again.";
-			} else {
-				commentError = 'Could not post your update right now. Please try again.';
-			}
-		} finally {
-			postingComment = false;
 		}
 	}
 
@@ -1196,66 +1079,6 @@
 										View all {publicAttendees.length} guests ?
 									</button>
 								{/if}
-							</section>
-
-							<section class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-								<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">Comments</p>
-								{#if loadingComments}
-									<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm text-zinc-400">Loading updates...</div>
-								{:else if comments.length === 0}
-									<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm text-zinc-400">No updates yet. Be the first to post.</div>
-								{:else}
-									<div class="space-y-2">
-										{#each comments as comment (comment.id)}
-											<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-												<div class="flex items-center justify-between gap-2">
-													<p class="text-xs font-semibold text-white">{comment.displayName}</p>
-													<p class="text-[11px] text-zinc-500">{formatCommentTime(comment.createdAt)}</p>
-												</div>
-												<p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-300">{comment.text}</p>
-											</div>
-										{/each}
-									</div>
-								{/if}
-
-								<div class="rounded-lg border border-zinc-700 bg-zinc-950/60 p-2">
-									<div class="flex items-center gap-2">
-										<Input
-											placeholder="Add a comment..."
-											bind:value={commentDraft}
-											maxlength={maxCommentLength}
-											disabled={postingComment}
-											class="h-9 border-zinc-700 bg-zinc-900/80 text-zinc-100 placeholder:text-zinc-500"
-											oninput={() => {
-												commentError = '';
-											}}
-										/>
-										{#if $currentUser}
-											<button
-												type="button"
-												class="inline-flex h-9 items-center justify-center rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white transition hover:bg-violet-500 disabled:opacity-60"
-												onclick={handlePostComment}
-												disabled={postingComment || commentDraft.trim().length === 0}
-											>
-												{postingComment ? 'Posting...' : 'Post'}
-											</button>
-										{:else}
-											<button
-												type="button"
-												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
-												onclick={openGuestSignIn}
-											>
-												Sign in
-											</button>
-										{/if}
-									</div>
-									<div class="mt-2 flex items-center justify-between gap-2">
-										<p class="text-[11px] text-zinc-500">{commentDraft.trim().length}/{maxCommentLength}</p>
-										{#if commentError}
-											<p class="text-[11px] text-rose-300">{commentError}</p>
-										{/if}
-									</div>
-								</div>
 							</section>
 
 							<section class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

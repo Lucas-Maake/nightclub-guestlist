@@ -195,6 +195,28 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 		};
 	}
 
+	function createRoutePrefillParams(tablePackage?: EventTablePackage | null): URLSearchParams | null {
+		if (!eventRecord) {
+			return null;
+		}
+
+		const resolvedTableType = tablePackage?.sectionLabel ?? eventRecord.defaultTableType;
+		const resolvedCapacity = tablePackage?.capacity ?? 6;
+		const resolvedNotes = tablePackage
+			? `${eventRecord.title} - ${tablePackage.sectionLabel}`
+			: `${eventRecord.title} - table request from event detail page.`;
+
+		return new URLSearchParams({
+			eventId: eventRecord.id,
+			clubName: eventRecord.venue,
+			startAt: eventRecord.startAt,
+			tableType: resolvedTableType,
+			notes: resolvedNotes,
+			dressCode: eventRecord.dressCode,
+			capacity: String(resolvedCapacity)
+		});
+	}
+
 	async function handleRequestTable(): Promise<void> {
 		if (!eventRecord) {
 			return;
@@ -208,7 +230,12 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 			return;
 		}
 
-		await goto(`/event/${eventRecord.id}/request-table`);
+		const params = createRoutePrefillParams(selectedTablePackage);
+		if (!params) {
+			return;
+		}
+
+		await goto(`/create?${params.toString()}`);
 	}
 
 	function openTablePackageModal(packageId: string): void {
@@ -250,23 +277,22 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 		});
 	}
 
-	async function handleTablePackageCheckoutSuccess(purchaseId: string): Promise<void> {
+	function handleTablePackageCheckoutSuccess(purchaseId: string): void {
 		void purchaseId;
-		if (!eventRecord || !selectedTablePackage) {
-			return;
-		}
-
 		tablePackageModalOpen = false;
-		const params = new URLSearchParams({
-			eventId: eventRecord.id,
-			clubName: eventRecord.venue,
-			startAt: eventRecord.startAt,
-			tableType: selectedTablePackage.sectionLabel,
-			notes: `${eventRecord.title} - ${selectedTablePackage.sectionLabel}`,
-			dressCode: eventRecord.dressCode,
-			capacity: String(selectedTablePackage.capacity)
+		selectedTablePackageId = '';
+
+		pushToast({
+			title: 'Table package confirmed!',
+			description: 'View your tickets in the Events page.',
+			variant: 'success',
+			action: {
+				label: 'View tickets',
+				onClick: () => {
+					void goto('/event?tab=tickets');
+				}
+			}
 		});
-		await goto(`/create?${params.toString()}`);
 	}
 
 	async function loadEventPageData(id: string): Promise<void> {
@@ -558,19 +584,28 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 										This event has ended. Package checkout is closed.
 									</p>
 								{/if}
-								<div class="mt-4 border-t border-zinc-700 pt-4">
-									<div class="flex items-center justify-between gap-3">
-										<div>
-											<p class="text-base font-semibold text-white">Don't see what you're looking for?</p>
-											<p class="text-sm text-zinc-400">Send us a custom table request.</p>
+								<div class="mt-4 rounded-xl border border-amber-300/30 bg-[radial-gradient(circle_at_14%_10%,rgba(251,191,36,0.18),transparent_55%),linear-gradient(135deg,rgba(19,19,27,0.98),rgba(13,13,18,0.98))] p-4 shadow-[0_0_24px_rgba(251,191,36,0.15)]">
+									<div class="flex items-start justify-between gap-3">
+										<div class="pr-1">
+											<p class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300" style="font-family: 'Space Mono', monospace;">
+												<Sparkles class="h-3.5 w-3.5" />
+												VIP Concierge
+											</p>
+											<p class="mt-2 text-base font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+												Need a custom VIP setup?
+											</p>
+											<p class="mt-1 text-sm text-zinc-300">
+												Tell us your group size, spend range, and preferred vibe. We'll tailor a table experience for your party.
+											</p>
 										</div>
 										<button
 											type="button"
-											class="inline-flex h-9 items-center justify-center rounded-lg bg-zinc-800 px-4 text-sm font-semibold text-zinc-100 transition hover:border-cyan-400/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+											class="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-500 px-4 text-sm font-extrabold uppercase tracking-[0.08em] text-zinc-950 shadow-[0_0_24px_rgba(250,204,21,0.34)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
+											style="font-family: 'Space Grotesk', sans-serif;"
 											onclick={handleRequestTable}
 											disabled={tableBookingClosed}
 										>
-											{tableBookingClosed ? 'Closed' : 'Request'}
+											{tableBookingClosed ? 'Closed' : 'Request VIP'}
 										</button>
 									</div>
 								</div>

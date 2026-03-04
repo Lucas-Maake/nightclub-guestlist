@@ -90,9 +90,10 @@
 			});
 
 			purchaseComplete = true;
+
 			setTimeout(() => {
 				onSuccess(result.purchaseId);
-			}, 900);
+			}, 1500);
 		} catch (error) {
 			errorMessage = toUserSafePurchaseMessage(error);
 			processing = false;
@@ -147,7 +148,7 @@
 		<div class="relative mt-6 flex flex-col items-center justify-center py-8">
 			<div class="relative">
 				<span
-					class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-lime-400/20 text-lime-300"
+					class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-success/20 text-success"
 				>
 					<svg
 						class="h-8 w-8"
@@ -159,9 +160,16 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 					</svg>
 				</span>
+				<span
+					class="pointer-events-none absolute -inset-2 rounded-full border-2 border-success/40 animate-ping"
+				></span>
+				<span
+					class="pointer-events-none absolute -inset-4 rounded-full border border-success/25 animate-ping"
+					style="animation-delay: 150ms"
+				></span>
 			</div>
-			<p class="mt-4 text-lg font-semibold text-white">Checkout Complete</p>
-			<p class="mt-1 text-sm text-zinc-300">Redirecting you to finish your table setup...</p>
+			<p class="mt-4 text-lg font-semibold text-foreground">You're all set!</p>
+			<p class="mt-1 text-sm text-muted-foreground">Your table package is confirmed.</p>
 		</div>
 	{:else if tablePackage}
 		<div class="mt-4 space-y-4">

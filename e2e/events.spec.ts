@@ -74,5 +74,32 @@ test.describe('Event Detail Page', () => {
 		await expect(page.getByRole('heading', { name: /table package information/i })).toBeVisible();
 		await expect(page.getByText('Deposit Subtotal')).toBeVisible();
 		await expect(page.getByRole('button', { name: /checkout \$1,000.00/i })).toBeVisible();
+
+		const modal = page.locator('[role="dialog"]').first();
+		const pageScrollBefore = await page.evaluate(() => window.scrollY);
+		const modalCanScroll = await modal.evaluate((node) => node.scrollHeight > node.clientHeight);
+
+		await modal.hover();
+		await page.mouse.wheel(0, 600);
+
+		await expect
+			.poll(async () => page.evaluate(() => window.scrollY))
+			.toBe(pageScrollBefore);
+
+		if (modalCanScroll) {
+			await expect.poll(async () => modal.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+		}
+	});
+
+	test('should route request table action to create form', async ({ page }) => {
+		await page.goto('/event/dillon-francis-table-experience');
+
+		await page.getByRole('button', { name: /^request$/i }).click();
+
+		await expect(page).toHaveURL(/\/create\?/);
+		await expect(page.getByRole('heading', { name: /create a reservation/i })).toBeVisible();
+		await expect
+			.poll(async () => new URL(page.url()).searchParams.get('eventId'))
+			.toBe('dillon-francis-table-experience');
 	});
 });

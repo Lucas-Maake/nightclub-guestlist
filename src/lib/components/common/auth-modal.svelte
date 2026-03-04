@@ -18,6 +18,7 @@
 	} from '$lib/firebase/auth';
 	import { completeAuthModal, authModalState, closeAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
+	import { lockBodyScroll, unlockBodyScroll } from '$lib/utils/body-scroll-lock';
 	import { detectAuthIssue, toUserSafeAuthMessage, type AuthIssue } from '$lib/utils/messages';
 	import { isProductionLikeRuntime } from '$lib/utils/security';
 
@@ -80,14 +81,6 @@
 		}
 
 		return `+${digits}`;
-	}
-
-	function setBodyScrollLock(locked: boolean): void {
-		if (typeof document === 'undefined') {
-			return;
-		}
-
-		document.body.style.overflow = locked ? 'hidden' : '';
 	}
 
 	function resetModalState(): void {
@@ -158,7 +151,6 @@
 		const currentLocation = `${$page.url.pathname}${$page.url.search}`;
 		completeAuthModal();
 		clearRecaptcha();
-		setBodyScrollLock(false);
 
 		if (target !== currentLocation) {
 			await goto(target);
@@ -358,13 +350,13 @@
 		const isOpen = $authModalState.open;
 
 		if (isOpen && !openSnapshot) {
-			setBodyScrollLock(true);
+			lockBodyScroll();
 			void initializeModal();
 		}
 
 		if (!isOpen && openSnapshot) {
 			clearRecaptcha();
-			setBodyScrollLock(false);
+			unlockBodyScroll();
 			resetModalState();
 		}
 
@@ -381,7 +373,9 @@
 
 	onDestroy(() => {
 		clearRecaptcha();
-		setBodyScrollLock(false);
+		if (openSnapshot) {
+			unlockBodyScroll();
+		}
 	});
 </script>
 
