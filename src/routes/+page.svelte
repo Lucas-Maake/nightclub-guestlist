@@ -1,9 +1,13 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { ArrowRight } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
-</script>
 
-<svelte:body style="overflow: hidden;" />
+	onMount(() => {
+		document.body.style.overflow = 'hidden';
+		return () => { document.body.style.overflow = ''; };
+	});
+</script>
 
 <div class="relative flex h-dvh flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
 	<div class="pointer-events-none absolute inset-0 bg-[url('/images/landing-minimal-bg.png')] bg-cover bg-center opacity-70"></div>
