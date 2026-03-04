@@ -29,8 +29,8 @@
 					</span>
 				</div>
 
-				<h1 class="mt-8 max-w-[820px] text-4xl font-black uppercase leading-none tracking-tight text-white sm:text-6xl lg:text-8xl" style="font-family: 'Manrope', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
-					Your night starts here
+				<h1 class="mt-8 whitespace-nowrap text-[2rem] font-thin uppercase leading-none tracking-[0.18em] text-white sm:text-6xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
+					Join the party
 				</h1>
 
 				<p class="mt-5 max-w-[480px] text-sm text-zinc-500">
