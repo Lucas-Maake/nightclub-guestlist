@@ -261,7 +261,7 @@
 					</div>
 				</section>
 			{:else if !eventsError && featuredEvent}
-				<section class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+				<section class="mx-5 grid max-h-[360px] overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:max-h-none lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="min-h-[190px]">
 						{#if eventPosterImage(featuredEvent)}
 							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
@@ -306,7 +306,7 @@
 						</section>
 					{:else}
 						<div class="grid gap-4 sm:grid-cols-2">
-							{#each filteredEvents as event, index (event.id)}
+							{#each filteredEvents.slice(1) as event, index (event.id)}
 								<a href={`/event/${event.id}`} data-event-card class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 opacity-0 transition hover:-translate-y-0.5 hover:border-violet-500/60">
 									<div class="absolute inset-0">
 										{#if eventPosterImage(event)}
