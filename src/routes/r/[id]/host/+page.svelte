@@ -193,7 +193,7 @@
 
 	function statusDotClass(status: GuestVisualStatus): string {
 		if (status === 'accepted') {
-			return 'bg-violet-500';
+			return 'bg-blue-500';
 		}
 
 		if (status === 'declined') {
@@ -209,7 +209,7 @@
 
 	function statusBadgeClass(status: GuestVisualStatus): string {
 		if (status === 'accepted') {
-			return 'bg-violet-500/15 text-violet-400';
+			return 'bg-blue-500/15 text-blue-400';
 		}
 
 		if (status === 'declined') {
@@ -402,7 +402,7 @@
 					</button>
 					<a
 						href={`/r/${reservationId}/checkin`}
-						class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+						class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)]"
 						style="font-family: 'Space Grotesk', sans-serif;"
 					>
 						Open check-in
@@ -424,7 +424,7 @@
 					<p class="mt-2 text-sm text-zinc-400">Only the reservation host can open this page.</p>
 					<a
 						href={`/r/${reservationId}`}
-						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)]"
 						style="font-family: 'Space Grotesk', sans-serif;"
 					>
 						Go to guest page
@@ -432,9 +432,9 @@
 				</div>
 			{:else}
 				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-					<div class="rounded-2xl border border-violet-500/25 bg-[#14141A] px-6 py-5">
+					<div class="rounded-2xl border border-blue-500/25 bg-[#14141A] px-6 py-5">
 						<div class="flex items-center gap-2.5">
-							<span class="h-2.5 w-2.5 rounded-full bg-violet-500"></span>
+							<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
 							<span class="text-[11px] uppercase tracking-[0.14em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Accepted</span>
 						</div>
 						<p class="mt-2 text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{acceptedCount}</p>
@@ -498,7 +498,7 @@
 										type="button"
 										class={`border-b-2 px-4 py-2.5 text-sm transition ${
 											filter === tab.key
-												? 'border-violet-500 font-semibold text-white'
+												? 'border-blue-500 font-semibold text-white'
 												: 'border-transparent text-zinc-500 hover:text-zinc-300'
 										}`}
 										style={filter === tab.key ? "font-family: 'Space Grotesk', sans-serif;" : ''}
@@ -606,7 +606,7 @@
 											aria-label="Toggle public guest list visibility"
 											disabled={guestListVisibilityPending}
 											class={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition ${
-												publicGuestListVisible ? 'bg-violet-500' : 'bg-zinc-600'
+												publicGuestListVisible ? 'bg-blue-500' : 'bg-zinc-600'
 											} ${guestListVisibilityPending ? 'opacity-60' : ''}`}
 											onclick={() => {
 												void updateGuestListVisibility(!publicGuestListVisible);
@@ -640,7 +640,7 @@
 											aria-label="Toggle plus-one availability"
 											disabled={plusOnesTogglePending}
 											class={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition ${
-												plusOnesEnabled ? 'bg-violet-500' : 'bg-zinc-600'
+												plusOnesEnabled ? 'bg-blue-500' : 'bg-zinc-600'
 											} ${plusOnesTogglePending ? 'opacity-60' : ''}`}
 											onclick={() => {
 												void updatePlusOneAvailability(!plusOnesEnabled);
@@ -674,7 +674,7 @@
 
 							<div class="mt-4 h-1.5 w-full rounded bg-[#1A1A22]">
 								<div
-									class="h-1.5 rounded bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"
+									class="h-1.5 rounded bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
 									style={`width:${progressFillPercent}%`}
 								></div>
 							</div>
@@ -694,7 +694,7 @@
 								</div>
 								<div class="flex items-center justify-between border-b border-zinc-800 py-2.5">
 									<div class="flex items-center gap-2">
-										<span class="h-2 w-2 rounded-full bg-violet-500"></span>
+										<span class="h-2 w-2 rounded-full bg-blue-500"></span>
 										<p class="text-sm text-zinc-400">Accepted</p>
 									</div>
 									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{acceptedCount}</p>

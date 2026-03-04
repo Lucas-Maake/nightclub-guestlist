@@ -297,7 +297,7 @@ let appliedPrefillSignature = $state('');
 			'inline-flex h-9 items-center rounded-full border px-4 text-[11px] font-semibold uppercase tracking-[0.12em] transition',
 			'font-mono',
 			active
-				? 'border-violet-500/45 bg-violet-500/15 text-violet-300'
+				? 'border-blue-500/45 bg-blue-500/15 text-blue-300'
 				: 'border-zinc-800 bg-[#1A1A22] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
 		].join(' ');
 	}
@@ -615,7 +615,7 @@ $effect(() => {
 <main class="app-shell py-6 sm:py-10">
 	{#if shareReservationId}
 		<section class="mx-auto w-full max-w-[1440px] space-y-6 text-white">
-			<div class="flex items-center gap-2 bg-[linear-gradient(90deg,rgba(168,85,247,0.12)_0%,rgba(5,5,7,0)_100%)] px-5 py-3 sm:px-8 lg:px-10">
+			<div class="flex items-center gap-2 bg-[linear-gradient(90deg,rgba(77,171,254,0.12)_0%,rgba(5,5,7,0)_100%)] px-5 py-3 sm:px-8 lg:px-10">
 				<span class="h-2.5 w-2.5 rounded-full bg-lime-300"></span>
 				<p class="text-xs font-bold uppercase tracking-[0.2em] text-lime-300" style="font-family: 'Space Mono', monospace;">
 					Invite is live
@@ -643,7 +643,7 @@ $effect(() => {
 							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
 								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Starts</p>
 								<div class="flex items-center gap-2.5">
-									<Calendar class="h-4 w-4 text-violet-400" />
+									<Calendar class="h-4 w-4 text-blue-400" />
 									<p class="text-sm font-semibold text-white">{shareStartLine}</p>
 								</div>
 							</div>
@@ -683,7 +683,7 @@ $effect(() => {
 							<button
 								type="button"
 								disabled={copyingTarget === 'invite'}
-								class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-xs font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] disabled:opacity-60"
+								class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-xs font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)] disabled:opacity-60"
 								onclick={() => copyShareLink(invite, 'Invite link copied', 'invite')}
 							>
 								{copyingTarget === 'invite' ? 'Copying...' : inviteCopied ? 'Copied' : 'Copy invite link'}
@@ -691,13 +691,13 @@ $effect(() => {
 						</div>
 
 						{#if debugInvite}
-							<div class="mt-4 space-y-3 rounded-xl border border-violet-500/35 bg-violet-500/10 px-5 py-4">
-								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300" style="font-family: 'Space Mono', monospace;">Test access</p>
+							<div class="mt-4 space-y-3 rounded-xl border border-blue-500/35 bg-blue-500/10 px-5 py-4">
+								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-300" style="font-family: 'Space Mono', monospace;">Test access</p>
 								<p class="break-all text-xs text-zinc-200" style="font-family: 'Space Mono', monospace;">{debugInvite}</p>
 								<button
 									type="button"
 									disabled={copyingTarget === 'debug'}
-									class="inline-flex h-8 items-center justify-center rounded-lg border border-violet-500/45 bg-transparent px-3 text-xs font-semibold text-violet-200 transition hover:text-white disabled:opacity-60"
+									class="inline-flex h-8 items-center justify-center rounded-lg border border-blue-500/45 bg-transparent px-3 text-xs font-semibold text-blue-200 transition hover:text-white disabled:opacity-60"
 									onclick={() => copyShareLink(debugInvite, 'Test link copied', 'debug')}
 								>
 									{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy test link'}
@@ -716,7 +716,7 @@ $effect(() => {
 							</div>
 							<div class="mt-3 h-1.5 w-full rounded bg-[#1A1A22]">
 								<div
-									class="h-1.5 rounded bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"
+									class="h-1.5 rounded bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
 									style={`width:${shareCapacityBarWidth}%`}
 								></div>
 							</div>
@@ -750,14 +750,14 @@ $effect(() => {
 						<section class="space-y-2">
 							<a
 								href={invite}
-								class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+								class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)]"
 								style="font-family: 'Space Grotesk', sans-serif;"
 							>
 								Open guest page
 							</a>
 							<a
 								href={`/r/${shareReservationId}/host`}
-								class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-violet-500/55 bg-transparent px-4 text-sm font-bold text-violet-300 transition hover:text-white"
+								class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-blue-500/55 bg-transparent px-4 text-sm font-bold text-blue-300 transition hover:text-white"
 								style="font-family: 'Space Grotesk', sans-serif;"
 							>
 								Open host hub
@@ -783,7 +783,7 @@ $effect(() => {
 					<p class="font-semibold text-white">Reservation not found.</p>
 					<p class="mt-1 text-sm">Open an event to book a table and start again.</p>
 					<a
-						class="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/50 hover:text-white"
+						class="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-blue-500/50 hover:text-white"
 						href="/event"
 					>
 						Browse events
@@ -794,9 +794,9 @@ $effect(() => {
 	{:else}
 		<section class="mx-auto w-full max-w-[920px]">
 			<div class="flex flex-col items-center gap-4 text-center">
-				<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-4 py-1.5">
-					<Plus class="h-3 w-3 text-violet-400" aria-hidden="true" />
-					<span class="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+				<div class="inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-4 py-1.5">
+					<Plus class="h-3 w-3 text-blue-400" aria-hidden="true" />
+					<span class="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-400">
 						New reservation
 					</span>
 				</div>
@@ -816,7 +816,7 @@ $effect(() => {
 						type="text"
 						bind:value={form.clubName}
 						placeholder="Nebula Room - Downtown"
-						class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+						class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-blue-500/55"
 					/>
 					{#if fieldErrors.clubName}
 						<p class="text-xs text-red-300">{fieldErrors.clubName}</p>
@@ -832,7 +832,7 @@ $effect(() => {
 							<input
 								id="startAt"
 								type="datetime-local"
-								class="datetime-input h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-violet-500/55"
+								class="datetime-input h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-blue-500/55"
 								bind:value={form.startAt}
 								oninput={() => {
 									activeStartPreset = null;
@@ -858,7 +858,7 @@ $effect(() => {
 							<select
 								id="tableType"
 								bind:value={form.tableType}
-								class="h-12 w-full appearance-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-violet-500/55"
+								class="h-12 w-full appearance-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 pr-11 text-[15px] font-medium text-white outline-none transition focus:border-blue-500/55"
 							>
 								<option value="" disabled>Select a section</option>
 								{#each TABLE_TYPE_OPTIONS as option}
@@ -908,7 +908,7 @@ $effect(() => {
 						<div class="flex h-12 overflow-hidden rounded-xl border border-zinc-800 bg-[#1A1A22]">
 							<button
 								type="button"
-								class="inline-flex h-full w-12 items-center justify-center border-r border-zinc-800 text-violet-400 transition hover:text-violet-300 disabled:cursor-not-allowed disabled:text-zinc-600"
+								class="inline-flex h-full w-12 items-center justify-center border-r border-zinc-800 text-blue-400 transition hover:text-blue-300 disabled:cursor-not-allowed disabled:text-zinc-600"
 								onclick={() => stepCapacity(-1)}
 								disabled={form.capacity <= 1}
 								aria-label="Decrease capacity"
@@ -926,7 +926,7 @@ $effect(() => {
 							/>
 							<button
 								type="button"
-								class="inline-flex h-full w-12 items-center justify-center border-l border-zinc-800 text-violet-400 transition hover:text-violet-300 disabled:cursor-not-allowed disabled:text-zinc-600"
+								class="inline-flex h-full w-12 items-center justify-center border-l border-zinc-800 text-blue-400 transition hover:text-blue-300 disabled:cursor-not-allowed disabled:text-zinc-600"
 								onclick={() => stepCapacity(1)}
 								disabled={form.capacity >= 100}
 								aria-label="Increase capacity"
@@ -949,7 +949,7 @@ $effect(() => {
 							type="text"
 							bind:value={form.dressCode}
 							placeholder="Upscale nightlife attire"
-							class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+							class="h-12 w-full rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-blue-500/55"
 						/>
 						{#if fieldErrors.dressCode}
 							<p class="text-xs text-red-300">{fieldErrors.dressCode}</p>
@@ -965,7 +965,7 @@ $effect(() => {
 						id="notes"
 						bind:value={form.notes}
 						placeholder="Arrival instructions, host notes, or welcome copy..."
-						class="h-28 w-full resize-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 py-3 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-500/55"
+						class="h-28 w-full resize-none rounded-xl border border-zinc-800 bg-[#1A1A22] px-4 py-3 text-[15px] font-medium text-white outline-none transition placeholder:text-zinc-500 focus:border-blue-500/55"
 					></textarea>
 					{#if fieldErrors.notes}
 						<p class="text-xs text-red-300">{fieldErrors.notes}</p>
@@ -986,7 +986,7 @@ $effect(() => {
 							aria-label="Toggle quick test access"
 							class={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
 								form.debugEnabled
-									? 'border-violet-400/60 bg-violet-500/85'
+									? 'border-blue-400/60 bg-blue-500/85'
 									: 'border-zinc-700 bg-zinc-600'
 							}`}
 							onclick={() => {
@@ -1012,7 +1012,7 @@ $effect(() => {
 					<button
 						type="submit"
 						disabled={!canSubmitCreate}
-						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 font-display text-base font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
+						class="inline-flex h-12 w-full items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 font-display text-base font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none"
 					>
 						{isSubmitting ? 'Creating reservation...' : 'Create reservation'}
 					</button>

@@ -107,7 +107,7 @@
 		}
 
 		if (status === 'accepted') {
-			return 'bg-violet-400';
+			return 'bg-blue-400';
 		}
 
 		if (status === 'declined') {
@@ -123,7 +123,7 @@
 		}
 
 		if (status === 'accepted') {
-			return 'bg-violet-500/15 text-violet-300';
+			return 'bg-blue-500/15 text-blue-300';
 		}
 
 		if (status === 'declined') {
@@ -422,7 +422,7 @@
 		}
 
 		if (isSelected) {
-			return 'border-violet-500/65 bg-violet-500/10 shadow-[0_0_24px_rgba(168,85,247,0.12)]';
+			return 'border-blue-500/65 bg-blue-500/10 shadow-[0_0_24px_rgba(77,171,254,0.12)]';
 		}
 
 		return 'border-zinc-800 bg-[#14141A]';
@@ -462,7 +462,7 @@
 					<p class="mt-2 text-sm text-zinc-400">Only the reservation host can access check-in.</p>
 					<a
 						href={`/r/${reservationId}`}
-						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)]"
 						style="font-family: 'Space Grotesk', sans-serif;"
 					>
 						Open guest page
@@ -472,7 +472,7 @@
 				<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 					<div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#14141A] px-5 py-3.5">
 						<div class="flex items-center gap-2">
-							<span class="h-2 w-2 rounded-full bg-violet-500"></span>
+							<span class="h-2 w-2 rounded-full bg-blue-500"></span>
 							<span class="text-xs text-zinc-400" style="font-family: 'Space Mono', monospace;">Accepted</span>
 						</div>
 						<p class="text-2xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{acceptedCount}</p>

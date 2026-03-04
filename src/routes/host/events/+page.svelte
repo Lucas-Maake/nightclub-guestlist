@@ -64,7 +64,7 @@
 		}
 
 		if (status === 'upcoming') {
-			return 'border-violet-500/35 bg-violet-500/15 text-violet-300';
+			return 'border-blue-500/35 bg-blue-500/15 text-blue-300';
 		}
 
 		return 'border-zinc-700 bg-[#1A1A22] text-zinc-400';
@@ -207,7 +207,7 @@
 				</h1>
 				<a
 					href="/event"
-					class="font-display inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+					class="font-display inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_16px_rgba(77,171,254,0.35)]"
 				>
 					Browse events
 				</a>
@@ -225,7 +225,7 @@
 					<p class="mt-2 text-sm text-zinc-400">Sign in to view the events you host.</p>
 					<button
 						type="button"
-						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(77,171,254,0.35)]"
 						onclick={handleSignIn}
 					>
 						Sign in
@@ -254,7 +254,7 @@
 					</p>
 					<a
 						href="/event"
-						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(77,171,254,0.35)]"
 					>
 						Browse events
 					</a>
@@ -278,8 +278,8 @@
 								<span class="h-1.5 w-1.5 rounded-full bg-cyan-300"></span>
 								Live {liveReservations.length}
 							</span>
-							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">
-								<span class="h-1.5 w-1.5 rounded-full bg-violet-300"></span>
+							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-300">
+								<span class="h-1.5 w-1.5 rounded-full bg-blue-300"></span>
 								Upcoming {upcomingReservations.length}
 							</span>
 							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-[#1A1A22] px-3 py-1 text-xs font-semibold text-zinc-400">
@@ -303,7 +303,7 @@
 								<section class="space-y-4">
 									<div class="flex items-center justify-between gap-3">
 										<h2 class="font-display text-2xl font-bold text-white">Upcoming</h2>
-										<span class="font-mono inline-flex items-center rounded-full border border-violet-500/35 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">
+										<span class="font-mono inline-flex items-center rounded-full border border-blue-500/35 bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-300">
 											{upcomingReservations.length}
 										</span>
 									</div>
@@ -314,7 +314,7 @@
 												<div class="flex flex-wrap items-start justify-between gap-3">
 													<div class="space-y-1">
 														<p class="font-display text-2xl font-bold text-white">{reservation.clubName}</p>
-														<p class="font-mono text-xs font-semibold text-violet-300">
+														<p class="font-mono text-xs font-semibold text-blue-300">
 															{reservationDateLine(reservation)}
 														</p>
 														<p class="text-sm text-zinc-400">
@@ -328,7 +328,7 @@
 
 												<div class="mt-3 flex flex-wrap items-center gap-4">
 													<div class="flex items-center gap-1.5">
-														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
 														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
 															{reservation.acceptedCount} ACCEPTED
 														</span>
@@ -348,7 +348,7 @@
 												<div class="mt-4 flex flex-wrap items-center gap-2">
 													<a
 														href={`/r/${reservation.reservationId}/host`}
-														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(168,85,247,0.35)]"
+														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(77,171,254,0.35)]"
 													>
 														Host hub
 													</a>
@@ -402,7 +402,7 @@
 
 												<div class="mt-3 flex flex-wrap items-center gap-4">
 													<div class="flex items-center gap-1.5">
-														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
 														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
 															{reservation.acceptedCount} ACCEPTED
 														</span>
@@ -422,7 +422,7 @@
 												<div class="mt-4 flex flex-wrap items-center gap-2">
 													<a
 														href={`/r/${reservation.reservationId}/host`}
-														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(168,85,247,0.35)]"
+														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(77,171,254,0.35)]"
 													>
 														Host hub
 													</a>
@@ -476,7 +476,7 @@
 
 												<div class="mt-3 flex flex-wrap items-center gap-4">
 													<div class="flex items-center gap-1.5">
-														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
 														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
 															{reservation.acceptedCount} ACCEPTED
 														</span>

@@ -339,7 +339,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 
 <div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
 	<div
-		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(168_85_247_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(77_171_254_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
 	></div>
 
 	<main class="relative z-10 flex min-h-screen flex-1 flex-col">
@@ -377,7 +377,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 				<div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,7,0.15)_0%,rgba(5,5,7,0.74)_58%,rgba(5,5,7,0.98)_100%)]"></div>
 				<div class="absolute inset-x-0 bottom-0">
 					<div class="mx-auto w-full max-w-[1440px] px-5 pb-6 sm:px-8 sm:pb-8 lg:px-12 lg:pb-10">
-						<p class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-violet-100" style="font-family: 'Space Mono', monospace;">
+						<p class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-blue-100" style="font-family: 'Space Mono', monospace;">
 							<Sparkles class="h-3.5 w-3.5" />
 							Live event
 						</p>
@@ -407,7 +407,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 				<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
 					<div class="order-2 space-y-5 lg:order-1">
 						<section class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
-							<p class="text-[11px] uppercase tracking-[0.14em] text-violet-300" style="font-family: 'Space Mono', monospace;">About</p>
+							<p class="text-[11px] uppercase tracking-[0.14em] text-blue-300" style="font-family: 'Space Mono', monospace;">About</p>
 							<p class="mt-3 text-sm leading-6 text-zinc-300">
 								{eventRecord.description}
 							</p>
@@ -419,7 +419,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 
 						<section class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
 							{#if isTablePackagesEvent}
-								<p class="text-[11px] uppercase tracking-[0.14em] text-violet-300" style="font-family: 'Space Mono', monospace;">
+								<p class="text-[11px] uppercase tracking-[0.14em] text-blue-300" style="font-family: 'Space Mono', monospace;">
 									{eventRecord.packageDetails?.heading ?? 'VIP Table Details'}
 								</p>
 								{#if eventRecord.packageDetails?.summary}
@@ -465,7 +465,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 									</p>
 								{/if}
 							{:else}
-								<p class="text-[11px] uppercase tracking-[0.14em] text-violet-300" style="font-family: 'Space Mono', monospace;">Admission</p>
+								<p class="text-[11px] uppercase tracking-[0.14em] text-blue-300" style="font-family: 'Space Mono', monospace;">Admission</p>
 								<div class="mt-3 space-y-2">
 									{#if eventRecord.ticketTiers.length === 0}
 										<div class="rounded-xl border border-zinc-700 bg-zinc-950/60 p-3">
@@ -490,7 +490,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 						</section>
 
 						<section class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
-							<p class="text-[11px] uppercase tracking-[0.14em] text-violet-300" style="font-family: 'Space Mono', monospace;">Event details</p>
+							<p class="text-[11px] uppercase tracking-[0.14em] text-blue-300" style="font-family: 'Space Mono', monospace;">Event details</p>
 							<div class="mt-3 grid gap-3 sm:grid-cols-2">
 								<article class="rounded-xl border border-zinc-700 bg-zinc-950/60 p-4">
 									<Zap class="h-5 w-5 text-cyan-300" />
@@ -549,7 +549,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 											<div
 												class={`rounded-xl border bg-zinc-950/60 p-3 transition ${
 													selectedTablePackageId === tablePackage.id
-														? 'border-violet-500/55 shadow-[0_0_14px_rgba(168,85,247,0.18)]'
+														? 'border-blue-500/55 shadow-[0_0_14px_rgba(77,171,254,0.18)]'
 														: 'border-zinc-700'
 												}`}
 											>
@@ -568,7 +568,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 													</div>
 													<button
 														type="button"
-														class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-semibold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+														class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-semibold text-white shadow-[0_0_18px_rgba(77,171,254,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
 														onclick={() => openTablePackageModal(tablePackage.id)}
 														disabled={tableBookingClosed}
 													>
@@ -621,7 +621,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 										<div
 											class={`relative z-0 flex items-center justify-between gap-3 rounded-xl border px-3 py-3 backdrop-blur-sm transition-all duration-200 focus-within:z-20 ${
 												(quantities[tier.id] ?? 0) > 0
-													? 'border-violet-500/45 bg-violet-500/12 shadow-[0_0_14px_rgba(168,85,247,0.2)]'
+													? 'border-blue-500/45 bg-blue-500/12 shadow-[0_0_14px_rgba(77,171,254,0.2)]'
 													: 'border-zinc-700 bg-zinc-950/45'
 											}`}
 										>
@@ -654,7 +654,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 									type="button"
 									class={`mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-bold transition ${
 										selectedTicketCount > 0
-											? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)] hover:brightness-110'
+											? 'bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-[0_0_24px_rgba(77,171,254,0.35)] hover:brightness-110'
 											: 'border border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-cyan-400/45'
 									} ${tableBookingClosed ? 'cursor-not-allowed opacity-60' : ''}`}
 									onclick={openPurchaseModal}
@@ -680,7 +680,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 						</section>
 
 						<section class="rounded-2xl border border-zinc-800 bg-zinc-900/88 p-4">
-							<p class="text-[11px] uppercase tracking-[0.14em] text-violet-300" style="font-family: 'Space Mono', monospace;">Venue</p>
+							<p class="text-[11px] uppercase tracking-[0.14em] text-blue-300" style="font-family: 'Space Mono', monospace;">Venue</p>
 							{#if mapEmbedSrc}
 								<div class="relative mt-3 h-36 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950/40">
 									<iframe
@@ -694,7 +694,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 									<div class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,7,0.16)_0%,rgba(5,5,7,0.32)_100%)]"></div>
 								</div>
 							{:else}
-								<div class="mt-3 h-36 overflow-hidden rounded-xl border border-zinc-700 bg-[radial-gradient(circle_at_50%_35%,rgba(168,85,247,0.22),transparent_60%),linear-gradient(180deg,#14141a_0%,#0f0f14_100%)]">
+								<div class="mt-3 h-36 overflow-hidden rounded-xl border border-zinc-700 bg-[radial-gradient(circle_at_50%_35%,rgba(77,171,254,0.22),transparent_60%),linear-gradient(180deg,#14141a_0%,#0f0f14_100%)]">
 									<div class="flex h-full items-center justify-center">
 										<MapPinned class="h-10 w-10 text-rose-400" />
 									</div>
@@ -725,13 +725,13 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 					<section class="mt-8 space-y-3">
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">More Events You'll Love</p>
-							<a href="/event" class="text-xs font-semibold uppercase tracking-[0.08em] text-violet-300 transition hover:text-violet-200">
+							<a href="/event" class="text-xs font-semibold uppercase tracking-[0.08em] text-blue-300 transition hover:text-blue-200">
 								View all
 							</a>
 						</div>
 						<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 							{#each moreEvents as item (item.id)}
-								<a href={`/event/${item.id}`} class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-0.5 hover:border-violet-500/55">
+								<a href={`/event/${item.id}`} class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-0.5 hover:border-blue-500/55">
 									<div class="relative h-44 overflow-hidden">
 										{#if item.posterImageUrl}
 											<img src={item.posterImageUrl} alt={`Poster for ${item.title}`} class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" loading="lazy" decoding="async" />
@@ -746,7 +746,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 										<p class="text-xs text-zinc-400">{item.venue}</p>
 										<div class="flex items-center justify-between pt-1">
 											<span class="text-xs text-lime-300" style="font-family: 'Space Mono', monospace;">{eventPriceFrom(item)}</span>
-											<span class="inline-flex h-8 items-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white">{eventCardActionLabel(item)}</span>
+											<span class="inline-flex h-8 items-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white">{eventCardActionLabel(item)}</span>
 										</div>
 									</div>
 								</a>
@@ -768,7 +768,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 			</div>
 			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
 				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
+				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">Browse Events</a>
 			</div>
 			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
 				<span>(c) 2026 Apollo HQ. All rights reserved.</span>

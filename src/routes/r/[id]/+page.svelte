@@ -725,7 +725,7 @@
 			? 'bg-[radial-gradient(circle_at_16%_18%,rgba(59,130,246,0.45),transparent_40%),radial-gradient(circle_at_84%_10%,rgba(16,185,129,0.3),transparent_36%),linear-gradient(160deg,#050911_0%,#0a1326_55%,#030712_100%)]'
 			: themeIndex === 1
 				? 'bg-[radial-gradient(circle_at_14%_22%,rgba(34,197,94,0.42),transparent_42%),radial-gradient(circle_at_84%_14%,rgba(250,204,21,0.26),transparent_36%),linear-gradient(165deg,#07120d_0%,#122318_55%,#030a06_100%)]'
-				: 'bg-[radial-gradient(circle_at_18%_20%,rgba(14,165,233,0.4),transparent_40%),radial-gradient(circle_at_84%_8%,rgba(168,85,247,0.28),transparent_38%),linear-gradient(158deg,#05111a_0%,#102438_55%,#03080f_100%)]'
+				: 'bg-[radial-gradient(circle_at_18%_20%,rgba(14,165,233,0.4),transparent_40%),radial-gradient(circle_at_84%_8%,rgba(77,171,254,0.28),transparent_38%),linear-gradient(158deg,#05111a_0%,#102438_55%,#03080f_100%)]'
 	);
 	const visibleAttendees = $derived(publicAttendees.slice(0, 3));
 	const hiddenAttendeesCount = $derived(Math.max(0, publicAttendees.length - visibleAttendees.length));
@@ -751,7 +751,7 @@
 	{/if}
 
 	<div
-		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_36rem_at_-12%_-8%,rgb(168_85_247_/_0.18),transparent_56%),radial-gradient(48rem_28rem_at_96%_10%,rgb(34_211_238_/_0.1),transparent_56%),linear-gradient(180deg,#07070b_0%,#09090f_45%,#050507_100%)]"
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_36rem_at_-12%_-8%,rgb(77_171_254_/_0.18),transparent_56%),radial-gradient(48rem_28rem_at_96%_10%,rgb(34_211_238_/_0.1),transparent_56%),linear-gradient(180deg,#07070b_0%,#09090f_45%,#050507_100%)]"
 	></div>
 
 	<AppHeader />
@@ -769,7 +769,7 @@
 					<p class="text-base font-semibold text-white">Reservation not found</p>
 					<p class="mt-1 text-sm">This invite may be invalid, expired, or removed by the host.</p>
 					<a
-						class="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/50 hover:text-white"
+						class="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-blue-500/50 hover:text-white"
 						href="/"
 					>
 						Back to home
@@ -794,7 +794,7 @@
 						<div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,7,0.1)_0%,rgba(5,5,7,0.52)_55%,rgba(5,5,7,0.96)_100%)]"></div>
 						<div class="absolute inset-x-0 bottom-0 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-10 lg:pb-8">
 							<div class="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-black/50 px-2.5 py-1">
-								<span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-violet-400/35 bg-violet-500/20 text-[11px] font-semibold text-violet-200" style="font-family: 'Space Grotesk', sans-serif;">
+								<span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-400/35 bg-blue-500/20 text-[11px] font-semibold text-blue-200" style="font-family: 'Space Grotesk', sans-serif;">
 									{hostInitials}
 								</span>
 								<div class="leading-tight">
@@ -816,7 +816,7 @@
 
 							<div class="space-y-3">
 								<div class="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/45 px-3 py-2.5">
-									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300">
 										<Calendar class="h-4 w-4" />
 									</span>
 									<div class="min-w-0">
@@ -867,7 +867,7 @@
 										<Button onclick={joinGuestlist}>Join Guestlist</Button>
 										<button
 											type="button"
-											class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+											class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-semibold text-zinc-200 transition hover:border-blue-500/55 hover:text-white"
 											onclick={openGuestSignIn}
 										>
 											Sign in
@@ -878,18 +878,18 @@
 										Checking your access...
 									</p>
 								{:else if hostViewOnly}
-									<div class="space-y-3 rounded-xl border border-violet-500/35 bg-violet-500/10 p-4">
+									<div class="space-y-3 rounded-xl border border-blue-500/35 bg-blue-500/10 p-4">
 										<p class="text-sm font-semibold text-white">Host preview mode</p>
 										<p class="text-sm text-zinc-300">Hosts can view this guest page, but RSVP actions are disabled.</p>
 										<div class="flex flex-wrap gap-2">
 											<a
-												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-blue-500/55 hover:text-white"
 												href={`/r/${reservationId}/host`}
 											>
 												Open host hub
 											</a>
 											<a
-												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-blue-500/55 hover:text-white"
 												href={`/r/${reservationId}/checkin`}
 											>
 												Open check-in
@@ -934,8 +934,8 @@
 											disabled={blocksNewAcceptance}
 											class={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
 												status === 'accepted'
-													? 'border-violet-500/65 bg-gradient-to-r from-violet-500 to-violet-700 text-white'
-													: 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-violet-500/45 hover:text-white'
+													? 'border-blue-500/65 bg-gradient-to-r from-blue-500 to-blue-700 text-white'
+													: 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-blue-500/45 hover:text-white'
 											}`}
 											onclick={() => {
 												status = 'accepted';
@@ -1005,7 +1005,7 @@
 											{submitting ? 'Saving...' : guest ? 'Update RSVP' : 'Save RSVP'}
 										</Button>
 										{#if celebrateAccepted}
-											<span class="pointer-events-none absolute -inset-3 rounded-pill border border-violet-400/45 animate-ping"></span>
+											<span class="pointer-events-none absolute -inset-3 rounded-pill border border-blue-400/45 animate-ping"></span>
 										{/if}
 									</div>
 								{/if}
@@ -1044,7 +1044,7 @@
 									<div class="flex items-center">
 										{#each visibleAttendees as attendee, index (attendee.uid)}
 											<span
-												class="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#050507] bg-violet-500/25 text-xs font-semibold text-violet-100 first:ml-0"
+												class="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#050507] bg-blue-500/25 text-xs font-semibold text-blue-100 first:ml-0"
 												style={`z-index:${10 - index}`}
 											>
 												{initials(attendee.namePublic)}
@@ -1062,7 +1062,7 @@
 											<div class="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2">
 												<div class="min-w-0">
 													<p class="truncate text-sm font-semibold text-white">{attendee.namePublic}</p>
-													<p class="text-xs text-violet-300">Going</p>
+													<p class="text-xs text-blue-300">Going</p>
 												</div>
 												<p class="text-[11px] text-zinc-500">recent</p>
 											</div>
@@ -1071,7 +1071,7 @@
 
 									<button
 										type="button"
-										class="text-xs font-semibold text-violet-300 transition hover:text-violet-200"
+										class="text-xs font-semibold text-blue-300 transition hover:text-blue-200"
 										onclick={() => {
 											guestListDialogOpen = true;
 										}}
@@ -1084,14 +1084,14 @@
 							<section class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
 								<button
 									type="button"
-									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-blue-500/55 hover:text-white"
 									onclick={addToCalendar}
 								>
 									Add to Calendar
 								</button>
 								<button
 									type="button"
-									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-blue-500/55 hover:text-white"
 									onclick={copyInviteLinkToClipboard}
 								>
 									Copy Link
@@ -1114,7 +1114,7 @@
 			</div>
 			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
 				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
+				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">Browse Events</a>
 			</div>
 			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
 				<span>(c) 2026 Apollo HQ. All rights reserved.</span>

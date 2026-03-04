@@ -243,7 +243,7 @@
 
 <div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
 	<div
-		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(168_85_247_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(77_171_254_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
 	></div>
 
 	<main class="relative z-10 flex min-h-screen flex-1 flex-col">
@@ -277,7 +277,7 @@
 					</p>
 					<p class="text-xs text-zinc-300">Reference ID: {submittedRequestId}</p>
 					<div class="flex flex-wrap gap-2">
-						<a href={`/event/${eventRecord.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">
+						<a href={`/event/${eventRecord.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">
 							Back to event
 						</a>
 						<a href="/event" class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white">
@@ -302,7 +302,7 @@
 				<div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,7,0.18)_0%,rgba(5,5,7,0.72)_58%,rgba(5,5,7,0.98)_100%)]"></div>
 				<div class="absolute inset-x-0 bottom-0">
 					<div class="mx-auto w-full max-w-[1200px] px-5 pb-6 sm:px-8 lg:px-12">
-						<p class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">Table request</p>
+						<p class="text-[11px] uppercase tracking-[0.12em] text-blue-300" style="font-family: 'Space Mono', monospace;">Table request</p>
 						<p class="mt-2 text-4xl font-black uppercase leading-[0.88] tracking-tight text-white sm:text-5xl" style="font-family: 'Space Grotesk', sans-serif;">
 							{eventRecord.posterHeadline}
 						</p>
@@ -327,7 +327,7 @@
 						</div>
 
 						<div class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4">
-							<p class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">Booking context</p>
+							<p class="text-[11px] uppercase tracking-[0.12em] text-blue-300" style="font-family: 'Space Mono', monospace;">Booking context</p>
 							<p class="mt-3 text-sm text-zinc-300">
 								Event: <span class="font-semibold text-white">{eventRecord.title}</span>
 							</p>
@@ -397,7 +397,7 @@
 						{/if}
 
 						<button
-							class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_22px_rgba(168,85,247,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+							class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_22px_rgba(77,171,254,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
 							type="submit"
 							disabled={submitting || tableRequestClosed}
 						>
@@ -419,7 +419,7 @@
 			</div>
 			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
 				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
+				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(77,171,254,0.35)]">Browse Events</a>
 			</div>
 			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
 				<span>(c) 2026 Apollo HQ. All rights reserved.</span>

@@ -32,18 +32,18 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<a href="/event" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-violet-500/60 hover:text-white">
+			<a href="/event" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white">
 				View events
 			</a>
-			<a href="/host/events" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-violet-500/60 hover:text-white">
+			<a href="/host/events" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white">
 				My events
 			</a>
 			{#if $currentUser}
-				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-violet-500/60 hover:text-white" onclick={handleSignOut}>
+				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white" onclick={handleSignOut}>
 					Sign out
 				</button>
 			{:else}
-				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-violet-500/60 hover:text-white" onclick={handleSignIn}>
+				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white" onclick={handleSignIn}>
 					Sign in
 				</button>
 			{/if}

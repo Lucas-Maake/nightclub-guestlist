@@ -45,6 +45,7 @@
 	let genreFilter = $state<GenreFilter>('all');
 	let events = $state<EventCatalogItem[]>([]);
 	let loadingEvents = $state(true);
+	let pageAnimated = $state(false);
 	let eventsError = $state('');
 	let loadingTickets = $state(false);
 	let ticketsError = $state('');
@@ -183,23 +184,26 @@
 	});
 
 	$effect(() => {
-		if (mainView !== 'events' || loadingEvents || filteredEvents.length === 0) return;
+		if (mainView !== 'events' || loadingEvents || filteredEvents.length === 0 || pageAnimated) return;
 
 		requestAnimationFrame(() => {
+			pageAnimated = true;
+			const introEls = document.querySelectorAll('[data-page-intro]');
 			const cards = document.querySelectorAll('[data-event-card]');
-			if (cards.length === 0) return;
-			animate(
-				cards,
-				{ opacity: [0, 1], y: [20, 0] },
-				{ duration: 0.35, delay: stagger(0.07), ease: [0.22, 1, 0.36, 1] }
-			);
+			if (introEls.length > 0) {
+				animate(introEls, { opacity: [0, 1], y: [20, 0] }, { duration: 0.35, delay: stagger(0.07), ease: [0.22, 1, 0.36, 1] });
+			}
+			if (cards.length > 0) {
+				const cardsStart = introEls.length * 0.07 + 0.07;
+				animate(cards, { opacity: [0, 1], y: [20, 0] }, { duration: 0.35, delay: (i: number) => cardsStart + i * 0.07, ease: [0.22, 1, 0.36, 1] });
+			}
 		});
 	});
 </script>
 
 <div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
 	<div
-		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(168_85_247_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(77_171_254_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
 	></div>
 
 	<div class="relative z-10">
@@ -208,16 +212,16 @@
 
 	<main class="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6">
 		<section class="flex flex-col gap-3 px-5 pb-1 pt-5 sm:px-8 lg:px-12 lg:pt-8">
-			<div class="flex items-center gap-3">
-				<div class="inline-flex w-fit items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-violet-100" style="font-family: 'Space Mono', monospace;">
+			<div data-page-intro class="flex items-center gap-3" style="opacity:0">
+				<div class="inline-flex w-fit items-center gap-2 rounded-full border border-blue-500/35 bg-blue-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-blue-100" style="font-family: 'Space Mono', monospace;">
 					<Sparkles class="h-3.5 w-3.5" />
 					<span>Live discovery</span>
 				</div>
 			</div>
-			<h1 class="text-[28px] font-extrabold uppercase leading-tight tracking-[-0.03em] sm:text-[36px] lg:text-[44px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
-			<p class="max-w-[560px] text-sm text-zinc-400">Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.</p>
+			<h1 data-page-intro class="text-[28px] font-extrabold uppercase leading-tight tracking-[-0.03em] sm:text-[36px] lg:text-[44px]" style="font-family: 'Space Grotesk', sans-serif; opacity:0">Upcoming Events</h1>
+			<p data-page-intro class="max-w-[560px] text-sm text-zinc-400" style="opacity:0">Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.</p>
 
-			<div class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
+			<div data-page-intro class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto" style="opacity:0">
 				<div class="relative inline-flex shrink-0 rounded-full border border-white/[0.1] bg-white/[0.06] p-1 backdrop-blur-xl" role="tablist" aria-label="Main view">
 					<div
 						class="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -236,7 +240,7 @@
 				{#if mainView === 'events'}
 					<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
 					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter, i}
-						<button in:fly={{ y: 8, duration: 220, delay: i * 40, easing: cubicOut }} type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
+						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
 							{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
 						</button>
 					{/each}
@@ -262,22 +266,22 @@
 					</div>
 				</section>
 			{:else if !eventsError && featuredEvent}
-				<section in:fly={{ y: 14, duration: 320, easing: cubicOut }} class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+				<section in:fly={{ y: 14, duration: 320, easing: cubicOut }} class="mx-5 grid overflow-hidden rounded-2xl border border-blue-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="h-[220px] lg:h-auto lg:min-h-full">
 						{#if eventPosterImage(featuredEvent)}
 							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
 						{/if}
 					</div>
 					<div class="flex flex-col gap-2 bg-gradient-to-b from-zinc-900/95 to-zinc-950/95 p-4 sm:p-6">
-						<p class="text-[11px] uppercase tracking-wider text-violet-300" style="font-family: 'Space Mono', monospace;">Featured event</p>
+						<p class="text-[11px] uppercase tracking-wider text-blue-300" style="font-family: 'Space Mono', monospace;">Featured event</p>
 						<h2 class="text-2xl font-bold leading-tight sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">{featuredEvent.title}</h2>
 						<p class="text-sm leading-6 text-zinc-300">{featuredEvent.description}</p>
 						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><Clock3 class="h-3.5 w-3.5" />{eventTimeLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
 						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><MapPin class="h-3.5 w-3.5" />{featuredEvent.venue}</p>
 						<p class="text-xs text-zinc-400">{eventDateLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
 						<div class="flex flex-wrap gap-2 pt-1">
-							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)] transition duration-200 hover:shadow-[0_0_40px_rgba(168,85,247,0.65)] hover:scale-[1.03]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
-							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition duration-200 hover:border-violet-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(168,85,247,0.35)] hover:scale-[1.03]">Request Table</a>
+							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(77,171,254,0.35)] transition duration-200 hover:shadow-[0_0_40px_rgba(77,171,254,0.65)] hover:scale-[1.03]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
+							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition duration-200 hover:border-blue-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(77,171,254,0.35)] hover:scale-[1.03]">Request Table</a>
 						</div>
 					</div>
 				</section>
@@ -308,12 +312,12 @@
 					{:else}
 						<div class="grid gap-4 sm:grid-cols-2">
 							{#each filteredEvents.slice(1) as event, index (event.id)}
-								<a href={`/event/${event.id}`} data-event-card class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 opacity-0 transition hover:-translate-y-0.5 hover:border-violet-500/60">
+								<a href={`/event/${event.id}`} data-event-card class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 opacity-0 transition hover:-translate-y-0.5 hover:border-blue-500/60">
 									<div class="absolute inset-0">
 										{#if eventPosterImage(event)}
 											<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Poster for ${event.title}`} loading="lazy" decoding="async" />
 										{:else}
-											<div class="h-full w-full bg-[radial-gradient(circle_at_15%_15%,rgb(168_85_247_/_0.45),transparent_42%),radial-gradient(circle_at_82%_10%,rgb(34_211_238_/_0.3),transparent_50%),linear-gradient(180deg,#1b1b24_0%,#12121a_60%,#0e0e14_100%)]"></div>
+											<div class="h-full w-full bg-[radial-gradient(circle_at_15%_15%,rgb(77_171_254_/_0.45),transparent_42%),radial-gradient(circle_at_82%_10%,rgb(34_211_238_/_0.3),transparent_50%),linear-gradient(180deg,#1b1b24_0%,#12121a_60%,#0e0e14_100%)]"></div>
 										{/if}
 										<div class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/75 to-black/95"></div>
 									</div>
@@ -355,14 +359,14 @@
 						<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-sm text-zinc-300">No upcoming events.</div>
 					{:else}
 						{#each soonEvents as event, i (event.id)}
-							<a in:fly={{ y: 8, duration: 240, delay: i * 55, easing: cubicOut }} href={`/event/${event.id}`} class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition hover:border-violet-500/55">
+							<a in:fly={{ y: 8, duration: 240, delay: i * 55, easing: cubicOut }} href={`/event/${event.id}`} class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition hover:border-blue-500/55">
 								<div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
 									{#if eventPosterImage(event)}
 										<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Thumbnail for ${event.title}`} loading="lazy" decoding="async" />
 									{/if}
 								</div>
 								<div class="min-w-0">
-									<p class="truncate text-[10px] uppercase tracking-wide text-violet-300" style="font-family: 'Space Mono', monospace;">{eventDateShortLine(event.startAt)}</p>
+									<p class="truncate text-[10px] uppercase tracking-wide text-blue-300" style="font-family: 'Space Mono', monospace;">{eventDateShortLine(event.startAt)}</p>
 									<p class="truncate text-sm font-bold text-white">{event.title}</p>
 									<p class="truncate text-xs text-zinc-400">{event.venue}</p>
 								</div>
@@ -378,7 +382,7 @@
 					<div class="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
 						<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Sign in to view your active tables and tickets.</p>
 						<p class="text-sm">Once you sign in, your upcoming reservations appear here automatically.</p>
-						<button type="button" class="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]" onclick={handleSignIn}>Sign in</button>
+						<button type="button" class="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(77,171,254,0.35)]" onclick={handleSignIn}>Sign in</button>
 					</div>
 				{:else if loadingTickets}
 					<div class="grid gap-3 sm:grid-cols-2" aria-live="polite" aria-busy="true">
@@ -400,7 +404,7 @@
 								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Ticket purchases</p>
 								<div class="grid gap-3 sm:grid-cols-2">
 									{#each sortedPurchases as purchase, i (purchase.purchaseId)}
-										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/event/${purchase.eventId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/event/${purchase.eventId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-blue-500/55">
 											<p class="text-[10px] uppercase tracking-wide text-lime-300" style="font-family: 'Space Mono', monospace;">{purchase.ticketCount} ticket{purchase.ticketCount === 1 ? '' : 's'}</p>
 											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{purchase.eventTitle}</p>
 											<p class="text-xs text-zinc-300">{purchaseDateLine(purchase)}</p>
@@ -417,7 +421,7 @@
 								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Active tables</p>
 								<div class="grid gap-3 sm:grid-cols-2">
 									{#each sortedTickets as ticket, i (ticket.reservationId)}
-										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/r/${ticket.reservationId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/r/${ticket.reservationId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-blue-500/55">
 											<p class="text-[10px] uppercase tracking-wide text-zinc-300" style="font-family: 'Space Mono', monospace;">Active ticket</p>
 											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{ticket.clubName}</p>
 											<p class="text-xs text-zinc-300">{ticketDateLine(ticket)}</p>

@@ -208,7 +208,7 @@
 				<Separator class="my-3 bg-zinc-700" />
 				<div class="flex items-center justify-between gap-3 text-sm font-semibold">
 					<span class="text-zinc-300">Total</span>
-					<span class="text-violet-300">{formatPrice(checkoutCents)}</span>
+					<span class="text-blue-300">{formatPrice(checkoutCents)}</span>
 				</div>
 			</div>
 
