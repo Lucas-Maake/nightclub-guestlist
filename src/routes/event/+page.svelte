@@ -8,6 +8,11 @@
 	import type { EventCatalogItem } from '$lib/data/events';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import type { UserActiveTicketRecord, UserTicketPurchaseRecord } from '$lib/types/models';
+	import { animate as motionAnimate, stagger, type DOMKeyframesDefinition, type AnimationOptions } from 'motion';
+
+	function animate(el: Element | Element[] | NodeListOf<Element> | string, kf: DOMKeyframesDefinition, opts?: AnimationOptions) {
+		return (motionAnimate as (el: Element | Element[] | NodeListOf<Element> | string, kf: DOMKeyframesDefinition, opts?: AnimationOptions) => void)(el, kf, opts);
+	}
 
 	type MainView = 'events' | 'tickets';
 	type GenreFilter = 'all' | 'techno' | 'house' | 'dnb' | 'trance';
@@ -180,6 +185,20 @@
 
 		void loadTicketsFor(uid);
 	});
+
+	$effect(() => {
+		if (loadingEvents || filteredEvents.length === 0) return;
+
+		requestAnimationFrame(() => {
+			const cards = document.querySelectorAll('[data-event-card]');
+			if (cards.length === 0) return;
+			animate(
+				cards,
+				{ opacity: [0, 1], y: [20, 0] },
+				{ duration: 0.35, delay: stagger(0.07), ease: [0.22, 1, 0.36, 1] }
+			);
+		});
+	});
 </script>
 
 <div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
@@ -281,7 +300,7 @@
 					{:else}
 						<div class="grid gap-4 sm:grid-cols-2">
 							{#each filteredEvents as event, index (event.id)}
-								<a href={`/event/${event.id}`} class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-0.5 hover:border-violet-500/60" style={`animation-delay:${index * 70}ms`}>
+								<a href={`/event/${event.id}`} data-event-card class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 opacity-0 transition hover:-translate-y-0.5 hover:border-violet-500/60">
 									<div class="absolute inset-0">
 										{#if eventPosterImage(event)}
 											<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Poster for ${event.title}`} loading="lazy" decoding="async" />
