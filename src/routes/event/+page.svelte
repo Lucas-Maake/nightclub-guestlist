@@ -342,8 +342,12 @@
 
 				<aside class="flex min-w-0 flex-col gap-2">
 					<div class="flex items-center justify-between px-1">
-						<p class="text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Happening soon</p>
-						<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-[11px] text-zinc-400">{soonEvents.length}</span>
+						{#if loadingEvents}
+							<div class="h-2.5 w-24 rounded-full skeleton-shimmer"></div>
+						{:else}
+							<p class="text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Happening soon</p>
+							<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-[11px] text-zinc-400">{soonEvents.length}</span>
+						{/if}
 					</div>
 					{#if loadingEvents}
 						{#each [1, 2, 3] as placeholder (placeholder)}
