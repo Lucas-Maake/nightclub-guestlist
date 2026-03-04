@@ -225,7 +225,7 @@
 			{#if mainView === 'events'}
 				<div class="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Event genres">
 					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter}
-						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
+						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition cursor-pointer ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
 							{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
 						</button>
 					{/each}
@@ -249,8 +249,8 @@
 						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><MapPin class="h-3.5 w-3.5" />{featuredEvent.venue}</p>
 						<p class="text-xs text-zinc-400">{eventDateLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
 						<div class="flex flex-wrap gap-2 pt-1">
-							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
-							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white">Request Table</a>
+							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)] transition-all duration-200 hover:shadow-[0_0_40px_rgba(168,85,247,0.65)] hover:scale-[1.03]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
+							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition-all duration-200 hover:border-violet-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(168,85,247,0.35)] hover:scale-[1.03]">Request Table</a>
 						</div>
 					</div>
 				</section>
