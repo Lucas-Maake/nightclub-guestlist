@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ArrowRight } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
-	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
@@ -70,17 +69,11 @@
 					</span>
 				</div>
 
-				<div class="mt-8 flex items-center justify-center gap-4">
-					<BrandMark class="h-10 w-10 shrink-0 sm:h-14 sm:w-14 lg:h-16 lg:w-16" />
-					<h1 class="text-5xl font-extrabold uppercase leading-none tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">
-						Apollo HQ
-					</h1>
-				</div>
-
-				<p class="mt-5 max-w-[520px] text-lg font-medium text-zinc-300 sm:text-xl">
+				<h1 class="mt-8 max-w-[820px] text-6xl font-extrabold uppercase leading-none tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 40px rgba(0,0,0,0.6);">
 					Your night starts here.
-				</p>
-				<p class="mt-2 max-w-[480px] text-sm text-zinc-500">
+				</h1>
+
+				<p class="mt-5 max-w-[480px] text-sm text-zinc-500">
 					Curated events, reserved tables, and instant access — wherever the night takes you.
 				</p>
 
