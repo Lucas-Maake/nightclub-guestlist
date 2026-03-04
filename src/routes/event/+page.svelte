@@ -187,7 +187,7 @@
 	});
 
 	$effect(() => {
-		if (loadingEvents || filteredEvents.length === 0) return;
+		if (mainView !== 'events' || loadingEvents || filteredEvents.length === 0) return;
 
 		requestAnimationFrame(() => {
 			const cards = document.querySelectorAll('[data-event-card]');
