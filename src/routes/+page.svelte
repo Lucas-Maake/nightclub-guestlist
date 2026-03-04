@@ -2,6 +2,51 @@
 	import { ArrowRight } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
+	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+	import { Calendar, MapPin, ChevronRight } from 'lucide-svelte';
+	import { listPublishedEvents } from '$lib/firebase/firestore';
+	import type { EventCatalogItem } from '$lib/data/events';
+
+	let events = $state<EventCatalogItem[]>([]);
+	let loadingEvents = $state(true);
+
+	const shortDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+	const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+	const upcomingEvents = $derived.by(() => {
+		const now = Date.now();
+		return [...events]
+			.filter((e) => new Date(e.endAt).getTime() >= now)
+			.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+			.slice(0, 3);
+	});
+
+	function eventPosterImage(event: EventCatalogItem): string {
+		const overrides: Record<string, string> = {
+			'thursday-den': '/images/events/den.png',
+			'red-room': '/images/events/decca.png',
+			'void-frequency': '/images/events/monarch.png',
+			'saturday-atelier': '/images/events/mission.png'
+		};
+		return overrides[event.id] ?? event.posterImageUrl ?? '';
+	}
+
+	function eventDateShortLine(startAtIso: string): string {
+		const start = new Date(startAtIso);
+		return `${shortDateFormatter.format(start).toUpperCase()} · ${timeFormatter.format(start)}`;
+	}
+
+	onMount(async () => {
+		try {
+			events = await listPublishedEvents();
+		} catch {
+			events = [];
+		} finally {
+			loadingEvents = false;
+		}
+	});
 </script>
 
 <div class="relative min-h-screen overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
@@ -58,5 +103,69 @@
 				</div>
 			</div>
 		</div>
+
+		{#if loadingEvents || upcomingEvents.length > 0}
+			<section class="pb-20 pt-4 lg:pb-28" aria-label="Upcoming events">
+				<div class="mb-6 flex items-center justify-between">
+					<h2 class="text-2xl font-extrabold uppercase tracking-[-0.02em] text-white sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">
+						Happening soon
+					</h2>
+					<a
+						href="/event"
+						class="inline-flex items-center gap-1 text-sm font-semibold text-violet-400 no-underline transition hover:text-violet-300"
+					>
+						View all <ChevronRight class="h-4 w-4" />
+					</a>
+				</div>
+
+				{#if loadingEvents}
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+						{#each [1, 2, 3] as _ (_)}
+							<div class="h-[300px] rounded-2xl border border-zinc-800 skeleton-shimmer"></div>
+						{/each}
+					</div>
+				{:else}
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{#each upcomingEvents as event, i (event.id)}
+							<a
+								in:fly={{ y: 16, duration: 300, delay: i * 80, easing: cubicOut }}
+								href={`/event/${event.id}`}
+								class="group relative flex min-h-[300px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 no-underline transition hover:-translate-y-0.5 hover:border-violet-500/60"
+							>
+								<div class="absolute inset-0">
+									{#if eventPosterImage(event)}
+										<img
+											class="h-full w-full object-cover"
+											src={eventPosterImage(event)}
+											alt={`Poster for ${event.title}`}
+											loading="lazy"
+											decoding="async"
+										/>
+									{:else}
+										<div class="h-full w-full bg-[radial-gradient(circle_at_15%_15%,rgb(168_85_247_/_0.45),transparent_42%),radial-gradient(circle_at_82%_10%,rgb(34_211_238_/_0.3),transparent_50%),linear-gradient(180deg,#1b1b24_0%,#12121a_60%,#0e0e14_100%)]"></div>
+									{/if}
+									<div class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/75 to-black/95"></div>
+								</div>
+								<div class="relative mt-auto flex flex-col gap-3 p-4">
+									<h3 class="text-xl font-bold leading-tight text-white" style="font-family: 'Space Grotesk', sans-serif;">{event.title}</h3>
+									<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+										<Calendar class="h-3.5 w-3.5" />{eventDateShortLine(event.startAt)}
+									</p>
+									<div class="flex items-center justify-between gap-3">
+										<p class="inline-flex min-w-0 items-center gap-1.5 text-xs text-zinc-300">
+											<MapPin class="h-3.5 w-3.5 shrink-0" />
+											<span class="truncate">{event.venue}{event.location ? ` · ${event.location}` : ''}</span>
+										</p>
+										<span class="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-white">
+											Details <ChevronRight class="h-3.5 w-3.5" />
+										</span>
+									</div>
+								</div>
+							</a>
+						{/each}
+					</div>
+				{/if}
+			</section>
+		{/if}
 	</main>
 </div>
