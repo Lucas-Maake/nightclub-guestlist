@@ -346,13 +346,10 @@
 					</div>
 					{#if loadingEvents}
 						{#each [1, 2, 3] as placeholder (placeholder)}
-							<div class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
-								<div class="h-12 w-12 shrink-0 rounded-lg skeleton-shimmer"></div>
-								<div class="flex min-w-0 flex-1 flex-col gap-1.5">
-									<div class="h-2 w-14 rounded skeleton-shimmer"></div>
-									<div class="h-3.5 w-3/4 rounded skeleton-shimmer"></div>
-									<div class="h-2.5 w-1/2 rounded skeleton-shimmer"></div>
-								</div>
+							<div class="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3">
+								<div class="h-2 w-16 rounded-full skeleton-shimmer"></div>
+								<div class="h-3 w-4/5 rounded-full skeleton-shimmer"></div>
+								<div class="h-2.5 w-1/2 rounded-full skeleton-shimmer"></div>
 							</div>
 						{/each}
 					{:else if soonEvents.length === 0}
