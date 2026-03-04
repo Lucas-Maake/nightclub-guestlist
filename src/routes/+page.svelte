@@ -3,7 +3,7 @@
 	import AppHeader from '$lib/components/common/app-header.svelte';
 </script>
 
-<div class="relative h-screen overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
+<div class="relative flex h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
 	<div class="pointer-events-none absolute inset-0 bg-[url('/images/landing-minimal-bg.png')] bg-cover bg-center opacity-70"></div>
 	<div
 		class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(77,171,254,0.22),transparent_36%),radial-gradient(circle_at_50%_72%,rgba(5,5,7,0.94),rgba(5,5,7,1)_74%),linear-gradient(180deg,rgba(5,5,7,0.2)_0%,rgba(5,5,7,0.82)_58%,#050507_100%)]"
@@ -14,8 +14,7 @@
 		<AppHeader />
 	</div>
 
-	<main class="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
-		<div class="flex min-h-[calc(100vh-68px)] items-center justify-center py-20 lg:py-28">
+	<main class="relative z-10 mx-auto flex w-full flex-1 items-center justify-center px-5 sm:px-8 lg:px-12">
 			<div class="flex w-full max-w-[900px] flex-col items-center text-center">
 				<div class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2">
 					<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400"></span>
@@ -44,6 +43,5 @@
 					</a>
 				</div>
 			</div>
-		</div>
 	</main>
 </div>
