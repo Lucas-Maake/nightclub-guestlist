@@ -27,7 +27,7 @@
 		<div class="flex min-w-0 items-center gap-3">
 			<a href="/event" class="inline-flex min-w-0 items-center gap-2 text-base font-extrabold uppercase text-white no-underline sm:text-lg">
 				<BrandMark class="h-4 w-4 shrink-0" />
-				<span class="font-display truncate leading-none">NIGHTCLUB GUESTLIST</span>
+				<span class="font-display truncate leading-none">APOLLO HQ</span>
 			</a>
 		</div>
 

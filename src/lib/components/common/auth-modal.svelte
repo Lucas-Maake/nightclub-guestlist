@@ -422,7 +422,7 @@
 					<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white" style="--foreground: 222 24% 18%; --primary: 262 90% 62%;">
 						<BrandMark class="h-4 w-4" />
 					</span>
-					<span class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#4b5563]">Nightclub Guestlist</span>
+					<span class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#4b5563]">Apollo HQ</span>
 				</div>
 				<h2 id="auth-modal-title" class="mt-4 text-[2rem] font-semibold leading-none tracking-tight text-[#20242a]">
 					Sign In / Sign Up

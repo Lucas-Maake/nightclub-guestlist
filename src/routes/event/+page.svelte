@@ -437,7 +437,7 @@
 
 	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
 		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
-			<span class="text-xs text-zinc-500">(c) 2026 Nightclub Guestlist</span>
+			<span class="text-xs text-zinc-500">(c) 2026 Apollo HQ</span>
 			<span class="text-xs text-zinc-600">All rights reserved.</span>
 		</div>
 	</footer>

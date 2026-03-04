@@ -727,7 +727,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
 			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Nightclub Guestlist</p>
+					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Apollo HQ</p>
 					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
 				</div>
 			</div>
@@ -736,7 +736,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
 			</div>
 			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-				<span>(c) 2026 Nightclub Guestlist. All rights reserved.</span>
+				<span>(c) 2026 Apollo HQ. All rights reserved.</span>
 			</div>
 		</div>
 	</footer>
