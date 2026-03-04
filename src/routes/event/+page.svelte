@@ -219,6 +219,7 @@
 				</div>
 			</div>
 			<h1 class="text-[28px] font-extrabold uppercase leading-tight tracking-[-0.03em] sm:text-[36px] lg:text-[44px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
+			<p class="max-w-[560px] text-sm text-zinc-400">Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.</p>
 
 			<div class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
 				<div class="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1" role="tablist" aria-label="Main view">
