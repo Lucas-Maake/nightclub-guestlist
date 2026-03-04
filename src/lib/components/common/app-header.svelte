@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { fade, fly } from 'svelte/transition';
 	import { Menu, X } from 'lucide-svelte';
@@ -13,6 +13,10 @@
 
 	let { compact = false }: Props = $props();
 	let mobileMenuOpen = $state(false);
+
+	afterNavigate(() => {
+		mobileMenuOpen = false;
+	});
 
 	async function handleSignOut(): Promise<void> {
 		mobileMenuOpen = false;
@@ -68,7 +72,7 @@
 				{#if mobileMenuOpen}
 					<div
 						in:fly={{ y: -6, duration: 180 }}
-						class="absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 shadow-2xl backdrop-blur-xl"
+						class="absolute right-0 top-11 z-50 w-48 overflow-hidden rounded-xl border border-white/[0.1] bg-[#1c1c23] shadow-2xl"
 					>
 						<nav class="flex flex-col p-1.5">
 							<a href="/event" onclick={() => (mobileMenuOpen = false)} class="rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-200 no-underline transition hover:bg-white/[0.07] hover:text-white">Browse</a>
