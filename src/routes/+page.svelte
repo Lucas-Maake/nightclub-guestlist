@@ -167,35 +167,36 @@
 				{/if}
 			</section>
 		{/if}
-	<section id="how-it-works" class="border-t border-zinc-800/60 pb-24 pt-20">
-		<h2 class="mb-12 text-center text-2xl font-extrabold uppercase tracking-[-0.02em] text-white sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">
-			How it works
-		</h2>
-		<div class="grid gap-8 sm:grid-cols-3">
-			{#each [
-				{ n: '01', icon: Calendar, title: 'Browse events', desc: 'Discover upcoming nights curated across top venues in your city.' },
-				{ n: '02', icon: Ticket, title: 'Reserve your spot', desc: 'Lock in a table or ticket in seconds — no forms, no waiting.' },
-				{ n: '03', icon: UserCheck, title: 'Show up', desc: 'Flash your confirmation at the door and walk straight in.' }
-			] as step (step.n)}
-				{@const Icon = step.icon}
-				<div class="flex flex-col items-center gap-4 text-center">
-					<div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-500/25 bg-violet-500/10">
-						<Icon class="h-6 w-6 text-violet-400" />
+		<section id="how-it-works" aria-labelledby="how-it-works-heading" class="border-t border-zinc-800/60 pb-24 pt-20">
+			<h2 id="how-it-works-heading" class="mb-12 text-center text-2xl font-extrabold uppercase tracking-[-0.02em] text-white sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">
+				How it works
+			</h2>
+			<div class="grid gap-8 sm:grid-cols-3">
+				{#each [
+					{ n: '01', icon: Calendar, title: 'Browse events', desc: 'Discover upcoming nights curated across top venues in your city.' },
+					{ n: '02', icon: Ticket, title: 'Reserve your spot', desc: 'Lock in a table or ticket in seconds — no forms, no waiting.' },
+					{ n: '03', icon: UserCheck, title: 'Show up', desc: 'Flash your confirmation at the door and walk straight in.' }
+				] as step (step.n)}
+					{@const Icon = step.icon}
+					<div class="flex flex-col items-center gap-4 text-center">
+						<div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-500/25 bg-violet-500/10">
+							<Icon class="h-6 w-6 text-violet-400" />
+						</div>
+						<div>
+							<p class="mb-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-violet-400" style="font-family: 'Space Mono', monospace;">{step.n}</p>
+							<h3 class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{step.title}</h3>
+							<p class="mt-1 text-sm text-zinc-400">{step.desc}</p>
+						</div>
 					</div>
-					<div>
-						<p class="mb-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-violet-400" style="font-family: 'Space Mono', monospace;">{step.n}</p>
-						<h3 class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{step.title}</h3>
-						<p class="mt-1 text-sm text-zinc-400">{step.desc}</p>
-					</div>
-				</div>
-			{/each}
-		</div>
-	</section>
+				{/each}
+			</div>
+		</section>
 	</main>
-<footer class="relative z-10 w-full border-t border-zinc-800/50 bg-[#0e0e12]">
-	<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
-		<span class="text-xs text-zinc-500">&copy; 2026 Apollo HQ</span>
-		<span class="text-xs text-zinc-600">All rights reserved.</span>
-	</div>
-</footer>
+
+	<footer class="relative z-10 w-full border-t border-zinc-800/50 bg-[#0e0e12]">
+		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+			<span class="text-xs text-zinc-500">&copy; 2026 Apollo HQ</span>
+			<span class="text-xs text-zinc-600">All rights reserved.</span>
+		</div>
+	</footer>
 </div>
