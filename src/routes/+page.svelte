@@ -17,30 +17,30 @@
 	<main class="relative z-10 mx-auto flex min-h-[calc(100vh-68px)] w-full max-w-[1440px] items-center justify-center px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
 		<section class="flex w-full max-w-[980px] flex-col items-center text-center">
 			<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2">
-				<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+				<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400"></span>
 				<span class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">
-					BROOKLYN'S #1 NIGHTLIFE PLATFORM
+					QUALITY NIGHTLIFE · ACROSS AMERICA
 				</span>
 			</div>
 
 			<h1 class="mt-6 text-5xl font-extrabold uppercase leading-[0.9] tracking-[-0.02em] text-white sm:text-6xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">
-				<span class="block">YOUR NEXT</span>
-				<span class="block">UNFORGETTABLE</span>
-				<span class="block">NIGHT STARTS HERE</span>
+				<span class="block">THE STANDARD</span>
+				<span class="block">FOR NIGHTLIFE</span>
+				<span class="block bg-gradient-to-r from-violet-300 via-violet-100 to-cyan-300 bg-clip-text text-transparent">IN EVERY CITY</span>
 			</h1>
 
-			<p class="mt-5 max-w-[660px] text-base text-zinc-300 sm:text-lg">
-				Discover events, book tables, and skip the line.
+			<p class="mt-5 max-w-[560px] text-base text-zinc-400 sm:text-lg">
+				Curated events, reserved tables, and instant access — wherever the night takes you.
 			</p>
 
 			<div class="mt-8 flex flex-wrap items-center justify-center gap-3">
 				<a
 					href="/event"
-					class="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-6 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)] transition hover:brightness-110"
+					class="group inline-flex h-13 items-center justify-center gap-2.5 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 px-8 text-base font-bold text-white shadow-[0_0_32px_rgba(168,85,247,0.45)] transition duration-200 hover:shadow-[0_0_52px_rgba(168,85,247,0.65)] hover:scale-[1.03]"
 					style="font-family: 'Space Grotesk', sans-serif;"
 				>
 					Explore Events
-					<ArrowRight class="h-4 w-4" />
+					<ArrowRight class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
 				</a>
 			</div>
 		</section>
