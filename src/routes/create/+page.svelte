@@ -616,8 +616,8 @@ $effect(() => {
 	{#if shareReservationId}
 		<section class="mx-auto w-full max-w-[1440px] space-y-6 text-white">
 			<div class="flex items-center gap-2 bg-[linear-gradient(90deg,rgba(77,171,254,0.12)_0%,rgba(5,5,7,0)_100%)] px-5 py-3 sm:px-8 lg:px-10">
-				<span class="h-2.5 w-2.5 rounded-full bg-lime-300"></span>
-				<p class="text-xs font-bold uppercase tracking-[0.2em] text-lime-300" style="font-family: 'Space Mono', monospace;">
+				<span class="h-2.5 w-2.5 rounded-full bg-sky-400"></span>
+				<p class="text-xs font-bold uppercase tracking-[0.2em] text-sky-400" style="font-family: 'Space Mono', monospace;">
 					Invite is live
 				</p>
 			</div>
@@ -657,7 +657,7 @@ $effect(() => {
 							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
 								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Capacity</p>
 								<div class="flex items-center gap-2.5">
-									<Users class="h-4 w-4 text-lime-300" />
+									<Users class="h-4 w-4 text-sky-400" />
 									<p class="text-sm font-semibold text-white">{shareReservation.capacity} guests</p>
 								</div>
 							</div>
@@ -721,7 +721,7 @@ $effect(() => {
 								></div>
 							</div>
 							<div class="mt-3 flex items-center justify-between gap-2 text-xs" style="font-family: 'Space Mono', monospace;">
-								<p class="font-semibold text-lime-300">{shareSpotsLeft} spots left</p>
+								<p class="font-semibold text-sky-400">{shareSpotsLeft} spots left</p>
 								<p class="text-zinc-500">{shareReservation.declinedCount} declined</p>
 							</div>
 						</section>

@@ -479,7 +479,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 													<p class="text-sm font-semibold text-white">{tier.label}</p>
 													<p class="text-xs text-zinc-400">Max {tier.maxPerOrder} per order</p>
 												</div>
-												<p class="text-sm font-semibold text-lime-300" style="font-family: 'Space Mono', monospace;">
+												<p class="text-sm font-semibold text-sky-400" style="font-family: 'Space Mono', monospace;">
 													{formatPrice(tier.priceCents)}
 												</p>
 											</div>
@@ -534,7 +534,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 							{#if isTablePackagesEvent}
 								<div class="flex items-center justify-between gap-3">
 									<p class="text-xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Select a Table Package</p>
-									<span class="inline-flex items-center rounded-full bg-lime-300/15 px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-lime-300" style="font-family: 'Space Mono', monospace;">
+									<span class="inline-flex items-center rounded-full bg-sky-400/15 px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-sky-400" style="font-family: 'Space Mono', monospace;">
 										{eventTablePackages.length} available
 									</span>
 								</div>
@@ -612,7 +612,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 							{:else}
 								<div class="flex items-center justify-between gap-3">
 									<p class="text-xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Select Tickets</p>
-									<span class="inline-flex items-center rounded-full bg-lime-300/15 px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-lime-300" style="font-family: 'Space Mono', monospace;">
+									<span class="inline-flex items-center rounded-full bg-sky-400/15 px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-sky-400" style="font-family: 'Space Mono', monospace;">
 										{selectedTicketCount} selected
 									</span>
 								</div>
@@ -745,7 +745,7 @@ function eventCardActionLabel(event: EventCatalogItem): string {
 										<p class="text-base font-semibold text-white">{item.title}</p>
 										<p class="text-xs text-zinc-400">{item.venue}</p>
 										<div class="flex items-center justify-between pt-1">
-											<span class="text-xs text-lime-300" style="font-family: 'Space Mono', monospace;">{eventPriceFrom(item)}</span>
+											<span class="text-xs text-sky-400" style="font-family: 'Space Mono', monospace;">{eventPriceFrom(item)}</span>
 											<span class="inline-flex h-8 items-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-3 text-xs font-bold text-white">{eventCardActionLabel(item)}</span>
 										</div>
 									</div>

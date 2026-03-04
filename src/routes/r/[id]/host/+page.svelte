@@ -680,7 +680,7 @@
 							</div>
 
 							<div class="mt-4 flex items-center justify-between gap-3 text-xs" style="font-family: 'Space Mono', monospace;">
-								<p class="font-semibold text-lime-300">{spotsLeft} spots left</p>
+								<p class="font-semibold text-sky-400">{spotsLeft} spots left</p>
 								<p class="text-zinc-500">{declinedCount} declined</p>
 							</div>
 						</section>

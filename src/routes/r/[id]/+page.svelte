@@ -834,7 +834,7 @@
 									</div>
 								</div>
 								<div class="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/45 px-3 py-2.5">
-									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-lime-400/15 text-lime-300">
+									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500/15 text-sky-400">
 										<Users class="h-4 w-4" />
 									</span>
 									<div class="min-w-0">

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import { Input, Label } from '$lib/components/ui/input';
 	import type { EventCatalogItem } from '$lib/data/events';
@@ -64,14 +66,13 @@
 	}
 
 	function toUsPhoneDisplay(value: string): string {
-		const digits = digitsOnly(value).slice(0, 10);
-		if (digits.length <= 3) {
-			return digits;
-		}
-		if (digits.length <= 6) {
-			return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-		}
-		return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+		let d = digitsOnly(value);
+		// Strip US country code when present (e.g. +1XXXXXXXXXX → XXXXXXXXXX)
+		if (d.length === 11 && d.startsWith('1')) d = d.slice(1);
+		d = d.slice(0, 10);
+		if (d.length <= 3) return d;
+		if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+		return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
 	}
 
 	function toUsPhoneE164(value: string): string | null {
@@ -250,9 +251,14 @@
 		<AppHeader />
 
 		{#if loadingEvent}
-			<section class="mx-auto w-full max-w-[1200px] px-5 py-8 sm:px-8 lg:px-12">
-				<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
-					<p class="font-semibold text-white">Loading event...</p>
+			<div class="relative h-[280px] overflow-hidden border-b border-zinc-800 sm:h-[340px] skeleton-shimmer"></div>
+			<section class="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
+				<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
+					<div class="order-2 space-y-5 lg:order-1">
+						<div class="h-40 rounded-2xl border border-zinc-800 skeleton-shimmer"></div>
+						<div class="h-28 rounded-2xl border border-zinc-800 skeleton-shimmer"></div>
+					</div>
+					<div class="order-1 h-[420px] rounded-2xl border border-zinc-800 skeleton-shimmer lg:order-2"></div>
 				</div>
 			</section>
 		{:else if !eventRecord}
@@ -267,8 +273,8 @@
 			</section>
 		{:else if submittedRequestId}
 			<section class="mx-auto w-full max-w-[1200px] px-5 py-8 sm:px-8 lg:px-12">
-				<div class="space-y-4 rounded-2xl border border-lime-300/35 bg-lime-300/10 p-5 text-zinc-100">
-					<p class="text-sm font-semibold uppercase tracking-wide text-lime-300" style="font-family: 'Space Mono', monospace;">
+				<div class="space-y-4 rounded-2xl border border-sky-400/35 bg-sky-400/10 p-5 text-zinc-100">
+					<p class="text-sm font-semibold uppercase tracking-wide text-sky-400" style="font-family: 'Space Mono', monospace;">
 						Request submitted
 					</p>
 					<p class="text-sm">
@@ -287,7 +293,7 @@
 				</div>
 			</section>
 		{:else}
-			<section class="relative h-[280px] overflow-hidden border-b border-zinc-800 sm:h-[340px]">
+			<section in:fly={{ y: 16, duration: 340, easing: cubicOut }} class="relative h-[280px] overflow-hidden border-b border-zinc-800 sm:h-[340px]">
 				{#if eventRecord.posterImageUrl}
 					<img
 						src={eventRecord.posterImageUrl}
@@ -314,7 +320,7 @@
 			<section class="mx-auto w-full max-w-[1200px] px-5 py-6 sm:px-8 sm:py-8 lg:px-12">
 				<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
 					<div class="order-2 space-y-5 lg:order-1">
-						<div class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
+						<div in:fly={{ y: 14, duration: 300, delay: 60, easing: cubicOut }} class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4 sm:p-5">
 							<h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl" style="font-family: 'Space Grotesk', sans-serif;">
 								Request A Table
 							</h1>
@@ -326,7 +332,7 @@
 							<p class="mt-2 text-sm font-semibold text-rose-200">This is not a confirmed booking.</p>
 						</div>
 
-						<div class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4">
+						<div in:fly={{ y: 14, duration: 300, delay: 120, easing: cubicOut }} class="rounded-2xl border border-zinc-800 bg-zinc-900/85 p-4">
 							<p class="text-[11px] uppercase tracking-[0.12em] text-blue-300" style="font-family: 'Space Mono', monospace;">Booking context</p>
 							<p class="mt-3 text-sm text-zinc-300">
 								Event: <span class="font-semibold text-white">{eventRecord.title}</span>
@@ -340,7 +346,7 @@
 						</div>
 					</div>
 
-					<form class="order-1 space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/88 p-4 sm:p-5 lg:order-2" onsubmit={handleSubmit}>
+					<form in:fly={{ y: 14, duration: 300, delay: 30, easing: cubicOut }} class="order-1 space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/88 p-4 sm:p-5 lg:order-2" onsubmit={handleSubmit}>
 						<div class="space-y-2">
 							<Label for="firstName">First Name *</Label>
 							<Input id="firstName" placeholder="First Name" bind:value={form.firstName} disabled={submitting} />
@@ -379,7 +385,15 @@
 									disabled={submitting}
 									oninput={(event: Event) => {
 										const target = event.currentTarget as HTMLInputElement;
-										form.phone = toUsPhoneDisplay(target.value);
+										const cursor = target.selectionStart ?? target.value.length;
+										const oldLen = target.value.length;
+										const formatted = toUsPhoneDisplay(target.value);
+										form.phone = formatted;
+										tick().then(() => {
+											const delta = formatted.length - oldLen;
+											const pos = Math.max(0, cursor + delta);
+											target.setSelectionRange(pos, pos);
+										});
 									}}
 								/>
 							</div>
