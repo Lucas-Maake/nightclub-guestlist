@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ArrowRight } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
+	import BrandMark from '$lib/components/common/brand-mark.svelte';
 </script>
 
 <div class="relative min-h-screen overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
@@ -19,15 +20,14 @@
 			<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2">
 				<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400"></span>
 				<span class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">
-					QUALITY NIGHTLIFE · ACROSS AMERICA
+					Best Nightlife In America
 				</span>
 			</div>
 
-			<h1 class="mt-6 text-5xl font-extrabold uppercase leading-[0.9] tracking-[-0.02em] text-white sm:text-6xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">
-				<span class="block">THE STANDARD</span>
-				<span class="block">FOR NIGHTLIFE</span>
-				<span class="block bg-gradient-to-r from-violet-300 via-violet-100 to-cyan-300 bg-clip-text text-transparent">IN EVERY CITY</span>
-			</h1>
+			<div class="mt-6 flex items-center justify-center gap-4">
+				<BrandMark class="h-12 w-12 shrink-0 sm:h-16 sm:w-16 lg:h-20 lg:w-20" />
+				<h1 class="text-5xl font-extrabold uppercase leading-none tracking-[-0.02em] text-white sm:text-6xl lg:text-8xl" style="font-family: 'Space Grotesk', sans-serif; text-shadow: 0 12px 34px rgba(0,0,0,0.5);">Apollo HQ</h1>
+			</div>
 
 			<p class="mt-5 max-w-[560px] text-base text-zinc-400 sm:text-lg">
 				Curated events, reserved tables, and instant access — wherever the night takes you.

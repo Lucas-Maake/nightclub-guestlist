@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
@@ -223,12 +222,17 @@
 			<p class="max-w-[560px] text-sm text-zinc-400">Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.</p>
 
 			<div class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
-				<div class="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1" role="tablist" aria-label="Main view">
-					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => goto('?tab=events', { replaceState: true, noScroll: true })}>
+				<div class="relative inline-flex shrink-0 rounded-full border border-white/[0.1] bg-white/[0.06] p-1 backdrop-blur-xl" role="tablist" aria-label="Main view">
+					<div
+						class="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white/[0.15] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_8px_rgba(0,0,0,0.3)] transition-transform duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+						style={`transform: translateX(${mainView === 'tickets' ? '100%' : '0'})`}
+						aria-hidden="true"
+					></div>
+					<button type="button" class={`relative z-10 inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-1.5 text-sm font-semibold transition-colors duration-200 ${mainView === 'events' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`} onclick={() => (mainView = 'events')}>
 						<Calendar class="h-4 w-4" />
 						<span>Events</span>
 					</button>
-					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => goto('?tab=tickets', { replaceState: true, noScroll: true })}>
+					<button type="button" class={`relative z-10 inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-1.5 text-sm font-semibold transition-colors duration-200 ${mainView === 'tickets' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`} onclick={() => (mainView = 'tickets')}>
 						<Ticket class="h-4 w-4" />
 						<span>Tickets</span>
 					</button>
