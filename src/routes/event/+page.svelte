@@ -261,7 +261,7 @@
 					{#if loadingEvents}
 						<div class="grid gap-4 sm:grid-cols-2" aria-live="polite" aria-busy="true">
 							{#each [1, 2, 3, 4] as placeholder (placeholder)}
-								<article class="h-[320px] rounded-2xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></article>
+								<article class="h-[320px] rounded-2xl border border-zinc-800 skeleton-shimmer"></article>
 							{/each}
 						</div>
 					{:else if eventsError}
@@ -314,7 +314,7 @@
 					</div>
 					{#if loadingEvents}
 						{#each [1, 2, 3] as placeholder (placeholder)}
-							<div class="h-[74px] rounded-xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></div>
+							<div class="h-[74px] rounded-xl border border-zinc-800 skeleton-shimmer"></div>
 						{/each}
 					{:else if soonEvents.length === 0}
 						<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-sm text-zinc-300">No upcoming events.</div>
@@ -348,7 +348,7 @@
 				{:else if loadingTickets}
 					<div class="grid gap-3 sm:grid-cols-2" aria-live="polite" aria-busy="true">
 						{#each [1, 2, 3] as placeholder (placeholder)}
-							<article class="h-36 rounded-xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></article>
+							<article class="h-36 rounded-xl border border-zinc-800 skeleton-shimmer"></article>
 						{/each}
 					</div>
 				{:else if ticketsError}
