@@ -211,45 +211,42 @@
 	</div>
 
 	<main class="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6">
-		<section class="flex flex-col gap-4 px-5 pb-1 pt-8 sm:px-8 lg:px-12 lg:pt-14">
-			<div class="inline-flex w-fit items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-violet-100" style="font-family: 'Space Mono', monospace;">
-				<Sparkles class="h-3.5 w-3.5" />
-				<span>Live discovery</span>
+		<section class="flex flex-col gap-3 px-5 pb-1 pt-5 sm:px-8 lg:px-12 lg:pt-8">
+			<div class="flex items-center gap-3">
+				<div class="inline-flex w-fit items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-violet-100" style="font-family: 'Space Mono', monospace;">
+					<Sparkles class="h-3.5 w-3.5" />
+					<span>Live discovery</span>
+				</div>
 			</div>
-			<h1 class="text-[44px] font-extrabold uppercase leading-[0.9] tracking-[-0.03em] sm:text-[64px] lg:max-w-[760px] lg:text-[96px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
-			<p class="max-w-[720px] text-sm text-zinc-300 sm:text-base lg:text-lg">
-				Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.
-			</p>
+			<h1 class="text-[28px] font-extrabold uppercase leading-tight tracking-[-0.03em] sm:text-[36px] lg:text-[44px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
 
-			<div class="flex w-full flex-wrap items-center gap-2">
-				<div class="inline-flex w-full items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1 sm:w-fit" role="tablist" aria-label="Main view">
-					<button type="button" class={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'events')}>
+			<div class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
+				<div class="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1" role="tablist" aria-label="Main view">
+					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'events')}>
 						<Calendar class="h-4 w-4" />
 						<span>Events</span>
 					</button>
-					<button type="button" class={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'tickets')}>
+					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'tickets')}>
 						<Ticket class="h-4 w-4" />
 						<span>Tickets</span>
 					</button>
 				</div>
 				<a
 					href="/host/events"
-					class="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/80 px-4 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white"
+					class="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/80 px-4 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white"
 					style="font-family: 'Space Grotesk', sans-serif;"
 				>
 					My events
 				</a>
-			</div>
-
-			{#if mainView === 'events'}
-				<div class="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Event genres">
+				{#if mainView === 'events'}
+					<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
 					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter}
 						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
 							{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
 						</button>
 					{/each}
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</section>
 
 		{#if mainView === 'events'}
