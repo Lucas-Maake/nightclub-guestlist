@@ -75,6 +75,24 @@
 	}
 }
 
+@layer utilities {
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(220 16% 10%) 0%,
+      hsl(220 16% 16%) 40%,
+      hsl(220 16% 10%) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-sweep 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 @layer components {
 	.font-display {
 		font-family: "Space Grotesk", sans-serif;
