@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import BrandMark from '$lib/components/common/brand-mark.svelte';
 	import { authReady, currentUser, signOutCurrentUser } from '$lib/firebase/auth';
 	import { openAuthModal } from '$lib/stores/auth-modal';
@@ -30,17 +32,31 @@
 		</a>
 
 		<nav class="flex items-center gap-6">
-			<a href="/event" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">Browse</a>
-			<a href="/host/events" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">My Events</a>
 			{#if $authReady}
+				<a
+					href="/event"
+					in:fly={{ y: -8, duration: 240, delay: 0, easing: cubicOut }}
+					class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white"
+				>Browse</a>
+				<a
+					href="/host/events"
+					in:fly={{ y: -8, duration: 240, delay: 60, easing: cubicOut }}
+					class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white"
+				>My Events</a>
 				{#if $currentUser}
-					<button type="button" class="text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-300" onclick={handleSignOut}>
-						Sign out
-					</button>
+					<button
+						type="button"
+						in:fly={{ y: -8, duration: 240, delay: 120, easing: cubicOut }}
+						class="text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-300"
+						onclick={handleSignOut}
+					>Sign out</button>
 				{:else}
-					<button type="button" class="inline-flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white backdrop-blur transition duration-150 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-300" onclick={handleSignIn}>
-						Sign in
-					</button>
+					<button
+						type="button"
+						in:fly={{ y: -8, duration: 240, delay: 120, easing: cubicOut }}
+						class="inline-flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white backdrop-blur transition duration-150 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-300"
+						onclick={handleSignIn}
+					>Sign in</button>
 				{/if}
 			{/if}
 		</nav>
