@@ -442,20 +442,9 @@
 	</main>
 
 	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
-		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Nightclub Guestlist</p>
-					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
-				</div>
-			</div>
-			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
-				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
-			</div>
-			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-				<span>(c) 2026 Nightclub Guestlist. All rights reserved.</span>
-			</div>
+		<div class="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+			<span class="text-xs text-zinc-500">(c) 2026 Nightclub Guestlist</span>
+			<span class="text-xs text-zinc-600">All rights reserved.</span>
 		</div>
 	</footer>
 </div>
