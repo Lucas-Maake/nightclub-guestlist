@@ -250,7 +250,23 @@
 		</section>
 
 		{#if mainView === 'events'}
-			{#if !loadingEvents && !eventsError && featuredEvent}
+			{#if loadingEvents}
+				<section class="mx-5 grid overflow-hidden rounded-2xl border border-zinc-800 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+					<div class="min-h-[190px] skeleton-shimmer"></div>
+					<div class="flex flex-col gap-3 p-4 sm:p-6">
+						<div class="h-2.5 w-20 rounded skeleton-shimmer"></div>
+						<div class="h-7 w-2/3 rounded-lg skeleton-shimmer"></div>
+						<div class="h-3.5 w-full rounded skeleton-shimmer"></div>
+						<div class="h-3.5 w-4/5 rounded skeleton-shimmer"></div>
+						<div class="h-3 w-1/3 rounded skeleton-shimmer"></div>
+						<div class="h-3 w-2/5 rounded skeleton-shimmer"></div>
+						<div class="flex gap-2 pt-1">
+							<div class="h-9 w-28 rounded-lg skeleton-shimmer"></div>
+							<div class="h-9 w-28 rounded-lg skeleton-shimmer"></div>
+						</div>
+					</div>
+				</section>
+			{:else if !eventsError && featuredEvent}
 				<section class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="min-h-[190px]">
 						{#if eventPosterImage(featuredEvent)}
@@ -330,7 +346,14 @@
 					</div>
 					{#if loadingEvents}
 						{#each [1, 2, 3] as placeholder (placeholder)}
-							<div class="h-[74px] rounded-xl border border-zinc-800 skeleton-shimmer"></div>
+							<div class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 p-2">
+								<div class="h-12 w-12 shrink-0 rounded-lg skeleton-shimmer"></div>
+								<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+									<div class="h-2 w-14 rounded skeleton-shimmer"></div>
+									<div class="h-3.5 w-3/4 rounded skeleton-shimmer"></div>
+									<div class="h-2.5 w-1/2 rounded skeleton-shimmer"></div>
+								</div>
+							</div>
 						{/each}
 					{:else if soonEvents.length === 0}
 						<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-sm text-zinc-300">No upcoming events.</div>
