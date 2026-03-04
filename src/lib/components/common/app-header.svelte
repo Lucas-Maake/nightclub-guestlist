@@ -22,31 +22,25 @@
 	}
 </script>
 
-<header class="relative z-20 border-b border-zinc-800 bg-black/60 backdrop-blur">
-	<div class={`mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3 ${compact ? 'px-4 py-2.5 sm:px-6 lg:px-10' : 'px-5 py-3 sm:px-8 lg:px-12'}`}>
-		<div class="flex min-w-0 items-center gap-3">
-			<a href="/" class="inline-flex min-w-0 items-center gap-2 text-base font-extrabold uppercase text-white no-underline sm:text-lg">
-				<BrandMark class="h-4 w-4 shrink-0" />
-				<span class="font-display truncate leading-none">APOLLO HQ</span>
-			</a>
-		</div>
+<header class="relative z-20 border-b border-white/[0.06] bg-black/40 backdrop-blur-xl">
+	<div class={`mx-auto flex w-full max-w-[1440px] items-center justify-between ${compact ? 'px-4 py-3 sm:px-6 lg:px-10' : 'px-5 py-4 sm:px-8 lg:px-12'}`}>
+		<a href="/" class="inline-flex items-center gap-2.5 no-underline">
+			<BrandMark class="h-5 w-5 shrink-0" />
+			<span class="text-sm font-black uppercase tracking-widest text-white" style="font-family: 'Manrope', sans-serif;">Apollo HQ</span>
+		</a>
 
-		<div class="flex items-center gap-2">
-			<a href="/event" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white">
-				View events
-			</a>
-			<a href="/host/events" class="inline-flex h-8 items-center rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white">
-				My events
-			</a>
+		<nav class="flex items-center gap-6">
+			<a href="/event" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">Browse</a>
+			<a href="/host/events" class="text-sm font-medium text-zinc-400 no-underline transition-colors duration-150 hover:text-white">My Events</a>
 			{#if $currentUser}
-				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white" onclick={handleSignOut}>
+				<button type="button" class="text-sm font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-300" onclick={handleSignOut}>
 					Sign out
 				</button>
 			{:else}
-				<button type="button" class="h-8 rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/60 hover:text-white" onclick={handleSignIn}>
+				<button type="button" class="inline-flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white backdrop-blur transition duration-150 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-300" onclick={handleSignIn}>
 					Sign in
 				</button>
 			{/if}
-		</div>
+		</nav>
 	</div>
 </header>
