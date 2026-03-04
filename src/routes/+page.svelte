@@ -17,7 +17,7 @@
 
 	<main class="relative z-10 mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12">
 		<div class="flex min-h-[calc(100vh-68px)] items-center justify-center py-20 lg:py-28">
-			<section class="flex w-full max-w-[900px] flex-col items-center text-center">
+			<div class="flex w-full max-w-[900px] flex-col items-center text-center">
 				<div class="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2">
 					<span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-400"></span>
 					<span class="text-[11px] uppercase tracking-[0.12em] text-violet-300" style="font-family: 'Space Mono', monospace;">
@@ -56,7 +56,7 @@
 						How it works
 					</a>
 				</div>
-			</section>
+			</div>
 		</div>
 	</main>
 </div>
