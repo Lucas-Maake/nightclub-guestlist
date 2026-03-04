@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly, fade } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
 	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
@@ -233,8 +235,8 @@
 				</div>
 				{#if mainView === 'events'}
 					<div class="h-5 w-px shrink-0 bg-zinc-700"></div>
-					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter}
-						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
+					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter, i}
+						<button in:fly={{ y: 8, duration: 220, delay: i * 40, easing: cubicOut }} type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
 							{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
 						</button>
 					{/each}
@@ -260,7 +262,7 @@
 					</div>
 				</section>
 			{:else if !eventsError && featuredEvent}
-				<section class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+				<section in:fly={{ y: 14, duration: 320, easing: cubicOut }} class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
 					<div class="h-[220px] lg:h-auto lg:min-h-full">
 						{#if eventPosterImage(featuredEvent)}
 							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
@@ -352,8 +354,8 @@
 					{:else if soonEvents.length === 0}
 						<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-sm text-zinc-300">No upcoming events.</div>
 					{:else}
-						{#each soonEvents as event (event.id)}
-							<a href={`/event/${event.id}`} class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition hover:border-violet-500/55">
+						{#each soonEvents as event, i (event.id)}
+							<a in:fly={{ y: 8, duration: 240, delay: i * 55, easing: cubicOut }} href={`/event/${event.id}`} class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition hover:border-violet-500/55">
 								<div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
 									{#if eventPosterImage(event)}
 										<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Thumbnail for ${event.title}`} loading="lazy" decoding="async" />
@@ -371,7 +373,7 @@
 				</aside>
 			</section>
 		{:else}
-			<section class="px-5 sm:px-8 lg:px-12">
+			<section in:fly={{ y: 16, duration: 300, easing: cubicOut }} class="px-5 sm:px-8 lg:px-12">
 				{#if !$currentUser}
 					<div class="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
 						<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Sign in to view your active tables and tickets.</p>
@@ -397,8 +399,8 @@
 							<section>
 								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Ticket purchases</p>
 								<div class="grid gap-3 sm:grid-cols-2">
-									{#each sortedPurchases as purchase (purchase.purchaseId)}
-										<a href={`/event/${purchase.eventId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+									{#each sortedPurchases as purchase, i (purchase.purchaseId)}
+										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/event/${purchase.eventId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
 											<p class="text-[10px] uppercase tracking-wide text-lime-300" style="font-family: 'Space Mono', monospace;">{purchase.ticketCount} ticket{purchase.ticketCount === 1 ? '' : 's'}</p>
 											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{purchase.eventTitle}</p>
 											<p class="text-xs text-zinc-300">{purchaseDateLine(purchase)}</p>
@@ -414,8 +416,8 @@
 							<section>
 								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Active tables</p>
 								<div class="grid gap-3 sm:grid-cols-2">
-									{#each sortedTickets as ticket (ticket.reservationId)}
-										<a href={`/r/${ticket.reservationId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+									{#each sortedTickets as ticket, i (ticket.reservationId)}
+										<a in:fly={{ y: 10, duration: 260, delay: i * 60, easing: cubicOut }} href={`/r/${ticket.reservationId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
 											<p class="text-[10px] uppercase tracking-wide text-zinc-300" style="font-family: 'Space Mono', monospace;">Active ticket</p>
 											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{ticket.clubName}</p>
 											<p class="text-xs text-zinc-300">{ticketDateLine(ticket)}</p>
