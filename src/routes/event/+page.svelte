@@ -310,7 +310,7 @@ type MainView = 'events' | 'tickets';
 						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><MapPin class="h-3.5 w-3.5" />{featuredEvent.venue}</p>
 						<div class="flex flex-wrap gap-2 pt-1">
 							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(77,171,254,0.35)] transition duration-200 hover:shadow-[0_0_40px_rgba(77,171,254,0.65)] hover:scale-[1.03]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
-							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition duration-200 hover:border-blue-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(77,171,254,0.35)] hover:scale-[1.03]">Request Table</a>
+							<a href={`/create?eventId=${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition duration-200 hover:border-blue-400/60 hover:text-white hover:shadow-[0_0_24px_rgba(77,171,254,0.35)] hover:scale-[1.03]">Request Table</a>
 						</div>
 					</div>
 				</section>
