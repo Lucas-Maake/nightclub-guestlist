@@ -2,17 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
+	import { Search, Users } from 'lucide-svelte';
 	import type { Unsubscribe } from 'firebase/firestore';
 	import AppHeader from '$lib/components/common/app-header.svelte';
-	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
-	import GuestKpiStrip from '$lib/components/common/guest-kpi-strip.svelte';
-	import StatusChip from '$lib/components/common/status-chip.svelte';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Input } from '$lib/components/ui/input';
-	import { Switch } from '$lib/components/ui/switch';
-	import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '$lib/components/ui/table';
-	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import {
 		isHostForReservation,
@@ -24,14 +16,19 @@
 	import type { GuestRecord, ReservationPublicRecord } from '$lib/types/models';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
-	import { cn } from '$lib/utils/cn';
 	import { formatPhone } from '$lib/utils/format';
 	import { inviteUrl } from '$lib/utils/links';
 
 	type GuestWithId = GuestRecord & { uid: string };
 	type FilterTab = 'all' | 'accepted' | 'declined' | 'invited' | 'checked-in';
+	type GuestVisualStatus = 'accepted' | 'declined' | 'invited' | 'checked-in';
 
 	const reservationId = $derived($page.params.id ?? '');
+	const subtitleDateFormatter = new Intl.DateTimeFormat('en-US', {
+		weekday: 'long',
+		month: 'long',
+		day: 'numeric'
+	});
 
 	let reservationPublic = $state<ReservationPublicRecord | null>(null);
 	let guests = $state<GuestWithId[]>([]);
@@ -162,7 +159,7 @@
 		guestsUnsubscribe?.();
 	});
 
-	function guestStatus(record: GuestWithId): 'accepted' | 'declined' | 'invited' | 'checked-in' {
+	function guestStatus(record: GuestWithId): GuestVisualStatus {
 		if (record.checkedInAt) {
 			return 'checked-in';
 		}
@@ -176,6 +173,54 @@
 		}
 
 		return 'invited';
+	}
+
+	function guestStatusLabel(status: GuestVisualStatus): string {
+		if (status === 'checked-in') {
+			return 'Checked In';
+		}
+
+		if (status === 'accepted') {
+			return 'Accepted';
+		}
+
+		if (status === 'declined') {
+			return 'Declined';
+		}
+
+		return 'Invited';
+	}
+
+	function statusDotClass(status: GuestVisualStatus): string {
+		if (status === 'accepted') {
+			return 'bg-violet-500';
+		}
+
+		if (status === 'declined') {
+			return 'bg-pink-500';
+		}
+
+		if (status === 'checked-in') {
+			return 'bg-cyan-400';
+		}
+
+		return 'bg-zinc-500';
+	}
+
+	function statusBadgeClass(status: GuestVisualStatus): string {
+		if (status === 'accepted') {
+			return 'bg-violet-500/15 text-violet-400';
+		}
+
+		if (status === 'declined') {
+			return 'bg-pink-500/15 text-pink-400';
+		}
+
+		if (status === 'checked-in') {
+			return 'bg-cyan-500/15 text-cyan-300';
+		}
+
+		return 'bg-zinc-500/15 text-zinc-400';
 	}
 
 	const filteredGuests = $derived.by(() => {
@@ -203,6 +248,32 @@
 	const filteredCountLabel = $derived(
 		`${filteredGuests.length} ${filteredGuests.length === 1 ? 'guest' : 'guests'} shown`
 	);
+	const subtitleLine = $derived.by(() => {
+		if (!reservationPublic) {
+			return 'Host controls for live reservation management.';
+		}
+
+		return `${reservationPublic.clubName} · ${subtitleDateFormatter.format(
+			reservationPublic.startAt.toDate()
+		)}`;
+	});
+	const claimedCount = $derived(reservationPublic?.claimedCount ?? acceptedCount);
+	const capacity = $derived(reservationPublic?.capacity ?? 0);
+	const spotsLeft = $derived(Math.max(capacity - claimedCount, 0));
+	const claimedRatioPercent = $derived.by(() => {
+		if (capacity <= 0) {
+			return 0;
+		}
+
+		return Math.max(0, Math.min(100, Math.round((claimedCount / capacity) * 100)));
+	});
+	const progressFillPercent = $derived.by(() => {
+		if (claimedRatioPercent <= 0) {
+			return 0;
+		}
+
+		return Math.max(claimedRatioPercent, 6);
+	});
 
 	async function copyInvite(): Promise<void> {
 		try {
@@ -287,8 +358,8 @@
 			pushToast({
 				title: nextEnabled ? 'Plus-ones enabled' : 'Plus-ones disabled',
 				description: nextEnabled
-					? 'Guests can add plus-ones on the RSVP page.'
-					: 'Guests can no longer add plus-ones on the RSVP page.',
+					? 'Guests can add plus-one names before saving RSVP.'
+					: 'Guests can no longer add plus-one names on the RSVP page.',
 				variant: 'success'
 			});
 		} catch {
@@ -307,247 +378,353 @@
 	}
 </script>
 
-<AppHeader />
+<div class="min-h-screen bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
+	<AppHeader />
 
-<main class="app-shell py-6 sm:py-8">
-	<section class="motion-stagger space-y-6">
-		<div class="flex flex-wrap items-start justify-between gap-3">
-			<div class="space-y-1">
-				<h1 class="section-title">Reservation guest management</h1>
+	<main class="mx-auto w-full max-w-[1440px]">
+		<section class="px-5 pb-6 pt-8 sm:px-8 lg:px-20">
+			<div class="flex flex-wrap items-start justify-between gap-4">
+				<div class="space-y-1">
+					<h1 class="text-[28px] font-extrabold uppercase leading-none tracking-wide text-white" style="font-family: 'Space Grotesk', sans-serif;">
+						GUEST MANAGEMENT
+					</h1>
+					<p class="text-xs font-medium text-zinc-500" style="font-family: 'Space Mono', monospace;">
+						{subtitleLine}
+					</p>
+				</div>
+				<div class="flex flex-wrap items-center gap-2">
+					<button
+						type="button"
+						class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-800 bg-[#1A1A22] px-5 text-sm font-semibold text-zinc-400 transition hover:text-zinc-200"
+						onclick={copyInvite}
+					>
+						{inviteCopied ? 'Copied!' : 'Copy invite link'}
+					</button>
+					<a
+						href={`/r/${reservationId}/checkin`}
+						class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+						style="font-family: 'Space Grotesk', sans-serif;"
+					>
+						Open check-in
+					</a>
+				</div>
 			</div>
-			<div class="flex flex-wrap gap-2">
-				<Button variant="outline" onclick={copyInvite}>{inviteCopied ? 'Copied!' : 'Copy invite link'}</Button>
-				<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href={`/r/${reservationId}/checkin`}>
-					Open check-in
-				</a>
-			</div>
-		</div>
+		</section>
 
-		{#if loading}
-			<Card>
-				<CardContent class="p-6">
-					<p class="state-panel-muted" aria-live="polite">Loading host dashboard...</p>
-				</CardContent>
-			</Card>
-		{:else if hostAccess === 'denied'}
-			<Card>
-				<CardHeader>
-					<CardTitle>Access denied</CardTitle>
-					<CardDescription>Only the reservation host can open this page.</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<a class={cn(buttonVariants({ variant: 'default', size: 'md' }))} href={`/r/${reservationId}`}>
+		<section class="px-5 pb-16 sm:px-8 lg:px-20">
+			{#if loading}
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-10 text-sm text-zinc-400">
+					Loading host dashboard...
+				</div>
+			{:else if hostAccess === 'denied'}
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+					<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+						Access denied
+					</p>
+					<p class="mt-2 text-sm text-zinc-400">Only the reservation host can open this page.</p>
+					<a
+						href={`/r/${reservationId}`}
+						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+						style="font-family: 'Space Grotesk', sans-serif;"
+					>
 						Go to guest page
 					</a>
-				</CardContent>
-			</Card>
-		{:else}
-			<GuestKpiStrip {acceptedCount} {declinedCount} {noResponseCount} {checkedInCount} />
+				</div>
+			{:else}
+				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<div class="rounded-2xl border border-violet-500/25 bg-[#14141A] px-6 py-5">
+						<div class="flex items-center gap-2.5">
+							<span class="h-2.5 w-2.5 rounded-full bg-violet-500"></span>
+							<span class="text-[11px] uppercase tracking-[0.14em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Accepted</span>
+						</div>
+						<p class="mt-2 text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{acceptedCount}</p>
+					</div>
+					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-5">
+						<div class="flex items-center gap-2.5">
+							<span class="h-2.5 w-2.5 rounded-full bg-pink-500"></span>
+							<span class="text-[11px] uppercase tracking-[0.14em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Declined</span>
+						</div>
+						<p class="mt-2 text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{declinedCount}</p>
+					</div>
+					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-5">
+						<div class="flex items-center gap-2.5">
+							<span class="h-2.5 w-2.5 rounded-full bg-zinc-500"></span>
+							<span class="text-[11px] uppercase tracking-[0.14em] text-zinc-500" style="font-family: 'Space Mono', monospace;">No response</span>
+						</div>
+						<p class="mt-2 text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{noResponseCount}</p>
+					</div>
+					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-5">
+						<div class="flex items-center gap-2.5">
+							<span class="h-2.5 w-2.5 rounded-full bg-cyan-400"></span>
+							<span class="text-[11px] uppercase tracking-[0.14em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Checked in</span>
+						</div>
+						<p class="mt-2 text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">{checkedInCount}</p>
+					</div>
+				</div>
 
-			<div class="grid gap-4 lg:grid-cols-[1fr_320px]">
-				<Card class="min-h-[540px] overflow-hidden">
-					<div class="border-b border-border/70 bg-card/95 p-4">
-						<div class="space-y-3">
-							<div class="relative">
-								<Input
-									id="host-search"
-									type="search"
-									placeholder="Search by name or phone..."
-									bind:value={search}
-									class="h-12 pr-20 text-base"
-								/>
+				<div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+					<section class="min-h-[540px] overflow-hidden rounded-2xl border border-zinc-800 bg-[#14141A]">
+						<div class="border-b border-zinc-800 px-5 py-4">
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-[#0f1118] px-4 py-3">
+								<div class="flex min-w-0 items-center gap-2.5">
+									<Search class="h-4 w-4 shrink-0 text-zinc-600" />
+									<input
+										id="host-search"
+										type="search"
+										placeholder="Search by name or phone..."
+										bind:value={search}
+										class="w-full border-none bg-transparent p-0 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
+									/>
+								</div>
 								<span
-									class="inline-kbd absolute right-3 top-1/2 -translate-y-1/2"
+									class="rounded-md border border-zinc-800 bg-[#1A1A22] px-2.5 py-1 text-[11px] text-zinc-500"
+									style="font-family: 'Space Mono', monospace;"
 								>
-									Press /
+									PRESS /
 								</span>
 							</div>
+						</div>
 
-							<Tabs>
-								<TabsList class="grid h-auto w-full grid-cols-5 gap-1">
-									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'all'} onclick={() => (filter = 'all')}>All</TabsTrigger>
-									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'accepted'} onclick={() => (filter = 'accepted')}>
-										Accepted
-									</TabsTrigger>
-									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'checked-in'} onclick={() => (filter = 'checked-in')}>
-										Checked In
-									</TabsTrigger>
-									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'declined'} onclick={() => (filter = 'declined')}>
-										Declined
-									</TabsTrigger>
-									<TabsTrigger class="w-full justify-center px-2 text-center" active={filter === 'invited'} onclick={() => (filter = 'invited')}>
-										Invited
-									</TabsTrigger>
-								</TabsList>
-								<TabsContent></TabsContent>
-							</Tabs>
-
-							<div class="flex flex-wrap items-center justify-between gap-2">
-								<p class="text-xs text-muted-foreground" aria-live="polite">{filteredCountLabel}</p>
-								{#if hasActiveFilters}
-									<Button size="sm" variant="ghost" onclick={clearFilters}>Clear filters</Button>
-								{/if}
+						<div class="border-b border-zinc-800 px-5">
+							<div class="flex flex-wrap items-center gap-1">
+								{#each [
+									{ key: 'all', label: 'All' },
+									{ key: 'accepted', label: 'Accepted' },
+									{ key: 'checked-in', label: 'Checked In' },
+									{ key: 'declined', label: 'Declined' },
+									{ key: 'invited', label: 'Invited' }
+								] as tab}
+									<button
+										type="button"
+										class={`border-b-2 px-4 py-2.5 text-sm transition ${
+											filter === tab.key
+												? 'border-violet-500 font-semibold text-white'
+												: 'border-transparent text-zinc-500 hover:text-zinc-300'
+										}`}
+										style={filter === tab.key ? "font-family: 'Space Grotesk', sans-serif;" : ''}
+										onclick={() => (filter = tab.key as FilterTab)}
+									>
+										{tab.label}
+									</button>
+								{/each}
 							</div>
 						</div>
-					</div>
 
-					<div class="scrollbar-none max-h-[62vh] overflow-auto">
-						<div class="hidden md:block">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>Name</TableHead>
-										<TableHead>Phone</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead class="text-right">Plus-ones</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#if filteredGuests.length === 0}
-										<TableRow>
-											<TableCell colspan={4} class="py-7 text-center text-sm text-muted-foreground">
-												No guests match this view.
-												{#if hasActiveFilters}
-													<button
-														type="button"
-														class="ml-2 text-primary underline-offset-2 hover:underline"
-														onclick={clearFilters}
-													>
-														Clear filters
-													</button>
-												{/if}
-											</TableCell>
-										</TableRow>
-									{:else}
-										{#each filteredGuests as guest (guest.uid)}
-											<TableRow class="h-14">
-												<TableCell>
-													<div class="space-y-1">
-														<p class="text-sm font-medium">{guest.displayName}</p>
-													</div>
-												</TableCell>
-												<TableCell class="text-muted-foreground">{formatPhone(guest.phone)}</TableCell>
-												<TableCell>
-													<StatusChip status={guestStatus(guest)} />
-												</TableCell>
-												<TableCell class="text-right text-muted-foreground">
-													{guest.plusOnes?.length ?? 0}
-												</TableCell>
-											</TableRow>
-										{/each}
-									{/if}
-								</TableBody>
-							</Table>
+						<div class="flex items-center justify-between gap-3 px-5 py-3">
+							<p class="text-xs text-zinc-500" style="font-family: 'Space Mono', monospace;">
+								{filteredCountLabel}
+							</p>
+							{#if hasActiveFilters}
+								<button type="button" class="text-xs font-semibold text-zinc-400 transition hover:text-zinc-200" onclick={clearFilters}>
+									Clear filters
+								</button>
+							{/if}
 						</div>
 
-						<div class="space-y-3 p-3 md:hidden">
+						<div class="hidden lg:block">
+							<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px] gap-4 border-y border-zinc-800 bg-[#1A1A22] px-5 py-2.5">
+								<p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Name</p>
+								<p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Phone</p>
+								<p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Status</p>
+								<p class="text-right text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Plus-ones</p>
+							</div>
+
 							{#if filteredGuests.length === 0}
-								<div class="state-panel-muted px-4 py-5">
-									<p>No guests match this view.</p>
-									{#if hasActiveFilters}
-										<Button size="sm" variant="ghost" class="mt-3" onclick={clearFilters}>Clear filters</Button>
-									{/if}
+								<div class="flex min-h-[280px] flex-col items-center justify-center gap-3 px-5 py-10 text-zinc-500">
+									<Users class="h-10 w-10" />
+									<p class="text-sm">More guests will appear here</p>
 								</div>
 							{:else}
 								{#each filteredGuests as guest (guest.uid)}
-									<div class="rounded-2xl border border-border/70 bg-secondary/20 p-4">
-										<div class="flex items-start justify-between gap-3">
-											<div>
-												<p class="text-base font-medium">{guest.displayName}</p>
-												<p class="text-sm text-muted-foreground">{formatPhone(guest.phone)}</p>
-											</div>
-											<StatusChip status={guestStatus(guest)} />
+									<div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_100px] items-center gap-4 border-b border-zinc-800 px-5 py-3.5">
+										<div class="min-w-0">
+											<p class="truncate text-sm font-semibold text-white">{guest.displayName}</p>
 										</div>
-										<p class="mt-3 text-xs text-muted-foreground">
-											{guest.plusOnes?.length ?? 0} plus-ones
-										</p>
+										<p class="truncate text-sm text-zinc-400">{formatPhone(guest.phone)}</p>
+										<div>
+											<span class={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(guestStatus(guest))}`} style="font-family: 'Space Mono', monospace;">
+												<span class={`h-1.5 w-1.5 rounded-full ${statusDotClass(guestStatus(guest))}`}></span>
+												{guestStatusLabel(guestStatus(guest))}
+											</span>
+										</div>
+										<p class="text-right text-sm text-zinc-400">{guest.plusOnes?.length ?? 0}</p>
 									</div>
 								{/each}
 							{/if}
 						</div>
-					</div>
-				</Card>
 
-				<div class="space-y-4">
-					<Card>
-						<CardHeader>
-							<CardTitle>Public guest list</CardTitle>
-							<CardDescription>
+						<div class="space-y-3 p-3 lg:hidden">
+							{#if filteredGuests.length === 0}
+								<div class="flex min-h-44 flex-col items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-[#0f1118] px-4 py-6 text-zinc-500">
+									<Users class="h-8 w-8" />
+									<p class="text-sm">More guests will appear here</p>
+								</div>
+							{:else}
+								{#each filteredGuests as guest (guest.uid)}
+									<div class="rounded-xl border border-zinc-800 bg-[#0f1118] px-4 py-3">
+										<div class="flex items-start justify-between gap-3">
+											<div class="min-w-0">
+												<p class="truncate text-sm font-semibold text-white">{guest.displayName}</p>
+												<p class="truncate text-xs text-zinc-400">{formatPhone(guest.phone)}</p>
+											</div>
+											<span class={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass(guestStatus(guest))}`} style="font-family: 'Space Mono', monospace;">
+												<span class={`h-1.5 w-1.5 rounded-full ${statusDotClass(guestStatus(guest))}`}></span>
+												{guestStatusLabel(guestStatus(guest))}
+											</span>
+										</div>
+										<p class="mt-3 text-xs text-zinc-500">{guest.plusOnes?.length ?? 0} plus-ones</p>
+									</div>
+								{/each}
+							{/if}
+						</div>
+					</section>
+
+					<aside class="space-y-5">
+						<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+							<h2 class="text-[22px] font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Public guest list</h2>
+							<p class="mt-2 text-sm text-zinc-400">
 								Control whether accepted attendee names are shown on the invite page.
-							</CardDescription>
-						</CardHeader>
-						<CardContent class="space-y-4">
-							<div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
-								<div class="min-w-0 space-y-1">
-									<p class="text-sm font-medium text-foreground">
-										{publicGuestListVisible ? 'Visible on invite page' : 'Hidden from invite page'}
-									</p>
-									<p class="text-xs text-muted-foreground">
-										{publicGuestListVisible
-											? 'Guests can see accepted names in first-name format.'
-											: 'Only host and check-in views can see the full guest list.'}
-									</p>
+							</p>
+
+							<div class="mt-4 space-y-3">
+								<div class="rounded-xl bg-[#1A1A22] p-4">
+									<div class="flex items-start justify-between gap-4">
+										<div class="min-w-0">
+											<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+												{publicGuestListVisible ? 'Visible on invite page' : 'Hidden from invite page'}
+											</p>
+											<p class="mt-1 text-xs text-zinc-500">
+												{publicGuestListVisible
+													? 'Guests can see accepted names in first-name format.'
+													: 'Only host and check-in views can see the full guest list.'}
+											</p>
+										</div>
+										<button
+											type="button"
+											role="switch"
+											aria-checked={publicGuestListVisible}
+											aria-label="Toggle public guest list visibility"
+											disabled={guestListVisibilityPending}
+											class={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition ${
+												publicGuestListVisible ? 'bg-violet-500' : 'bg-zinc-600'
+											} ${guestListVisibilityPending ? 'opacity-60' : ''}`}
+											onclick={() => {
+												void updateGuestListVisibility(!publicGuestListVisible);
+											}}
+										>
+											<span
+												class={`absolute left-[3px] top-[3px] h-[18px] w-[18px] rounded-full bg-white transition-transform ${
+													publicGuestListVisible ? 'translate-x-[20px]' : 'translate-x-0'
+												}`}
+											></span>
+										</button>
+									</div>
 								</div>
-								<Switch
-									class="shrink-0"
-									checked={publicGuestListVisible}
-									disabled={guestListVisibilityPending}
-									on:toggle={(event) => {
-										void updateGuestListVisibility(event.detail);
-									}}
-								/>
-							</div>
-							<div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl border border-border/75 bg-secondary/20 p-4">
-								<div class="min-w-0 space-y-1">
-									<p class="text-sm font-medium text-foreground">
-										{plusOnesEnabled ? 'Plus-ones allowed' : 'Plus-ones disabled'}
-									</p>
-									<p class="text-xs text-muted-foreground">
-										{plusOnesEnabled
-											? 'Guests can add plus-one names before saving RSVP.'
-											: 'Guest RSVP page hides plus-one entry and blocks new plus-ones.'}
-									</p>
+
+								<div class="rounded-xl bg-[#1A1A22] p-4">
+									<div class="flex items-start justify-between gap-4">
+										<div class="min-w-0">
+											<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+												{plusOnesEnabled ? 'Plus-ones enabled' : 'Plus-ones disabled'}
+											</p>
+											<p class="mt-1 text-xs text-zinc-500">
+												{plusOnesEnabled
+													? 'Guests can add plus-one names before saving RSVP.'
+													: 'Guest RSVP page hides plus-one entry and blocks new plus-ones.'}
+											</p>
+										</div>
+										<button
+											type="button"
+											role="switch"
+											aria-checked={plusOnesEnabled}
+											aria-label="Toggle plus-one availability"
+											disabled={plusOnesTogglePending}
+											class={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition ${
+												plusOnesEnabled ? 'bg-violet-500' : 'bg-zinc-600'
+											} ${plusOnesTogglePending ? 'opacity-60' : ''}`}
+											onclick={() => {
+												void updatePlusOneAvailability(!plusOnesEnabled);
+											}}
+										>
+											<span
+												class={`absolute left-[3px] top-[3px] h-[18px] w-[18px] rounded-full bg-white transition-transform ${
+													plusOnesEnabled ? 'translate-x-[20px]' : 'translate-x-0'
+												}`}
+											></span>
+										</button>
+									</div>
 								</div>
-								<Switch
-									class="shrink-0"
-									checked={plusOnesEnabled}
-									disabled={plusOnesTogglePending}
-									on:toggle={(event) => {
-										void updatePlusOneAvailability(event.detail);
-									}}
-								/>
 							</div>
+
 							{#if guestListVisibilityPending}
-								<p class="text-xs text-muted-foreground">Saving visibility setting...</p>
+								<p class="mt-3 text-xs text-zinc-500">Saving visibility setting...</p>
 							{/if}
 							{#if plusOnesTogglePending}
-								<p class="text-xs text-muted-foreground">Saving plus-one setting...</p>
+								<p class="mt-1 text-xs text-zinc-500">Saving plus-one setting...</p>
 							{/if}
-						</CardContent>
-					</Card>
+						</section>
 
-					{#if reservationPublic}
-						<CapacityMeter
-							capacity={reservationPublic.capacity}
-							accepted={reservationPublic.claimedCount}
-							declined={reservationPublic.declinedCount}
-						/>
-					{/if}
+						<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+							<div class="flex items-center justify-between gap-3">
+								<h2 class="text-[22px] font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Capacity</h2>
+								<p class="text-xs text-zinc-400" style="font-family: 'Space Mono', monospace;">
+									{claimedCount}/{capacity} spots claimed
+								</p>
+							</div>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>Quick stats</CardTitle>
-						</CardHeader>
-						<CardContent class="space-y-2 text-sm text-muted-foreground">
-							<p>{guests.length} total guests</p>
-							<p>{acceptedCount} accepted</p>
-							<p>{declinedCount} declined</p>
-							<p>{noResponseCount} no response</p>
-							<p>{checkedInCount} checked in</p>
-						</CardContent>
-					</Card>
+							<div class="mt-4 h-1.5 w-full rounded bg-[#1A1A22]">
+								<div
+									class="h-1.5 rounded bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"
+									style={`width:${progressFillPercent}%`}
+								></div>
+							</div>
+
+							<div class="mt-4 flex items-center justify-between gap-3 text-xs" style="font-family: 'Space Mono', monospace;">
+								<p class="font-semibold text-lime-300">{spotsLeft} spots left</p>
+								<p class="text-zinc-500">{declinedCount} declined</p>
+							</div>
+						</section>
+
+						<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+							<h2 class="text-[22px] font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Quick stats</h2>
+							<div class="mt-3">
+								<div class="flex items-center justify-between border-b border-zinc-800 py-2.5">
+									<p class="text-sm text-zinc-400">Total guests</p>
+									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{guests.length}</p>
+								</div>
+								<div class="flex items-center justify-between border-b border-zinc-800 py-2.5">
+									<div class="flex items-center gap-2">
+										<span class="h-2 w-2 rounded-full bg-violet-500"></span>
+										<p class="text-sm text-zinc-400">Accepted</p>
+									</div>
+									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{acceptedCount}</p>
+								</div>
+								<div class="flex items-center justify-between border-b border-zinc-800 py-2.5">
+									<div class="flex items-center gap-2">
+										<span class="h-2 w-2 rounded-full bg-pink-500"></span>
+										<p class="text-sm text-zinc-400">Declined</p>
+									</div>
+									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{declinedCount}</p>
+								</div>
+								<div class="flex items-center justify-between border-b border-zinc-800 py-2.5">
+									<div class="flex items-center gap-2">
+										<span class="h-2 w-2 rounded-full bg-zinc-500"></span>
+										<p class="text-sm text-zinc-400">No response</p>
+									</div>
+									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{noResponseCount}</p>
+								</div>
+								<div class="flex items-center justify-between py-2.5">
+									<div class="flex items-center gap-2">
+										<span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+										<p class="text-sm text-zinc-400">Checked in</p>
+									</div>
+									<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{checkedInCount}</p>
+								</div>
+							</div>
+						</section>
+					</aside>
 				</div>
-			</div>
-		{/if}
-	</section>
-</main>
+			{/if}
+		</section>
+	</main>
+</div>

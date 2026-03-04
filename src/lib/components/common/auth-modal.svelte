@@ -418,8 +418,11 @@
 			</div>
 
 			<div class="mt-2 text-center">
-				<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f7fa]">
-					<BrandMark class="h-6 w-6" />
+				<div class="mx-auto inline-flex items-center gap-2 rounded-full border border-[#e4e7ec] bg-[#f7f9fc] px-3 py-2 shadow-[0_8px_20px_-14px_rgba(20,25,40,0.45)]">
+					<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white" style="--foreground: 222 24% 18%; --primary: 262 90% 62%;">
+						<BrandMark class="h-4 w-4" />
+					</span>
+					<span class="text-[10px] font-bold uppercase tracking-[0.14em] text-[#4b5563]">Nightclub Guestlist</span>
 				</div>
 				<h2 id="auth-modal-title" class="mt-4 text-[2rem] font-semibold leading-none tracking-tight text-[#20242a]">
 					Sign In / Sign Up

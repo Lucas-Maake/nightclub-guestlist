@@ -20,7 +20,12 @@ import {
 	writeBatch
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import type { EventCatalogItem, EventTicketTier } from '$lib/data/events';
+import type {
+	EventCatalogItem,
+	EventPackageDetails,
+	EventTablePackage,
+	EventTicketTier
+} from '$lib/data/events';
 import { findEventById, listEventsSortedAsc } from '$lib/data/events';
 import type {
 	CreateTableRequestInput,
@@ -147,6 +152,17 @@ function coerceNumber(value: unknown, fallback = 0): number {
 	return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+function coerceStringArray(value: unknown): string[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value
+		.filter((item): item is string => typeof item === 'string')
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0);
+}
+
 function coerceEventTicketTier(value: unknown): (EventTicketTier & { sortOrder: number }) | null {
 	if (!value || typeof value !== 'object') {
 		return null;
@@ -171,6 +187,65 @@ function coerceEventTicketTier(value: unknown): (EventTicketTier & { sortOrder: 
 	};
 }
 
+function coerceEventTablePackage(value: unknown): (EventTablePackage & { sortOrder: number }) | null {
+	if (!value || typeof value !== 'object') {
+		return null;
+	}
+
+	const source = value as Record<string, unknown>;
+	const sectionLabel = coerceString(source.sectionLabel);
+	const capacity = Math.max(1, coerceNumber(source.capacity, 1));
+	const minSpendCents = Math.max(0, coerceNumber(source.minSpendCents, 0));
+	const depositCents = Math.max(0, coerceNumber(source.depositCents, 0));
+	const maxPerOrder = Math.max(1, coerceNumber(source.maxPerOrder, 1));
+	const sortOrder = coerceNumber(source.sortOrder, 0);
+
+	if (!sectionLabel) {
+		return null;
+	}
+
+	return {
+		id: '',
+		sectionLabel,
+		capacity,
+		minSpendCents,
+		depositCents,
+		maxPerOrder,
+		sortOrder
+	};
+}
+
+function coerceEventPackageDetails(value: unknown): EventPackageDetails | null {
+	if (!value || typeof value !== 'object') {
+		return null;
+	}
+
+	const source = value as Record<string, unknown>;
+	const heading = coerceString(source.heading);
+	const summary = coerceString(source.summary);
+	const intro = coerceString(source.intro);
+	const inclusions = coerceStringArray(source.inclusions);
+	const policy = coerceString(source.policy);
+	const capacityNote = coerceString(source.capacityNote);
+	const contactEmail = coerceString(source.contactEmail);
+	const infoUrl = coerceString(source.infoUrl);
+
+	if (!heading && !summary && !intro && inclusions.length === 0 && !policy && !capacityNote) {
+		return null;
+	}
+
+	return {
+		heading: heading || 'VIP Table Details',
+		summary,
+		intro,
+		inclusions,
+		policy,
+		capacityNote,
+		...(contactEmail ? { contactEmail } : {}),
+		...(infoUrl ? { infoUrl } : {})
+	};
+}
+
 function normalizeEventPosterUrl(value: string): string {
 	if (!value) {
 		return '';
@@ -187,7 +262,8 @@ function normalizeEventPosterUrl(value: string): string {
 function mapEventFromDoc(
 	eventId: string,
 	value: unknown,
-	ticketTiers: EventTicketTier[]
+	ticketTiers: EventTicketTier[],
+	tablePackages: EventTablePackage[]
 ): EventCatalogItem | null {
 	if (!value || typeof value !== 'object') {
 		return null;
@@ -206,6 +282,8 @@ function mapEventFromDoc(
 		return null;
 	}
 	const posterImageUrl = normalizeEventPosterUrl(coerceString(source.posterImageUrl));
+	const salesMode = coerceString(source.salesMode) === 'table-packages' ? 'table-packages' : 'tickets';
+	const packageDetails = coerceEventPackageDetails(source.packageDetails);
 
 	return {
 		id: eventId,
@@ -223,6 +301,9 @@ function mapEventFromDoc(
 		...(posterImageUrl ? { posterImageUrl } : {}),
 		description: coerceString(source.description),
 		ticketTiers,
+		salesMode,
+		...(tablePackages.length > 0 ? { tablePackages } : {}),
+		...(packageDetails ? { packageDetails } : {}),
 		defaultTableType: coerceString(source.defaultTableType, 'Main Floor Table'),
 		dressCode: coerceString(source.dressCode, 'Nightlife attire')
 	};
@@ -622,6 +703,34 @@ async function loadEventTicketTiers(eventId: string): Promise<EventTicketTier[]>
 	return mapped.map(({ sortOrder: _sortOrder, ...tier }) => tier);
 }
 
+async function loadEventTablePackages(eventId: string): Promise<EventTablePackage[]> {
+	const packagesCollection = collection(db, 'events', eventId, 'tablePackages');
+	const packagesQuery = query(packagesCollection, orderBy('sortOrder', 'asc'));
+	const packagesSnapshot = await getDocs(packagesQuery);
+
+	const mapped = packagesSnapshot.docs
+		.map((document) => {
+			const tablePackage = coerceEventTablePackage(document.data());
+			if (!tablePackage) {
+				return null;
+			}
+
+			return {
+				id: document.id,
+				sectionLabel: tablePackage.sectionLabel,
+				capacity: tablePackage.capacity,
+				minSpendCents: tablePackage.minSpendCents,
+				depositCents: tablePackage.depositCents,
+				maxPerOrder: tablePackage.maxPerOrder,
+				sortOrder: tablePackage.sortOrder
+			};
+		})
+		.filter((tablePackage): tablePackage is EventTablePackage & { sortOrder: number } => tablePackage !== null)
+		.sort((a, b) => a.sortOrder - b.sortOrder);
+
+	return mapped.map(({ sortOrder: _sortOrder, ...tablePackage }) => tablePackage);
+}
+
 export async function listPublishedEvents(): Promise<EventCatalogItem[]> {
 	try {
 		const eventsQuery = query(
@@ -635,8 +744,11 @@ export async function listPublishedEvents(): Promise<EventCatalogItem[]> {
 		const mapped = await Promise.all(
 			eventsSnapshot.docs.map(async (document) => {
 				const eventId = document.id;
-				const ticketTiers = await loadEventTicketTiers(eventId);
-				return mapEventFromDoc(eventId, document.data(), ticketTiers);
+				const [ticketTiers, tablePackages] = await Promise.all([
+					loadEventTicketTiers(eventId),
+					loadEventTablePackages(eventId)
+				]);
+				return mapEventFromDoc(eventId, document.data(), ticketTiers, tablePackages);
 			})
 		);
 
@@ -664,8 +776,11 @@ export async function getPublishedEventById(eventId: string): Promise<EventCatal
 				return null;
 			}
 
-			const ticketTiers = await loadEventTicketTiers(eventId);
-			return mapEventFromDoc(eventId, data, ticketTiers);
+			const [ticketTiers, tablePackages] = await Promise.all([
+				loadEventTicketTiers(eventId),
+				loadEventTablePackages(eventId)
+			]);
+			return mapEventFromDoc(eventId, data, ticketTiers, tablePackages);
 		}
 	} catch {
 		// Fall through to local fallback.

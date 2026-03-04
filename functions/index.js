@@ -131,6 +131,34 @@ function formatPublicGuestName(name) {
 	return secondInitial ? `${first} ${secondInitial}.` : first;
 }
 
+function timestampToMillis(value) {
+	if (!value) {
+		return null;
+	}
+
+	if (typeof value.toMillis === 'function') {
+		const millis = value.toMillis();
+		return Number.isFinite(millis) ? millis : null;
+	}
+
+	if (value instanceof Date) {
+		const millis = value.getTime();
+		return Number.isFinite(millis) ? millis : null;
+	}
+
+	if (typeof value === 'string' || typeof value === 'number') {
+		const millis = new Date(value).getTime();
+		return Number.isFinite(millis) ? millis : null;
+	}
+
+	return null;
+}
+
+function isEventEnded(eventData) {
+	const endAtMs = timestampToMillis(eventData?.endAt);
+	return endAtMs !== null && endAtMs <= Date.now();
+}
+
 async function assertHostReservationAccess(reservationId, uid) {
 	const reservationRef = db.collection('reservations').doc(reservationId);
 	const snapshot = await reservationRef.get();
@@ -398,6 +426,9 @@ exports.createTicketPurchase = onCall(async (request) => {
 	if (eventData.published !== true) {
 		throw new HttpsError('failed-precondition', 'Event is not available for purchase.');
 	}
+	if (isEventEnded(eventData)) {
+		throw new HttpsError('failed-precondition', 'Event is not available for purchase.');
+	}
 
 	// Fetch ticket tiers
 	const tiersSnapshot = await eventRef.collection('ticketTiers').get();
@@ -464,6 +495,9 @@ exports.submitTableRequest = onCall(async (request) => {
 
 	const eventData = eventSnapshot.data() || {};
 	if (eventData.published !== true) {
+		throw new HttpsError('failed-precondition', 'Event is not available for table requests.');
+	}
+	if (isEventEnded(eventData)) {
 		throw new HttpsError('failed-precondition', 'Event is not available for table requests.');
 	}
 

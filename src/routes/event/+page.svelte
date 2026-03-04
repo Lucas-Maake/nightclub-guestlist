@@ -1,19 +1,17 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { Bell, Calendar, Clock3, MapPin, Search, Ticket, User } from 'lucide-svelte';
-	import { currentUser, signOutCurrentUser, waitForAuthReady } from '$lib/firebase/auth';
+	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
+	import AppHeader from '$lib/components/common/app-header.svelte';
+	import { currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import { listPublishedEvents, listUserActiveTickets, listUserTicketPurchases } from '$lib/firebase/firestore';
 	import type { EventCatalogItem } from '$lib/data/events';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import type { UserActiveTicketRecord, UserTicketPurchaseRecord } from '$lib/types/models';
-	import { cn } from '$lib/utils/cn';
 
 	type MainView = 'events' | 'tickets';
 	type GenreFilter = 'all' | 'techno' | 'house' | 'dnb' | 'trance';
-	type EventCardState = 'tonight' | 'upcoming' | 'past';
 
-	const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
 	const shortDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
 	const dateLineFormatter = new Intl.DateTimeFormat('en-US', {
 		weekday: 'short',
@@ -37,9 +35,6 @@
 		'saturday-atelier': '/images/events/mission.png'
 	};
 
-	const eqHeights = [14, 22, 11, 28, 18, 32, 15, 25, 20, 34, 13, 24, 29, 17, 26, 19];
-	const eqDurations = [0.82, 1.05, 0.74, 1.22, 0.93, 1.14, 0.8, 1.18, 0.88, 1.28, 0.78, 1.06, 1.16, 0.86, 1.24, 0.92];
-
 	let mainView = $state<MainView>('events');
 	let genreFilter = $state<GenreFilter>('all');
 	let events = $state<EventCatalogItem[]>([]);
@@ -53,10 +48,16 @@
 	const sortedEvents = $derived.by(() =>
 		[...events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
 	);
-	const featuredEvents = $derived.by(() =>
-		sortedEvents.filter((event) => eventMatchesGenre(event, genreFilter)).slice(0, 4)
+	const filteredEvents = $derived.by(() =>
+		sortedEvents.filter((event) => eventMatchesGenre(event, genreFilter))
 	);
-	const featuredBanner = $derived.by(() => featuredEvents[0] ?? sortedEvents[0] ?? null);
+	const upcomingEvents = $derived.by(() =>
+		sortedEvents.filter((event) => parseDate(event.endAt).getTime() >= Date.now())
+	);
+	const soonEvents = $derived.by(() =>
+		(upcomingEvents.length > 0 ? upcomingEvents : sortedEvents).slice(0, 3)
+	);
+	const featuredEvent = $derived.by(() => filteredEvents[0] ?? sortedEvents[0] ?? null);
 	const sortedTickets = $derived.by(() =>
 		[...tickets].sort((a, b) => a.startAt.toMillis() - b.startAt.toMillis())
 	);
@@ -68,20 +69,17 @@
 		return new Date(value);
 	}
 
-	function dateBadgeDay(date: Date): string {
-		return String(date.getDate()).padStart(2, '0');
-	}
-
-	function dateBadgeMonth(date: Date): string {
-		return monthFormatter.format(date);
-	}
-
 	function eventTimeLine(start: Date, end: Date): string {
 		return `${timeFormatter.format(start)} - ${timeFormatter.format(end)}`;
 	}
 
 	function eventDateLine(start: Date, end: Date): string {
 		return `${dateLineFormatter.format(start)} ${timeFormatter.format(start)} - ${timeFormatter.format(end)}`;
+	}
+
+	function eventDateShortLine(startAtIso: string): string {
+		const start = parseDate(startAtIso);
+		return `${shortDateFormatter.format(start).toUpperCase()} - ${timeFormatter.format(start)}`;
 	}
 
 	function ticketDateLine(ticket: UserActiveTicketRecord): string {
@@ -96,29 +94,6 @@
 
 	function formatPurchasePrice(cents: number): string {
 		return currencyFormatter.format(cents / 100);
-	}
-
-	function eventCardState(event: EventCatalogItem): EventCardState {
-		const start = parseDate(event.startAt);
-		const end = parseDate(event.endAt);
-		const now = new Date();
-		if (end.getTime() < now.getTime()) {
-			return 'past';
-		}
-		if (start.toDateString() === now.toDateString()) {
-			return 'tonight';
-		}
-		return 'upcoming';
-	}
-
-	function eventStateLabel(state: EventCardState, startAtIso: string): string {
-		if (state === 'tonight') {
-			return 'Tonight';
-		}
-		if (state === 'past') {
-			return 'Past';
-		}
-		return shortDateFormatter.format(parseDate(startAtIso)).toUpperCase();
 	}
 
 	function eventPosterImage(event: EventCatalogItem): string {
@@ -143,29 +118,8 @@
 		return /trance|frequency|pulse|reactor/.test(haystack);
 	}
 
-	function tabClass(active: boolean): string {
-		return cn('tab-chip', active && 'tab-chip--active');
-	}
-
 	async function handleSignIn(): Promise<void> {
 		await openAuthModal({ returnTo: '/event', source: 'event-page' });
-	}
-
-	async function handleSignOut(): Promise<void> {
-		await signOutCurrentUser();
-	}
-
-	async function handleMyEvents(): Promise<void> {
-		await goto('/host/events');
-	}
-
-	async function handleProfileAction(): Promise<void> {
-		if (!$currentUser) {
-			await handleSignIn();
-			return;
-		}
-
-		await handleMyEvents();
 	}
 
 	async function loadTicketsFor(uid: string): Promise<void> {
@@ -210,6 +164,11 @@
 	});
 
 	$effect(() => {
+		const tab = $page.url.searchParams.get('tab');
+		mainView = tab === 'tickets' ? 'tickets' : 'events';
+	});
+
+	$effect(() => {
 		const uid = $currentUser?.uid ?? '';
 		if (!uid) {
 			tickets = [];
@@ -223,924 +182,241 @@
 	});
 </script>
 
-<svelte:head>
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
-		rel="stylesheet"
-	/>
-</svelte:head>
+<div class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
+	<div
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_38rem_at_-10%_-8%,rgb(168_85_247_/_0.22),transparent_55%),radial-gradient(48rem_28rem_at_95%_12%,rgb(34_211_238_/_0.12),transparent_55%),linear-gradient(180deg,#0a0a0f_0%,#0e0512_42%,#050507_100%)]"
+	></div>
 
-<div class="events-page">
-	<div class="ambient-glow" aria-hidden="true">
-		<div class="orb orb--1"></div>
-		<div class="orb orb--2"></div>
-		<div class="orb orb--3"></div>
+	<div class="relative z-10">
+		<AppHeader />
 	</div>
-	<div class="grain" aria-hidden="true"></div>
-	<div class="scanline" aria-hidden="true"></div>
 
-	<main class="page-wrapper">
-		<header class="header">
-			<div class="header-left">
-				<p class="header-label">Tonight &amp; Upcoming</p>
-				<h1 class="header-title">Events</h1>
+	<main class="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6">
+		<section class="flex flex-col gap-4 px-5 pb-1 pt-8 sm:px-8 lg:px-12 lg:pt-14">
+			<div class="inline-flex w-fit items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.08em] text-violet-100" style="font-family: 'Space Mono', monospace;">
+				<Sparkles class="h-3.5 w-3.5" />
+				<span>Live discovery</span>
 			</div>
-			<div class="header-actions">
-				{#if $currentUser}
-					<button type="button" class="utility-btn" onclick={handleMyEvents}>My events</button>
-					<button type="button" class="utility-btn" onclick={handleSignOut}>Sign out</button>
-				{/if}
-				<button type="button" class="bell-btn" aria-label="Notifications">
-					<Bell class="h-5 w-5" />
-				</button>
-			</div>
-		</header>
+			<h1 class="text-[44px] font-extrabold uppercase leading-[0.9] tracking-[-0.03em] sm:text-[64px] lg:max-w-[760px] lg:text-[96px]" style="font-family: 'Space Grotesk', sans-serif;">Upcoming Events</h1>
+			<p class="max-w-[720px] text-sm text-zinc-300 sm:text-base lg:text-lg">
+				Discover the best nights, underground DJs, and iconic venues while keeping your existing ticket and reservation flow unchanged.
+			</p>
 
-		<div class="filter-tabs" role="tablist" aria-label="Event genres">
-			<button type="button" class={tabClass(genreFilter === 'all')} onclick={() => (genreFilter = 'all')}>All Events</button>
-			<button type="button" class={tabClass(genreFilter === 'techno')} onclick={() => (genreFilter = 'techno')}>Techno</button>
-			<button type="button" class={tabClass(genreFilter === 'house')} onclick={() => (genreFilter = 'house')}>House</button>
-			<button type="button" class={tabClass(genreFilter === 'dnb')} onclick={() => (genreFilter = 'dnb')}>DnB</button>
-			<button type="button" class={tabClass(genreFilter === 'trance')} onclick={() => (genreFilter = 'trance')}>Trance</button>
-		</div>
+			<div class="flex w-full flex-wrap items-center gap-2">
+				<div class="inline-flex w-full items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1 sm:w-fit" role="tablist" aria-label="Main view">
+					<button type="button" class={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'events')}>
+						<Calendar class="h-4 w-4" />
+						<span>Events</span>
+					</button>
+					<button type="button" class={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex-none ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'tickets')}>
+						<Ticket class="h-4 w-4" />
+						<span>Tickets</span>
+					</button>
+				</div>
+				<a
+					href="/host/events"
+					class="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/80 px-4 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white"
+					style="font-family: 'Space Grotesk', sans-serif;"
+				>
+					My events
+				</a>
+			</div>
+
+			{#if mainView === 'events'}
+				<div class="scrollbar-none flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Event genres">
+					{#each ['all', 'techno', 'house', 'dnb', 'trance'] as filter}
+						<button type="button" class={`h-8 whitespace-nowrap rounded-full border px-3 text-xs font-semibold uppercase tracking-wide transition ${genreFilter === filter ? 'border-lime-300/50 bg-lime-300/10 text-lime-300' : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-cyan-400/45 hover:text-white'}`} onclick={() => (genreFilter = filter as GenreFilter)}>
+							{filter === 'all' ? 'All Events' : filter === 'dnb' ? 'DnB' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</section>
 
 		{#if mainView === 'events'}
-			{#if loadingEvents}
-				<section class="events-row" aria-live="polite" aria-busy="true">
-					{#each [1, 2, 3, 4] as placeholder, index (placeholder)}
-						<div class="event-card skeleton" style={`animation-delay:${500 + index * 100}ms`}></div>
-					{/each}
+			{#if !loadingEvents && !eventsError && featuredEvent}
+				<section class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+					<div class="min-h-[190px]">
+						{#if eventPosterImage(featuredEvent)}
+							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
+						{/if}
+					</div>
+					<div class="flex flex-col gap-2 bg-gradient-to-b from-zinc-900/95 to-zinc-950/95 p-4 sm:p-6">
+						<p class="text-[11px] uppercase tracking-wider text-violet-300" style="font-family: 'Space Mono', monospace;">Featured event</p>
+						<h2 class="text-2xl font-bold leading-tight sm:text-3xl" style="font-family: 'Space Grotesk', sans-serif;">{featuredEvent.title}</h2>
+						<p class="text-sm leading-6 text-zinc-300">{featuredEvent.description}</p>
+						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><Clock3 class="h-3.5 w-3.5" />{eventTimeLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
+						<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><MapPin class="h-3.5 w-3.5" />{featuredEvent.venue}</p>
+						<p class="text-xs text-zinc-400">{eventDateLine(parseDate(featuredEvent.startAt), parseDate(featuredEvent.endAt))}</p>
+						<div class="flex flex-wrap gap-2 pt-1">
+							<a href={`/event/${featuredEvent.id}`} class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]">{featuredEvent.salesMode === 'table-packages' ? 'View Packages' : 'Get Tickets'}</a>
+							<a href={`/event/${featuredEvent.id}/request-table`} class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-4 text-sm font-bold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white">Request Table</a>
+						</div>
+					</div>
 				</section>
-			{:else if eventsError}
-				<section class="state-panel">
-					<p>{eventsError}</p>
-					<button type="button" class="cta-button cta-button--ghost" onclick={loadEvents}>Try again</button>
-				</section>
-			{:else if featuredEvents.length === 0}
-				<section class="state-panel">
-					<p>No events match this category right now.</p>
-					<button type="button" class="cta-button cta-button--ghost" onclick={() => (genreFilter = 'all')}>Show all events</button>
-				</section>
-			{:else}
-				<section class="events-row">
-					{#each featuredEvents as event, index (event.id)}
-						<a href={`/event/${event.id}`} class="event-card" style={`animation-delay:${500 + index * 100}ms`}>
-							{#if eventPosterImage(event)}
-								<img
-									class="card-img"
-									src={eventPosterImage(event)}
-									alt={`Poster for ${event.title}`}
-									loading="lazy"
-									decoding="async"
-								/>
-							{/if}
-							<div class="card-overlay"></div>
-							<div class="card-content">
-								<p class="card-title">{event.title}</p>
-								<span class="card-date-badge">{eventStateLabel(eventCardState(event), event.startAt)}</span>
-								<div class="card-meta">
-									<span class="card-meta-item"><Clock3 class="h-3.5 w-3.5" />{eventTimeLine(parseDate(event.startAt), parseDate(event.endAt))}</span>
-									<span class="card-meta-item"><MapPin class="h-3.5 w-3.5" />{event.venue}</span>
-								</div>
-							</div>
-						</a>
-					{/each}
-				</section>
+			{/if}
 
-				{#if featuredBanner}
-					<section class="rave-banner motion-block" style="animation-delay: 1000ms">
-						<img class="rave-banner-img" src={eventPosterImage(featuredBanner)} alt={`Banner for ${featuredBanner.title}`} />
-						<div class="rave-banner-overlay"></div>
-
-						<div class="eq-visualizer" aria-hidden="true">
-							{#each eqHeights as height, index (index)}
-								<span
-									class="eq-bar"
-									style={`--eq-h:${height}px; --eq-dur:${eqDurations[index]}s; animation-delay:${(index % 6) * 120}ms`}
-								></span>
+			<section class="grid gap-4 px-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-12">
+				<div class="min-w-0">
+					{#if loadingEvents}
+						<div class="grid gap-4 sm:grid-cols-2" aria-live="polite" aria-busy="true">
+							{#each [1, 2, 3, 4] as placeholder (placeholder)}
+								<article class="h-[320px] rounded-2xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></article>
 							{/each}
 						</div>
-
-						<div class="rave-banner-content">
-							<div class="rave-banner-text">
-								<h2>Feel The Bass</h2>
-								<p>// {featuredEvents.length} events loaded - don&apos;t miss out</p>
-							</div>
+					{:else if eventsError}
+						<section class="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+							<p>{eventsError}</p>
+							<button type="button" class="h-9 w-fit rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white" onclick={loadEvents}>Try again</button>
+						</section>
+					{:else if filteredEvents.length === 0}
+						<section class="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+							{#if sortedEvents.length === 0}
+								<p>No published events yet.</p>
+							{:else}
+								<p>No events match this category right now.</p>
+								<button type="button" class="h-9 w-fit rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white" onclick={() => (genreFilter = 'all')}>Show all events</button>
+							{/if}
+						</section>
+					{:else}
+						<div class="grid gap-4 sm:grid-cols-2">
+							{#each filteredEvents as event, index (event.id)}
+								<a href={`/event/${event.id}`} class="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-0.5 hover:border-violet-500/60" style={`animation-delay:${index * 70}ms`}>
+									<div class="absolute inset-0">
+										{#if eventPosterImage(event)}
+											<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Poster for ${event.title}`} loading="lazy" decoding="async" />
+										{:else}
+											<div class="h-full w-full bg-[radial-gradient(circle_at_15%_15%,rgb(168_85_247_/_0.45),transparent_42%),radial-gradient(circle_at_82%_10%,rgb(34_211_238_/_0.3),transparent_50%),linear-gradient(180deg,#1b1b24_0%,#12121a_60%,#0e0e14_100%)]"></div>
+										{/if}
+										<div class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/75 to-black/95"></div>
+									</div>
+									<div class="relative mt-auto flex flex-col gap-3 p-4">
+										<h2 class="text-xl font-bold leading-tight text-white sm:text-2xl" style="font-family: 'Space Grotesk', sans-serif;">{event.title}</h2>
+										<p class="inline-flex items-center gap-1.5 text-xs text-zinc-300"><Calendar class="h-3.5 w-3.5" />{eventDateShortLine(event.startAt)}</p>
+										<div class="flex items-center justify-between gap-3">
+											<p class="inline-flex min-w-0 items-center gap-1.5 text-xs text-zinc-300">
+												<MapPin class="h-3.5 w-3.5 shrink-0" />
+												<span class="truncate">{event.venue}{event.location ? ` - ${event.location}` : ''}</span>
+											</p>
+											<span class="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-white">View details <ChevronRight class="h-3.5 w-3.5" /></span>
+										</div>
+									</div>
+								</a>
+							{/each}
 						</div>
-					</section>
-				{/if}
-			{/if}
+					{/if}
+				</div>
+
+				<aside class="flex min-w-0 flex-col gap-2">
+					<div class="flex items-center justify-between px-1">
+						<p class="text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Happening soon</p>
+						<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900 text-[11px] text-zinc-400">{soonEvents.length}</span>
+					</div>
+					{#if loadingEvents}
+						{#each [1, 2, 3] as placeholder (placeholder)}
+							<div class="h-[74px] rounded-xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></div>
+						{/each}
+					{:else if soonEvents.length === 0}
+						<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-3 text-sm text-zinc-300">No upcoming events.</div>
+					{:else}
+						{#each soonEvents as event (event.id)}
+							<a href={`/event/${event.id}`} class="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 transition hover:border-violet-500/55">
+								<div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
+									{#if eventPosterImage(event)}
+										<img class="h-full w-full object-cover" src={eventPosterImage(event)} alt={`Thumbnail for ${event.title}`} loading="lazy" decoding="async" />
+									{/if}
+								</div>
+								<div class="min-w-0">
+									<p class="truncate text-[10px] uppercase tracking-wide text-violet-300" style="font-family: 'Space Mono', monospace;">{eventDateShortLine(event.startAt)}</p>
+									<p class="truncate text-sm font-bold text-white">{event.title}</p>
+									<p class="truncate text-xs text-zinc-400">{event.venue}</p>
+								</div>
+								<ChevronRight class="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
+							</a>
+						{/each}
+					{/if}
+				</aside>
+			</section>
 		{:else}
-			<section class="tickets-panel motion-block" style="animation-delay: 450ms">
+			<section class="px-5 sm:px-8 lg:px-12">
 				{#if !$currentUser}
-					<div class="state-panel">
-						<p class="state-title">Sign in to view your active tables and tickets.</p>
-						<p class="state-subtitle">Once you sign in, your upcoming reservations appear here automatically.</p>
-						<button type="button" class="cta-button" onclick={handleSignIn}>Sign in</button>
+					<div class="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+						<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Sign in to view your active tables and tickets.</p>
+						<p class="text-sm">Once you sign in, your upcoming reservations appear here automatically.</p>
+						<button type="button" class="inline-flex h-9 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]" onclick={handleSignIn}>Sign in</button>
 					</div>
 				{:else if loadingTickets}
-					<div class="tickets-list" aria-live="polite" aria-busy="true">
+					<div class="grid gap-3 sm:grid-cols-2" aria-live="polite" aria-busy="true">
 						{#each [1, 2, 3] as placeholder (placeholder)}
-							<div class="ticket-card skeleton"></div>
+							<article class="h-36 rounded-xl border border-zinc-800 bg-zinc-900/70 animate-pulse"></article>
 						{/each}
 					</div>
 				{:else if ticketsError}
-					<div class="state-panel">{ticketsError}</div>
+					<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">{ticketsError}</div>
 				{:else if sortedTickets.length === 0 && sortedPurchases.length === 0}
-					<div class="state-panel">
-						<p class="state-title">No active tickets yet.</p>
-						<p class="state-subtitle">Choose an event to reserve a table once event details go live.</p>
+					<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+						<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">No active tickets yet.</p>
+						<p class="mt-1 text-sm">Choose an event to reserve a table once event details go live.</p>
 					</div>
 				{:else}
-					<div class="tickets-list">
-						{#each sortedPurchases as purchase (purchase.purchaseId)}
-							<a href={`/event/${purchase.eventId}`} class="ticket-card">
-								<p class="ticket-chip">{purchase.ticketCount} ticket{purchase.ticketCount === 1 ? '' : 's'}</p>
-								<p class="ticket-title">{purchase.eventTitle}</p>
-								<p class="ticket-meta">{purchaseDateLine(purchase)}</p>
-								<p class="ticket-price">{formatPurchasePrice(purchase.subtotalCents)}</p>
-							</a>
-						{/each}
+					<div class="flex flex-col gap-4">
+						{#if sortedPurchases.length > 0}
+							<section>
+								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Ticket purchases</p>
+								<div class="grid gap-3 sm:grid-cols-2">
+									{#each sortedPurchases as purchase (purchase.purchaseId)}
+										<a href={`/event/${purchase.eventId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+											<p class="text-[10px] uppercase tracking-wide text-lime-300" style="font-family: 'Space Mono', monospace;">{purchase.ticketCount} ticket{purchase.ticketCount === 1 ? '' : 's'}</p>
+											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{purchase.eventTitle}</p>
+											<p class="text-xs text-zinc-300">{purchaseDateLine(purchase)}</p>
+											<p class="text-xs text-zinc-400">{purchase.eventVenue}</p>
+											<p class="text-sm text-lime-300" style="font-family: 'Space Mono', monospace;">{formatPurchasePrice(purchase.subtotalCents)}</p>
+										</a>
+									{/each}
+								</div>
+							</section>
+						{/if}
 
-						{#each sortedTickets as ticket (ticket.reservationId)}
-							<a href={`/r/${ticket.reservationId}`} class="ticket-card">
-								<p class="ticket-chip ticket-chip--muted">Active ticket</p>
-								<p class="ticket-title">{ticket.clubName}</p>
-								<p class="ticket-meta">{ticketDateLine(ticket)}</p>
-								<p class="ticket-meta">Table: {ticket.tableType}</p>
-								<p class="ticket-meta">Guest: {ticket.guestDisplayName} {ticket.plusOneCount > 0 ? `(+${ticket.plusOneCount})` : ''}</p>
-							</a>
-						{/each}
+						{#if sortedTickets.length > 0}
+							<section>
+								<p class="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-300" style="font-family: 'Space Grotesk', sans-serif;">Active tables</p>
+								<div class="grid gap-3 sm:grid-cols-2">
+									{#each sortedTickets as ticket (ticket.reservationId)}
+										<a href={`/r/${ticket.reservationId}`} class="flex flex-col gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-violet-500/55">
+											<p class="text-[10px] uppercase tracking-wide text-zinc-300" style="font-family: 'Space Mono', monospace;">Active ticket</p>
+											<p class="text-lg font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{ticket.clubName}</p>
+											<p class="text-xs text-zinc-300">{ticketDateLine(ticket)}</p>
+											<p class="text-xs text-zinc-400">Table: {ticket.tableType}</p>
+											<p class="text-xs text-zinc-400">Guest: {ticket.guestDisplayName}{ticket.plusOneCount > 0 ? ` (+${ticket.plusOneCount})` : ''}</p>
+										</a>
+									{/each}
+								</div>
+							</section>
+						{/if}
 					</div>
 				{/if}
 			</section>
 		{/if}
 
-		<nav class="bottom-nav">
-			<button type="button" class={cn('nav-item', mainView === 'events' ? 'nav-item--active' : 'nav-item--inactive')} onclick={() => (mainView = 'events')}>
-				<Calendar class="h-[22px] w-[22px]" />
-				<span>Events</span>
-			</button>
-			<button type="button" class="nav-item nav-item--inactive" onclick={() => goto('/')}>
-				<Search class="h-[22px] w-[22px]" />
-				<span>Explore</span>
-			</button>
-			<button type="button" class={cn('nav-item', mainView === 'tickets' ? 'nav-item--active' : 'nav-item--inactive')} onclick={() => (mainView = 'tickets')}>
-				<Ticket class="h-[22px] w-[22px]" />
-				<span>Tickets</span>
-			</button>
-			<button type="button" class="nav-item nav-item--inactive" onclick={handleProfileAction}>
-				<User class="h-[22px] w-[22px]" />
-				<span>{$currentUser ? 'Profile' : 'Sign in'}</span>
-			</button>
-		</nav>
 	</main>
+
+	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
+		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
+			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Nightclub Guestlist</p>
+					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
+				</div>
+			</div>
+			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
+				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
+			</div>
+			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+				<span>(c) 2026 Nightclub Guestlist. All rights reserved.</span>
+			</div>
+		</div>
+	</footer>
 </div>
 
-<style>
-	.events-page {
-		--void: #0a0a0f;
-		--surface: #15152080;
-		--border: #1e1e3a;
-		--border-light: #2a2a3a;
-		--text-primary: #ffffff;
-		--text-secondary: #8a8aaa;
-		--text-muted: #525260;
-		--accent-start: #4f5aff;
-		--accent-end: #7b3fe4;
-		position: relative;
-		min-height: 100vh;
-		background: var(--void);
-		color: var(--text-primary);
-		font-family: 'DM Sans', sans-serif;
-		overflow: hidden;
-	}
 
-	.page-wrapper {
-		position: relative;
-		z-index: 2;
-		max-width: 1440px;
-		margin: 0 auto;
-		min-height: 100vh;
-		display: flex;
-		flex-direction: column;
-		padding-bottom: 96px;
-	}
-
-	.ambient-glow,
-	.grain,
-	.scanline {
-		position: fixed;
-		inset: 0;
-		pointer-events: none;
-	}
-
-	.ambient-glow {
-		z-index: 0;
-		overflow: hidden;
-	}
-
-	.orb {
-		position: absolute;
-		border-radius: 999px;
-		filter: blur(120px);
-		opacity: 0.14;
-		animation: orb-float 12s ease-in-out infinite alternate;
-	}
-
-	.orb--1 {
-		width: 620px;
-		height: 620px;
-		top: -220px;
-		left: -120px;
-		background: #7b3fe4;
-	}
-
-	.orb--2 {
-		width: 520px;
-		height: 520px;
-		top: 36%;
-		right: -170px;
-		background: #4f5aff;
-		animation-delay: -4s;
-		animation-duration: 15s;
-	}
-
-	.orb--3 {
-		width: 420px;
-		height: 420px;
-		left: 32%;
-		bottom: -120px;
-		background: #7b3fe4;
-		animation-delay: -7s;
-		animation-duration: 18s;
-	}
-
-	.grain {
-		z-index: 1;
-		opacity: 0.035;
-		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-		background-repeat: repeat;
-		background-size: 200px;
-	}
-
-	.scanline {
-		z-index: 1;
-		background: repeating-linear-gradient(
-			0deg,
-			transparent,
-			transparent 2px,
-			rgba(0, 0, 0, 0.03) 2px,
-			rgba(0, 0, 0, 0.03) 4px
-		);
-	}
-
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 12px;
-		padding: 28px 40px 20px;
-		opacity: 0;
-		transform: translateY(20px);
-		animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-	}
-
-	.header-left {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.header-label {
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 4px;
-		text-transform: uppercase;
-		color: rgba(79, 90, 255, 0.64);
-	}
-
-	.header-title {
-		font-family: 'Sora', sans-serif;
-		font-size: 42px;
-		font-weight: 800;
-		letter-spacing: -2px;
-		line-height: 1;
-		margin: 0;
-		background: linear-gradient(135deg, #ffffff 58%, #4f5aff);
-		background-clip: text;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-	}
-
-	.header-actions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.utility-btn {
-		height: 34px;
-		padding: 0 12px;
-		border-radius: 999px;
-		border: 1px solid var(--border-light);
-		background: var(--surface);
-		color: #b8bbd8;
-		font-size: 12px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 180ms ease;
-	}
-
-	.utility-btn:hover {
-		border-color: #4f5aff80;
-		color: #fff;
-	}
-
-	.bell-btn {
-		width: 44px;
-		height: 44px;
-		display: grid;
-		place-items: center;
-		border-radius: 999px;
-		border: 1px solid var(--border-light);
-		background: var(--surface);
-		color: #8a8aaa;
-		cursor: pointer;
-		position: relative;
-		transition: all 240ms ease;
-	}
-
-	.bell-btn::after {
-		content: '';
-		position: absolute;
-		top: 11px;
-		right: 12px;
-		width: 7px;
-		height: 7px;
-		border-radius: 999px;
-		background: #e040a0;
-		box-shadow: 0 0 8px #e040a0;
-		animation: notif-pulse 2s ease-in-out infinite;
-	}
-
-	.bell-btn:hover {
-		color: #fff;
-		border-color: #4f5aff;
-		box-shadow: 0 0 20px rgba(79, 90, 255, 0.25);
-		transform: scale(1.05);
-	}
-
-	.filter-tabs {
-		display: flex;
-		gap: 10px;
-		padding: 0 40px 24px;
-		overflow-x: auto;
-		scrollbar-width: none;
-		opacity: 0;
-		transform: translateY(20px);
-		animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
-	}
-
-	.filter-tabs::-webkit-scrollbar {
-		display: none;
-	}
-
-	.tab-chip {
-		height: 38px;
-		padding: 0 22px;
-		border-radius: 999px;
-		border: 1px solid var(--border-light);
-		background: var(--surface);
-		color: var(--text-muted);
-		font-family: 'DM Sans', sans-serif;
-		font-size: 13px;
-		font-weight: 500;
-		white-space: nowrap;
-		cursor: pointer;
-		transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	.tab-chip:hover {
-		color: #9b9ebb;
-		border-color: #3a3a4f;
-	}
-
-	.tab-chip--active {
-		border-color: transparent;
-		background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-		color: #fff;
-		font-weight: 700;
-		box-shadow: 0 0 24px rgba(79, 90, 255, 0.35), 0 0 60px rgba(123, 63, 228, 0.18);
-	}
-
-	.events-row {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 18px;
-		padding: 0 40px 32px;
-	}
-
-	.event-card {
-		position: relative;
-		overflow: hidden;
-		height: 240px;
-		border-radius: 18px;
-		border: 1px solid var(--border);
-		text-decoration: none;
-		color: #ffffff;
-		opacity: 0;
-		transform: translateY(26px);
-		animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-		transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1), border-color 260ms ease, box-shadow 260ms ease;
-	}
-
-	.event-card.skeleton {
-		background: #131623;
-	}
-
-	.event-card:hover {
-		transform: translateY(-6px) scale(1.02);
-		border-color: #4f5aff;
-		box-shadow: 0 12px 50px rgba(79, 90, 255, 0.25), 0 0 0 1px rgba(79, 90, 255, 0.12);
-	}
-
-	.event-card:hover .card-img {
-		transform: scale(1.1);
-	}
-
-	.card-img {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		filter: brightness(0.7) saturate(0.88);
-		transition: transform 6s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	.card-overlay {
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(to top, #0a0a0f 0%, rgba(10, 10, 15, 0.86) 40%, rgba(10, 10, 15, 0) 100%);
-	}
-
-	.card-content {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 20px 22px;
-	}
-
-	.card-date-badge {
-		display: inline-flex;
-		align-self: flex-start;
-		padding: 4px 12px;
-		border-radius: 999px;
-		background: rgba(79, 90, 255, 0.32);
-		color: #fff;
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 2px;
-		text-transform: uppercase;
-		backdrop-filter: blur(8px);
-	}
-
-	.card-title {
-		margin: 0;
-		font-family: 'Sora', sans-serif;
-		font-size: 25px;
-		font-weight: 800;
-		letter-spacing: -0.7px;
-		line-height: 1.1;
-		text-transform: uppercase;
-		color: #ffffff;
-	}
-
-	.card-meta {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		flex-wrap: wrap;
-		font-size: 12px;
-		color: #ffffff;
-	}
-
-	.card-meta-item {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		opacity: 0.92;
-	}
-
-	.rave-banner {
-		position: relative;
-		height: 500px;
-		margin: 0 40px;
-		border-radius: 24px;
-		overflow: hidden;
-	}
-
-	.rave-banner-img {
-		position: absolute;
-		inset: -40px;
-		width: calc(100% + 80px);
-		height: calc(100% + 80px);
-		object-fit: cover;
-		object-position: center 40%;
-		animation: banner-zoom 25s ease-in-out infinite alternate;
-	}
-
-	.rave-banner-overlay {
-		position: absolute;
-		inset: 0;
-		background:
-			linear-gradient(to top, #0a0a0f 0%, transparent 40%),
-			linear-gradient(to bottom, #0a0a0f 0%, transparent 30%),
-			radial-gradient(ellipse at 50% 80%, rgba(79, 90, 255, 0.16) 0%, transparent 60%);
-	}
-
-	.rave-banner-content {
-		position: absolute;
-		left: 48px;
-		right: 48px;
-		bottom: 48px;
-		display: flex;
-		align-items: flex-end;
-		gap: 16px;
-	}
-
-	.rave-banner-text h2 {
-		margin: 0;
-		font-family: 'Sora', sans-serif;
-		font-size: 56px;
-		font-weight: 800;
-		letter-spacing: -2px;
-		line-height: 1;
-		text-transform: uppercase;
-		background: linear-gradient(135deg, #fff 30%, #7dd3fc 100%);
-		background-clip: text;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-	}
-
-	.rave-banner-text p {
-		margin: 10px 0 0;
-		font-size: 14px;
-		letter-spacing: 1px;
-		text-transform: uppercase;
-		color: var(--text-secondary);
-	}
-
-	.eq-visualizer {
-		position: absolute;
-		top: 48px;
-		right: 48px;
-		display: flex;
-		align-items: flex-end;
-		gap: 3px;
-		height: 40px;
-		opacity: 0.58;
-	}
-
-	.eq-bar {
-		width: 4px;
-		height: 8px;
-		border-radius: 4px;
-		background: linear-gradient(to top, #4f5aff, #7b3fe4);
-		animation: eq-bounce var(--eq-dur) ease-in-out infinite alternate;
-	}
-
-	.cta-button {
-		height: 48px;
-		padding: 0 32px;
-		border-radius: 999px;
-		border: none;
-		background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-		color: #fff;
-		font-family: 'Sora', sans-serif;
-		font-size: 14px;
-		font-weight: 700;
-		letter-spacing: 2px;
-		text-transform: uppercase;
-		cursor: pointer;
-		box-shadow: 0 0 30px rgba(79, 90, 255, 0.3);
-		transition: all 280ms cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	.cta-button:hover {
-		transform: translateY(-2px) scale(1.02);
-		box-shadow: 0 0 50px rgba(79, 90, 255, 0.5), 0 8px 30px rgba(0, 0, 0, 0.4);
-	}
-
-	.cta-button--ghost {
-		height: 40px;
-		padding: 0 18px;
-		font-size: 12px;
-		letter-spacing: 1px;
-	}
-
-	.motion-block {
-		opacity: 0;
-		transform: translateY(24px);
-		animation: fade-slide-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-	}
-
-	.tickets-panel {
-		margin: 0 40px 20px;
-	}
-
-	.tickets-list {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 14px;
-	}
-
-	.ticket-card {
-		display: block;
-		padding: 18px;
-		border-radius: 16px;
-		border: 1px solid var(--border);
-		background: rgba(17, 18, 25, 0.84);
-		text-decoration: none;
-		transition: border-color 220ms ease, transform 220ms ease;
-	}
-
-	.ticket-card:hover {
-		border-color: #4f5aff80;
-		transform: translateY(-2px);
-	}
-
-	.ticket-card.skeleton {
-		height: 120px;
-		background: #141623;
-	}
-
-	.ticket-chip {
-		margin: 0;
-		color: #6b7aff;
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-	}
-
-	.ticket-chip--muted {
-		color: var(--text-secondary);
-	}
-
-	.ticket-title {
-		margin: 10px 0 0;
-		font-family: 'Sora', sans-serif;
-		font-size: 18px;
-		font-weight: 700;
-		color: #fff;
-	}
-
-	.ticket-meta {
-		margin: 6px 0 0;
-		font-size: 12px;
-		color: var(--text-secondary);
-	}
-
-	.ticket-price {
-		margin: 10px 0 0;
-		font-size: 16px;
-		font-weight: 700;
-		color: #fff;
-	}
-
-	.state-panel {
-		margin: 0 40px 16px;
-		padding: 16px;
-		border-radius: 14px;
-		border: 1px solid var(--border);
-		background: rgba(17, 18, 25, 0.84);
-		color: var(--text-secondary);
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.state-title {
-		margin: 0;
-		color: #fff;
-		font-size: 16px;
-		font-weight: 700;
-	}
-
-	.state-subtitle {
-		margin: 0;
-		font-size: 13px;
-	}
-
-	.bottom-nav {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		width: 100%;
-		z-index: 20;
-		display: flex;
-		justify-content: space-around;
-		align-items: center;
-		gap: 8px;
-		padding: 16px 0 24px;
-		border-top: 1px solid var(--border);
-		background: #0a0a0fe6;
-		backdrop-filter: blur(6px);
-		opacity: 0;
-		transform: translateY(20px);
-		animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
-	}
-
-	.nav-item {
-		display: inline-flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 5px;
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		font-size: 11px;
-		font-weight: 500;
-		transition: color 220ms ease;
-	}
-
-	.nav-item--inactive {
-		color: var(--text-muted);
-	}
-
-	.nav-item--inactive:hover {
-		color: var(--text-secondary);
-	}
-
-	.nav-item--active {
-		color: #4f5aff;
-		font-weight: 700;
-	}
-
-	.nav-item--active::after {
-		content: '';
-		width: 4px;
-		height: 4px;
-		margin-top: 1px;
-		border-radius: 999px;
-		background: #4f5aff;
-		box-shadow: 0 0 8px #4f5aff;
-	}
-
-	@keyframes fade-slide-up {
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@keyframes orb-float {
-		0% {
-			transform: translate(0, 0) scale(1);
-		}
-		33% {
-			transform: translate(40px, -30px) scale(1.1);
-		}
-		66% {
-			transform: translate(-20px, 48px) scale(0.9);
-		}
-		100% {
-			transform: translate(26px, 18px) scale(1.05);
-		}
-	}
-
-	@keyframes notif-pulse {
-		0%,
-		100% {
-			transform: scale(1);
-			opacity: 1;
-		}
-		50% {
-			transform: scale(1.35);
-			opacity: 0.62;
-		}
-	}
-
-	@keyframes banner-zoom {
-		0% {
-			transform: scale(1) translateY(0);
-		}
-		100% {
-			transform: scale(1.08) translateY(-10px);
-		}
-	}
-
-	@keyframes eq-bounce {
-		0% {
-			height: 8px;
-		}
-		100% {
-			height: var(--eq-h);
-		}
-	}
-
-	@media (max-width: 1180px) {
-		.header,
-		.filter-tabs,
-		.events-row,
-		.rave-banner,
-		.tickets-panel,
-		.state-panel {
-			margin-left: 24px;
-			margin-right: 24px;
-			padding-left: 0;
-			padding-right: 0;
-		}
-
-		.events-row {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 900px) {
-		.header {
-			padding: 24px 20px 14px;
-		}
-
-		.header-title {
-			font-size: 34px;
-		}
-
-		.header-actions {
-			gap: 6px;
-		}
-
-		.utility-btn {
-			display: none;
-		}
-
-		.filter-tabs {
-			padding: 0 20px 18px;
-			margin: 0;
-		}
-
-		.events-row {
-			display: flex;
-			flex-direction: column;
-			gap: 16px;
-			padding: 0 20px 24px;
-			margin: 0;
-		}
-
-		.event-card {
-			height: 220px;
-		}
-
-		.card-title {
-			font-size: 24px;
-		}
-
-		.rave-banner {
-			height: 360px;
-			margin: 0 20px;
-		}
-
-		.rave-banner-content {
-			left: 20px;
-			right: 20px;
-			bottom: 20px;
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.rave-banner-text h2 {
-			font-size: 42px;
-		}
-
-		.eq-visualizer {
-			top: 20px;
-			right: 20px;
-		}
-
-		.tickets-panel,
-		.state-panel {
-			margin: 0 20px 20px;
-		}
-
-		.tickets-list {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		* {
-			animation-duration: 1ms !important;
-			animation-iteration-count: 1 !important;
-			transition-duration: 1ms !important;
-		}
-	}
-</style>

@@ -3,246 +3,111 @@
   "children": [
     {
       "type": "frame",
-      "id": "GGYop",
-      "x": 900,
+      "id": "s227b",
+      "x": 0,
       "y": 0,
-      "name": "Rave Events",
-      "clip": true,
-      "width": 402,
-      "fill": "#0A0A0F",
+      "name": "FREQUENCY — Underground Events",
+      "width": 1440,
+      "fill": "$bg-deep",
       "layout": "vertical",
       "children": [
         {
           "type": "frame",
-          "id": "vRM6s",
-          "name": "Header",
+          "id": "i4Uga",
+          "name": "Navigation",
           "width": "fill_container",
           "padding": [
             20,
-            24,
-            16,
-            24
+            80
           ],
           "justifyContent": "space_between",
           "alignItems": "center",
           "children": [
             {
+              "type": "text",
+              "id": "JjDle",
+              "name": "Logo",
+              "fill": "$text-primary",
+              "content": "FREQUENCY",
+              "fontFamily": "Space Mono",
+              "fontSize": 18,
+              "fontWeight": "700",
+              "letterSpacing": 4
+            },
+            {
               "type": "frame",
-              "id": "xtvHY",
-              "name": "headerLeft",
-              "layout": "vertical",
-              "gap": 2,
+              "id": "TRHwo",
+              "name": "navLinks",
+              "gap": 40,
+              "alignItems": "center",
               "children": [
                 {
                   "type": "text",
-                  "id": "tBuXe",
-                  "name": "headerGreeting",
-                  "fill": "#6B7AFF50",
-                  "content": "TONIGHT &amp; UPCOMING",
+                  "id": "5MRaa",
+                  "name": "link1",
+                  "fill": "$text-secondary",
+                  "content": "EVENTS",
                   "fontFamily": "Inter",
-                  "fontSize": 10,
-                  "fontWeight": "700",
+                  "fontSize": 11,
+                  "fontWeight": "500",
                   "letterSpacing": 3
                 },
                 {
                   "type": "text",
-                  "id": "ldMj8",
-                  "name": "headerTitle",
-                  "fill": "#FFFFFF",
-                  "content": "Events",
-                  "fontFamily": "Sora",
-                  "fontSize": 32,
-                  "fontWeight": "700",
-                  "letterSpacing": -1.5
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "QGmdD",
-              "name": "bellFrame",
-              "width": 40,
-              "height": 40,
-              "fill": "#15152080",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#2A2A3A"
-              },
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "w2iuM",
-                  "name": "bellIcon",
-                  "width": 20,
-                  "height": 20,
-                  "iconFontName": "bell",
-                  "iconFontFamily": "lucide",
-                  "fill": "#8A8AAA"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "FxN0y",
-          "name": "Filter Tabs",
-          "width": "fill_container",
-          "gap": 8,
-          "padding": [
-            0,
-            24
-          ],
-          "children": [
-            {
-              "type": "frame",
-              "id": "v0JrB",
-              "name": "tabAll",
-              "fill": {
-                "type": "gradient",
-                "gradientType": "linear",
-                "enabled": true,
-                "rotation": 180,
-                "size": {
-                  "height": 1
+                  "id": "PAGfE",
+                  "name": "link2",
+                  "fill": "$text-secondary",
+                  "content": "ARTISTS",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "letterSpacing": 3
                 },
-                "colors": [
-                  {
-                    "color": "#4F5AFF",
-                    "position": 0
-                  },
-                  {
-                    "color": "#7B3FE4",
-                    "position": 1
-                  }
-                ]
-              },
-              "cornerRadius": 20,
-              "padding": [
-                8,
-                18
-              ],
-              "children": [
                 {
                   "type": "text",
-                  "id": "t3R5e",
-                  "name": "tabAllText",
-                  "fill": "#FFFFFF",
-                  "content": "All Events",
+                  "id": "eT3T6",
+                  "name": "link3",
+                  "fill": "$text-secondary",
+                  "content": "VENUES",
                   "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "mHM2C",
-              "name": "tabTechno",
-              "fill": "#15152080",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#2A2A3A"
-              },
-              "padding": [
-                8,
-                18
-              ],
-              "children": [
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "letterSpacing": 3
+                },
                 {
                   "type": "text",
-                  "id": "bV0pm",
-                  "name": "tabTechnoText",
-                  "fill": "#6A6A8A",
-                  "content": "Techno",
+                  "id": "0MD9h",
+                  "name": "link4",
+                  "fill": "$text-secondary",
+                  "content": "ABOUT",
                   "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "500"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "26zd9",
-              "name": "tabHouse",
-              "fill": "#15152080",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#2A2A3A"
-              },
-              "padding": [
-                8,
-                18
-              ],
-              "children": [
+                  "fontSize": 11,
+                  "fontWeight": "500",
+                  "letterSpacing": 3
+                },
                 {
-                  "type": "text",
-                  "id": "uR3TE",
-                  "name": "tabHouseText",
-                  "fill": "#6A6A8A",
-                  "content": "House",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "500"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "sfyj2",
-              "name": "tabDnB",
-              "fill": "#15152080",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#2A2A3A"
-              },
-              "padding": [
-                8,
-                18
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "E0i9l",
-                  "name": "tabDnBText",
-                  "fill": "#6A6A8A",
-                  "content": "DnB",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "500"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "BlcuG",
-              "name": "tabTrance",
-              "fill": "#15152080",
-              "cornerRadius": 20,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#2A2A3A"
-              },
-              "padding": [
-                8,
-                18
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "6s5R2",
-                  "name": "tabTranceText",
-                  "fill": "#6A6A8A",
-                  "content": "Trance",
-                  "fontFamily": "Inter",
-                  "fontSize": 12,
-                  "fontWeight": "500"
+                  "type": "frame",
+                  "id": "Kzww0",
+                  "name": "ctaNav",
+                  "fill": "$neon-purple",
+                  "padding": [
+                    10,
+                    24
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "95mib",
+                      "name": "ctaNavText",
+                      "fill": "#FFFFFF",
+                      "content": "GET TICKETS",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 2
+                    }
+                  ]
                 }
               ]
             }
@@ -250,908 +115,1581 @@
         },
         {
           "type": "frame",
-          "id": "LZXAU",
-          "name": "Events List",
+          "id": "M9vVD",
+          "name": "Hero Section",
           "width": "fill_container",
+          "height": 720,
+          "fill": [
+            {
+              "type": "gradient",
+              "gradientType": "radial",
+              "enabled": true,
+              "rotation": 0,
+              "size": {
+                "width": 1.2,
+                "height": 1.2
+              },
+              "colors": [
+                {
+                  "color": "#BF00FF18",
+                  "position": 0
+                },
+                {
+                  "color": "#0A0A0A00",
+                  "position": 1
+                }
+              ],
+              "center": {
+                "x": 0.3,
+                "y": 0.4
+              }
+            },
+            {
+              "type": "gradient",
+              "gradientType": "radial",
+              "enabled": true,
+              "rotation": 0,
+              "size": {
+                "width": 1,
+                "height": 1
+              },
+              "colors": [
+                {
+                  "color": "#00F0FF10",
+                  "position": 0
+                },
+                {
+                  "color": "#0A0A0A00",
+                  "position": 1
+                }
+              ],
+              "center": {
+                "x": 0.7,
+                "y": 0.6
+              }
+            },
+            {
+              "type": "gradient",
+              "gradientType": "linear",
+              "enabled": true,
+              "rotation": 180,
+              "size": {
+                "height": 1
+              },
+              "colors": [
+                {
+                  "color": "#0A0A0A",
+                  "position": 0
+                },
+                {
+                  "color": "#0A0A0A00",
+                  "position": 0.15
+                }
+              ]
+            }
+          ],
           "layout": "vertical",
-          "gap": 16,
+          "gap": 32,
           "padding": [
-            20,
-            24,
-            24,
-            24
-          ],
-          "children": [
-            {
-              "type": "frame",
-              "id": "1aBGO",
-              "name": "Event Card 1",
-              "clip": true,
-              "width": "fill_container",
-              "height": 220,
-              "cornerRadius": 16,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#1E1E3A"
-              },
-              "layout": "none",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "cS4U2",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Image",
-                  "width": 354,
-                  "height": 220,
-                  "fill": {
-                    "type": "image",
-                    "enabled": true,
-                    "url": "./images/generated-1772425014170.png",
-                    "mode": "fill"
-                  }
-                },
-                {
-                  "type": "frame",
-                  "id": "afruP",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Overlay",
-                  "width": 354,
-                  "height": 220,
-                  "fill": {
-                    "type": "gradient",
-                    "gradientType": "linear",
-                    "enabled": true,
-                    "rotation": 0,
-                    "size": {
-                      "height": 1
-                    },
-                    "colors": [
-                      {
-                        "color": "#0A0A0F00",
-                        "position": 0
-                      },
-                      {
-                        "color": "#0A0A0FDD",
-                        "position": 0.55
-                      },
-                      {
-                        "color": "#0A0A0F",
-                        "position": 1
-                      }
-                    ]
-                  },
-                  "layout": "none",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "kJush",
-                      "x": 16,
-                      "y": 130,
-                      "name": "Card Content",
-                      "width": 322,
-                      "layout": "vertical",
-                      "gap": 6,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "oGC1d",
-                          "name": "tonightBadge",
-                          "fill": {
-                            "type": "gradient",
-                            "gradientType": "linear",
-                            "enabled": true,
-                            "rotation": 180,
-                            "size": {
-                              "height": 1
-                            },
-                            "colors": [
-                              {
-                                "color": "#4F5AFF",
-                                "position": 0
-                              },
-                              {
-                                "color": "#7B3FE4",
-                                "position": 1
-                              }
-                            ]
-                          },
-                          "cornerRadius": 4,
-                          "padding": [
-                            4,
-                            10
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "GRxff",
-                              "name": "tonightText",
-                              "fill": "#FFFFFF",
-                              "content": "TONIGHT",
-                              "fontFamily": "Inter",
-                              "fontSize": 9,
-                              "fontWeight": "700",
-                              "letterSpacing": 2
-                            }
-                          ]
-                        },
-                        {
-                          "type": "text",
-                          "id": "a4cck",
-                          "name": "card1title",
-                          "fill": "#FFFFFF",
-                          "content": "NOCTURNAL FREQUENCY",
-                          "fontFamily": "Sora",
-                          "fontSize": 20,
-                          "fontWeight": "700",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "frame",
-                          "id": "Ylzkg",
-                          "name": "card1meta",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "Wnt9M",
-                              "name": "card1time",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "rXNyw",
-                                  "name": "card1timeIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "clock-3",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "ZyaEr",
-                                  "name": "card1timeText",
-                                  "fill": "#8A8AAA",
-                                  "content": "23:00 — 06:00",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "kkBdY",
-                              "name": "card1loc",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "8mr12",
-                                  "name": "card1locIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "map-pin",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "giHBs",
-                                  "name": "card1locText",
-                                  "fill": "#8A8AAA",
-                                  "content": "Warehouse 9",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "nVM1B",
-              "name": "Event Card 2",
-              "clip": true,
-              "width": "fill_container",
-              "height": 200,
-              "cornerRadius": 16,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#1E1E3A"
-              },
-              "layout": "none",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "AHVf8",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Image 2",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "image",
-                    "enabled": true,
-                    "url": "./images/generated-1772425045128.png",
-                    "mode": "fill"
-                  }
-                },
-                {
-                  "type": "frame",
-                  "id": "KI5LX",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Overlay 2",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "gradient",
-                    "gradientType": "linear",
-                    "enabled": true,
-                    "rotation": 0,
-                    "size": {
-                      "height": 1
-                    },
-                    "colors": [
-                      {
-                        "color": "#0A0A0F00",
-                        "position": 0
-                      },
-                      {
-                        "color": "#0A0A0FDD",
-                        "position": 0.5
-                      },
-                      {
-                        "color": "#0A0A0F",
-                        "position": 1
-                      }
-                    ]
-                  },
-                  "layout": "none",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "dwKb5",
-                      "x": 16,
-                      "y": 110,
-                      "name": "Card Content 2",
-                      "width": 322,
-                      "layout": "vertical",
-                      "gap": 6,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "cdSDg",
-                          "name": "card2badge",
-                          "fill": "#1A1A3080",
-                          "cornerRadius": 4,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#4F5AFF40"
-                          },
-                          "padding": [
-                            4,
-                            10
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "guwW9",
-                              "name": "card2badgeText",
-                              "fill": "#7B8AFF",
-                              "content": "SAT MAR 7",
-                              "fontFamily": "Inter",
-                              "fontSize": 9,
-                              "fontWeight": "700",
-                              "letterSpacing": 2
-                            }
-                          ]
-                        },
-                        {
-                          "type": "text",
-                          "id": "cVGoH",
-                          "name": "card2title",
-                          "fill": "#FFFFFF",
-                          "content": "SYSTEM OVERRIDE",
-                          "fontFamily": "Sora",
-                          "fontSize": 20,
-                          "fontWeight": "700",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "frame",
-                          "id": "g92i5",
-                          "name": "card2meta",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "4nx07",
-                              "name": "card2time",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "161gI",
-                                  "name": "card2timeIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "clock-3",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "93Lsq",
-                                  "name": "card2timeText",
-                                  "fill": "#8A8AAA",
-                                  "content": "22:00 — 05:00",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "BST5f",
-                              "name": "card2loc",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "k2PcD",
-                                  "name": "card2locIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "map-pin",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "LdcMw",
-                                  "name": "card2locText",
-                                  "fill": "#8A8AAA",
-                                  "content": "The Bunker",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "8sKrL",
-              "name": "Event Card 3",
-              "clip": true,
-              "width": "fill_container",
-              "height": 200,
-              "cornerRadius": 16,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#1E1E3A"
-              },
-              "layout": "none",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "rIOnh",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Image 3",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "image",
-                    "enabled": true,
-                    "url": "./images/generated-1772425066742.png",
-                    "mode": "fill"
-                  }
-                },
-                {
-                  "type": "frame",
-                  "id": "qDcxM",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Overlay 3",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "gradient",
-                    "gradientType": "linear",
-                    "enabled": true,
-                    "rotation": 0,
-                    "size": {
-                      "height": 1
-                    },
-                    "colors": [
-                      {
-                        "color": "#0A0A0F00",
-                        "position": 0
-                      },
-                      {
-                        "color": "#0A0A0FDD",
-                        "position": 0.5
-                      },
-                      {
-                        "color": "#0A0A0F",
-                        "position": 1
-                      }
-                    ]
-                  },
-                  "layout": "none",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "TPUA8",
-                      "x": 16,
-                      "y": 110,
-                      "name": "Card Content 3",
-                      "width": 322,
-                      "layout": "vertical",
-                      "gap": 6,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "0Nv4k",
-                          "name": "card3badge",
-                          "fill": "#1A1A3080",
-                          "cornerRadius": 4,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#4F5AFF40"
-                          },
-                          "padding": [
-                            4,
-                            10
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "zqpOV",
-                              "name": "card3badgeText",
-                              "fill": "#7B8AFF",
-                              "content": "FRI MAR 13",
-                              "fontFamily": "Inter",
-                              "fontSize": 9,
-                              "fontWeight": "700",
-                              "letterSpacing": 2
-                            }
-                          ]
-                        },
-                        {
-                          "type": "text",
-                          "id": "CADGF",
-                          "name": "card3title",
-                          "fill": "#FFFFFF",
-                          "content": "PULSE REACTOR",
-                          "fontFamily": "Sora",
-                          "fontSize": 20,
-                          "fontWeight": "700",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "frame",
-                          "id": "6WD7I",
-                          "name": "card3meta",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "cp5XF",
-                              "name": "card3time",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "z4bCT",
-                                  "name": "card3timeIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "clock-3",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "WCu5i",
-                                  "name": "card3timeText",
-                                  "fill": "#8A8AAA",
-                                  "content": "21:00 — 04:00",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "rVGNd",
-                              "name": "card3loc",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "tpUBk",
-                                  "name": "card3locIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "map-pin",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "YPxNZ",
-                                  "name": "card3locText",
-                                  "fill": "#8A8AAA",
-                                  "content": "Void Arena",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "uoDiJ",
-              "name": "Event Card 4",
-              "clip": true,
-              "width": "fill_container",
-              "height": 200,
-              "cornerRadius": 16,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#1E1E3A"
-              },
-              "layout": "none",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "53UaL",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Image 4",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "image",
-                    "enabled": true,
-                    "url": "./images/generated-1772425085456.png",
-                    "mode": "fill"
-                  }
-                },
-                {
-                  "type": "frame",
-                  "id": "kMDaP",
-                  "x": 0,
-                  "y": 0,
-                  "name": "Card Overlay 4",
-                  "width": 354,
-                  "height": 200,
-                  "fill": {
-                    "type": "gradient",
-                    "gradientType": "linear",
-                    "enabled": true,
-                    "rotation": 0,
-                    "size": {
-                      "height": 1
-                    },
-                    "colors": [
-                      {
-                        "color": "#0A0A0F00",
-                        "position": 0
-                      },
-                      {
-                        "color": "#0A0A0FDD",
-                        "position": 0.5
-                      },
-                      {
-                        "color": "#0A0A0F",
-                        "position": 1
-                      }
-                    ]
-                  },
-                  "layout": "none",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "3CQer",
-                      "x": 16,
-                      "y": 110,
-                      "name": "Card Content 4",
-                      "width": 322,
-                      "layout": "vertical",
-                      "gap": 6,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "1LlwR",
-                          "name": "card4badge",
-                          "fill": "#1A1A3080",
-                          "cornerRadius": 4,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#4F5AFF40"
-                          },
-                          "padding": [
-                            4,
-                            10
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "A9Q79",
-                              "name": "card4badgeText",
-                              "fill": "#7B8AFF",
-                              "content": "SAT MAR 21",
-                              "fontFamily": "Inter",
-                              "fontSize": 9,
-                              "fontWeight": "700",
-                              "letterSpacing": 2
-                            }
-                          ]
-                        },
-                        {
-                          "type": "text",
-                          "id": "Qbho6",
-                          "name": "card4title",
-                          "fill": "#FFFFFF",
-                          "content": "DARK MATTER",
-                          "fontFamily": "Sora",
-                          "fontSize": 20,
-                          "fontWeight": "700",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "frame",
-                          "id": "q0sZe",
-                          "name": "card4meta",
-                          "gap": 12,
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "bIMi8",
-                              "name": "card4time",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "hspso",
-                                  "name": "card4timeIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "clock-3",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "aSewo",
-                                  "name": "card4timeText",
-                                  "fill": "#8A8AAA",
-                                  "content": "23:30 — 07:00",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "A9jSz",
-                              "name": "card4loc",
-                              "gap": 4,
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "icon_font",
-                                  "id": "JidXH",
-                                  "name": "card4locIcon",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "map-pin",
-                                  "iconFontFamily": "lucide",
-                                  "fill": "#6B7AFF"
-                                },
-                                {
-                                  "type": "text",
-                                  "id": "RM7vS",
-                                  "name": "card4locText",
-                                  "fill": "#8A8AAA",
-                                  "content": "Substation 44",
-                                  "fontFamily": "Inter",
-                                  "fontSize": 11,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "BbQvl",
-          "name": "Bottom Nav",
-          "width": "fill_container",
-          "fill": "#0A0A0F",
-          "stroke": {
-            "thickness": {
-              "top": 1
-            },
-            "fill": "#1A1A2E"
-          },
-          "padding": [
-            12,
             0,
-            20,
-            0
+            80
           ],
-          "justifyContent": "space_around",
+          "justifyContent": "center",
           "alignItems": "center",
           "children": [
             {
               "type": "frame",
-              "id": "jfGDu",
-              "name": "nav1",
-              "layout": "vertical",
-              "gap": 4,
+              "id": "0JEtg",
+              "name": "Grid Lines",
+              "opacity": 0.08,
+              "width": "fill_container",
+              "height": "fill_container",
+              "stroke": {
+                "thickness": 0.5,
+                "fill": "#BF00FF"
+              },
+              "layout": "none"
+            },
+            {
+              "type": "text",
+              "id": "i66zs",
+              "name": "Tagline",
+              "fill": "$neon-cyan",
+              "content": "UNDERGROUND ELECTRONIC MUSIC",
+              "fontFamily": "Space Mono",
+              "fontSize": 12,
+              "letterSpacing": 6
+            },
+            {
+              "type": "text",
+              "id": "3eBP4",
+              "name": "Headline",
+              "fill": "$text-primary",
+              "textGrowth": "fixed-width",
+              "width": 900,
+              "content": "ENTER THE\nFREQUENCY",
+              "lineHeight": 0.9,
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 120,
+              "fontWeight": "900",
+              "letterSpacing": -3
+            },
+            {
+              "type": "text",
+              "id": "EAAEy",
+              "name": "Subline",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": 600,
+              "content": "Immersive warehouse events. Raw sound systems.\nThe underground never sleeps.",
+              "lineHeight": 1.6,
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 18
+            },
+            {
+              "type": "frame",
+              "id": "KlkGo",
+              "name": "CTA Row",
+              "gap": 20,
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
-                  "id": "74y1n",
-                  "name": "nav1icon",
-                  "width": 22,
-                  "height": 22,
-                  "iconFontName": "calendar",
-                  "iconFontFamily": "lucide",
-                  "fill": "#6B7AFF"
+                  "type": "frame",
+                  "id": "QFBFq",
+                  "name": "CTA Primary",
+                  "fill": "$neon-purple",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "$neon-purple-glow",
+                    "blur": 30,
+                    "spread": 2
+                  },
+                  "gap": 10,
+                  "padding": [
+                    18,
+                    48
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Zdbnv",
+                      "name": "ctaBtnText",
+                      "fill": "#FFFFFF",
+                      "content": "EXPLORE EVENTS",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "700",
+                      "letterSpacing": 3
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DjBMo",
+                  "name": "CTA Secondary",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$neon-cyan"
+                  },
+                  "padding": [
+                    18,
+                    48
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QqUF8",
+                      "name": "ctaSecText",
+                      "fill": "$neon-cyan",
+                      "content": "LISTEN NOW",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500",
+                      "letterSpacing": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FNwql",
+          "name": "Divider",
+          "width": "fill_container",
+          "height": 1,
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 0,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#0A0A0A00",
+                "position": 0
+              },
+              {
+                "color": "#BF00FF40",
+                "position": 0.5
+              },
+              {
+                "color": "#0A0A0A00",
+                "position": 1
+              }
+            ]
+          }
+        },
+        {
+          "type": "frame",
+          "id": "gAH6b",
+          "name": "Upcoming Events Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "MNLKh",
+              "name": "Section Header",
+              "layout": "vertical",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WjUXj",
+                  "name": "sectionTag",
+                  "fill": "$neon-pink",
+                  "content": "UPCOMING",
+                  "fontFamily": "Space Mono",
+                  "fontSize": 11,
+                  "letterSpacing": 6
                 },
                 {
                   "type": "text",
-                  "id": "D6vpN",
-                  "name": "nav1label",
-                  "fill": "#6B7AFF",
-                  "content": "Events",
+                  "id": "vTWNQ",
+                  "name": "sectionTitle",
+                  "fill": "$text-primary",
+                  "content": "NEXT ON THE SCHEDULE",
                   "fontFamily": "Inter",
-                  "fontSize": 10,
-                  "fontWeight": "600"
+                  "fontSize": 42,
+                  "fontWeight": "800",
+                  "letterSpacing": -1
+                },
+                {
+                  "type": "frame",
+                  "id": "DgGFN",
+                  "name": "sectionLine",
+                  "width": 60,
+                  "height": 2,
+                  "fill": "$neon-pink"
                 }
               ]
             },
             {
               "type": "frame",
-              "id": "rtW0c",
-              "name": "nav2",
+              "id": "vtXBX",
+              "name": "Events Grid",
+              "width": "fill_container",
               "layout": "vertical",
-              "gap": 4,
+              "gap": 24,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YGC1w",
+                  "name": "Row 1",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "OtHsc",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card1",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503388431.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "TECHNO"
+                        },
+                        "yYj5O": {
+                          "content": "DARK MATTER"
+                        },
+                        "Xg47S": {
+                          "content": "SAT 15 MAR — 23:00"
+                        },
+                        "tuIoz": {
+                          "content": "WAREHOUSE 9, BROOKLYN"
+                        },
+                        "7fvTl": {
+                          "content": "Rebekah / SPFDJ / Kobosil"
+                        }
+                      }
+                    },
+                    {
+                      "id": "UZwxQ",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card2",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503396087.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "JkGcF": {
+                          "fill": "#00F0FF20",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$neon-cyan"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "DRUM & BASS",
+                          "fill": "$neon-cyan"
+                        },
+                        "yYj5O": {
+                          "content": "SUBSONIC"
+                        },
+                        "Xg47S": {
+                          "content": "FRI 21 MAR — 22:00"
+                        },
+                        "tuIoz": {
+                          "content": "THE BUNKER, MANHATTAN"
+                        },
+                        "7fvTl": {
+                          "content": "Noisia / Camo & Krooked / Mefjus"
+                        }
+                      }
+                    },
+                    {
+                      "id": "AcRzy",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card3",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503406236.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "JkGcF": {
+                          "fill": "#FF006E20",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$neon-pink"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "HOUSE",
+                          "fill": "$neon-pink"
+                        },
+                        "yYj5O": {
+                          "content": "DEEP STATE"
+                        },
+                        "Xg47S": {
+                          "content": "SAT 29 MAR — 00:00"
+                        },
+                        "tuIoz": {
+                          "content": "BASEMENT CLUB, QUEENS"
+                        },
+                        "7fvTl": {
+                          "content": "Dixon / Âme / Black Coffee"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fap2y",
+                  "name": "Row 2",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "D1qDO",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card4",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503412546.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "JkGcF": {
+                          "fill": "#00FF8820",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#00FF88"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "ACID",
+                          "fill": "#00FF88"
+                        },
+                        "yYj5O": {
+                          "content": "ACID RAIN"
+                        },
+                        "Xg47S": {
+                          "content": "THU 3 APR — 23:30"
+                        },
+                        "tuIoz": {
+                          "content": "POWER STATION, BRONX"
+                        },
+                        "7fvTl": {
+                          "content": "Tin Man / Ceephax / 999999999"
+                        }
+                      }
+                    },
+                    {
+                      "id": "3xrFd",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card5",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503423056.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "AMBIENT"
+                        },
+                        "yYj5O": {
+                          "content": "ZERO GRAVITY"
+                        },
+                        "Xg47S": {
+                          "content": "SAT 12 APR — 21:00"
+                        },
+                        "tuIoz": {
+                          "content": "VOID SPACE, WILLIAMSBURG"
+                        },
+                        "7fvTl": {
+                          "content": "Ryuichi Sakamoto / Nils Frahm / Ólafur Arnalds"
+                        }
+                      }
+                    },
+                    {
+                      "id": "duDCg",
+                      "type": "ref",
+                      "ref": "cX4xA",
+                      "width": "fill_container",
+                      "name": "card6",
+                      "descendants": {
+                        "ESLRW": {
+                          "fill": {
+                            "type": "image",
+                            "enabled": true,
+                            "url": "./images/generated-1772503430451.png",
+                            "mode": "fill"
+                          }
+                        },
+                        "JkGcF": {
+                          "fill": "#FF006E20",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$neon-pink"
+                          }
+                        },
+                        "0tGmX": {
+                          "content": "HARDCORE",
+                          "fill": "$neon-pink"
+                        },
+                        "yYj5O": {
+                          "content": "PRESSURE"
+                        },
+                        "Xg47S": {
+                          "content": "FRI 18 APR — 23:00"
+                        },
+                        "tuIoz": {
+                          "content": "COMPOUND, RED HOOK"
+                        },
+                        "7fvTl": {
+                          "content": "Dax J / Paula Temple / AnD"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kzYZz",
+          "name": "Divider 2",
+          "width": "fill_container",
+          "height": 1,
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 0,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#0A0A0A00",
+                "position": 0
+              },
+              {
+                "color": "#00F0FF40",
+                "position": 0.5
+              },
+              {
+                "color": "#0A0A0A00",
+                "position": 1
+              }
+            ]
+          }
+        },
+        {
+          "type": "frame",
+          "id": "TJv3q",
+          "name": "Featured Event Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "xrZpr",
+              "name": "featHeader",
+              "layout": "vertical",
+              "gap": 12,
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
-                  "id": "NWoTE",
-                  "name": "nav2icon",
-                  "width": 22,
-                  "height": 22,
-                  "iconFontName": "search",
-                  "iconFontFamily": "lucide",
-                  "fill": "#525260"
+                  "type": "text",
+                  "id": "io0Yw",
+                  "name": "featTag",
+                  "fill": "$neon-cyan",
+                  "content": "FEATURED EVENT",
+                  "fontFamily": "Space Mono",
+                  "fontSize": 11,
+                  "letterSpacing": 6
                 },
                 {
                   "type": "text",
-                  "id": "y9Fn9",
-                  "name": "nav2label",
-                  "fill": "#525260",
-                  "content": "Explore",
+                  "id": "j7mkV",
+                  "name": "featTitle",
+                  "fill": "$text-primary",
+                  "content": "DON'T MISS THIS",
                   "fontFamily": "Inter",
-                  "fontSize": 10,
-                  "fontWeight": "500"
+                  "fontSize": 42,
+                  "fontWeight": "800",
+                  "letterSpacing": -1
+                },
+                {
+                  "type": "frame",
+                  "id": "TjjCk",
+                  "name": "featLine",
+                  "width": 60,
+                  "height": 2,
+                  "fill": "$neon-cyan"
                 }
               ]
             },
             {
               "type": "frame",
-              "id": "TPOQi",
-              "name": "nav3",
-              "layout": "vertical",
-              "gap": 4,
-              "alignItems": "center",
+              "id": "YNdSi",
+              "name": "Featured Card",
+              "clip": true,
+              "width": "fill_container",
+              "height": 500,
+              "fill": "#0F0F1A",
+              "cornerRadius": 4,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border-glow-cyan"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$neon-cyan-glow",
+                "blur": 60,
+                "spread": 4
+              },
+              "layout": "none",
               "children": [
                 {
-                  "type": "icon_font",
-                  "id": "4se7s",
-                  "name": "nav3icon",
-                  "width": 22,
-                  "height": 22,
-                  "iconFontName": "ticket",
-                  "iconFontFamily": "lucide",
-                  "fill": "#525260"
+                  "type": "frame",
+                  "id": "LYKRN",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Featured BG",
+                  "opacity": 0.4,
+                  "width": 1280,
+                  "height": 500,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1772503463526.png",
+                    "mode": "fill"
+                  }
                 },
                 {
-                  "type": "text",
-                  "id": "nWuq2",
-                  "name": "nav3label",
-                  "fill": "#525260",
-                  "content": "Tickets",
-                  "fontFamily": "Inter",
-                  "fontSize": 10,
-                  "fontWeight": "500"
+                  "type": "frame",
+                  "id": "1OzMC",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Overlay",
+                  "width": 1280,
+                  "height": 500,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 0,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#0A0A0A00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#0A0A0ACC",
+                        "position": 0.4
+                      },
+                      {
+                        "color": "#0A0A0A",
+                        "position": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "iOWFA",
+                  "x": 64,
+                  "y": 180,
+                  "name": "Content",
+                  "width": 600,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "73NEg",
+                      "name": "featEventTag",
+                      "fill": "#FF006E20",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$neon-pink"
+                      },
+                      "padding": [
+                        6,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CeiS8",
+                          "name": "featEventTagText",
+                          "fill": "$neon-pink",
+                          "content": "TECHNO / INDUSTRIAL",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 10,
+                          "fontWeight": "700",
+                          "letterSpacing": 2
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "kbPwk",
+                      "name": "featEventName",
+                      "fill": "$text-primary",
+                      "textGrowth": "fixed-width",
+                      "width": 600,
+                      "content": "SIGNAL\nLOSS",
+                      "lineHeight": 0.9,
+                      "fontFamily": "Inter",
+                      "fontSize": 72,
+                      "fontWeight": "900",
+                      "letterSpacing": -2
+                    },
+                    {
+                      "type": "text",
+                      "id": "yv55D",
+                      "name": "featEventSub",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": 500,
+                      "content": "A 12-hour immersive experience across 3 warehouse floors.\n200+ artists. One frequency.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 16
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PSHus",
+                      "name": "Countdown",
+                      "gap": 20,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "3Igp5",
+                          "name": "cd1",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "6AlzE",
+                              "name": "cd1num",
+                              "fill": "$neon-cyan",
+                              "content": "14",
+                              "fontFamily": "Space Mono",
+                              "fontSize": 36,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "BZxaX",
+                              "name": "cd1label",
+                              "fill": "$text-muted",
+                              "content": "DAYS",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "600",
+                              "letterSpacing": 3
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "NdiPz",
+                          "name": "cdSep1",
+                          "fill": "$text-muted",
+                          "content": ":",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 28,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lrd7m",
+                          "name": "cd2",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "V0b2R",
+                              "name": "cd2num",
+                              "fill": "$neon-cyan",
+                              "content": "08",
+                              "fontFamily": "Space Mono",
+                              "fontSize": 36,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "J8nDX",
+                              "name": "cd2label",
+                              "fill": "$text-muted",
+                              "content": "HRS",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "600",
+                              "letterSpacing": 3
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "Lq1UO",
+                          "name": "cdSep2",
+                          "fill": "$text-muted",
+                          "content": ":",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 28,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wbFgJ",
+                          "name": "cd3",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "fqh7L",
+                              "name": "cd3num",
+                              "fill": "$neon-cyan",
+                              "content": "42",
+                              "fontFamily": "Space Mono",
+                              "fontSize": 36,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "EM0za",
+                              "name": "cd3label",
+                              "fill": "$text-muted",
+                              "content": "MIN",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "600",
+                              "letterSpacing": 3
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "1QZPp",
+                          "name": "cdSep3",
+                          "fill": "$text-muted",
+                          "content": ":",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 28,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "0WtqY",
+                          "name": "cd4",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "aOmlW",
+                              "name": "cd4num",
+                              "fill": "$neon-cyan",
+                              "content": "17",
+                              "fontFamily": "Space Mono",
+                              "fontSize": 36,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "yI7Fe",
+                              "name": "cd4label",
+                              "fill": "$text-muted",
+                              "content": "SEC",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "600",
+                              "letterSpacing": 3
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "8XikX",
+                      "name": "Get Tickets CTA",
+                      "fill": "$neon-pink",
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$neon-pink-glow",
+                        "blur": 40,
+                        "spread": 4
+                      },
+                      "gap": 10,
+                      "padding": [
+                        18,
+                        48
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "p9TT9",
+                          "name": "ctaFeatText",
+                          "fill": "#FFFFFF",
+                          "content": "GET TICKETS",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "700",
+                          "letterSpacing": 3
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "dtxEI",
+                          "name": "ctaFeatArrow",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "arrow-right",
+                          "iconFontFamily": "lucide",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "FB9K8",
+                  "x": 900,
+                  "y": 220,
+                  "name": "Event Meta",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "fJboy",
+                      "name": "metaDate",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "T1uv2",
+                          "name": "metaDateLabel",
+                          "fill": "$text-muted",
+                          "content": "DATE",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "600",
+                          "letterSpacing": 3
+                        },
+                        {
+                          "type": "text",
+                          "id": "kv9HO",
+                          "name": "metaDateVal",
+                          "fill": "$text-primary",
+                          "content": "SAT 15 MARCH 2026",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JmdMU",
+                      "name": "metaTime",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "NFRuE",
+                          "name": "metaTimeLabel",
+                          "fill": "$text-muted",
+                          "content": "DOORS OPEN",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "600",
+                          "letterSpacing": 3
+                        },
+                        {
+                          "type": "text",
+                          "id": "xE7TH",
+                          "name": "metaTimeVal",
+                          "fill": "$text-primary",
+                          "content": "22:00 — 10:00",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HknBv",
+                      "name": "metaVenue",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "pMPYo",
+                          "name": "metaVenueLabel",
+                          "fill": "$text-muted",
+                          "content": "VENUE",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "600",
+                          "letterSpacing": 3
+                        },
+                        {
+                          "type": "text",
+                          "id": "zes3f",
+                          "name": "metaVenueVal",
+                          "fill": "$text-primary",
+                          "textGrowth": "fixed-width",
+                          "width": 300,
+                          "content": "DEPOT 47\nBUSHWICK, BROOKLYN",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Space Mono",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oSQ2H",
+                      "name": "metaPrice",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "eVsWp",
+                          "name": "metaPriceLabel",
+                          "fill": "$text-muted",
+                          "content": "TICKETS FROM",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "600",
+                          "letterSpacing": 3
+                        },
+                        {
+                          "type": "text",
+                          "id": "d6Jah",
+                          "name": "metaPriceVal",
+                          "fill": "$neon-cyan",
+                          "content": "$35",
+                          "fontFamily": "Space Mono",
+                          "fontSize": 28,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pXRMO",
+          "name": "Divider 3",
+          "width": "fill_container",
+          "height": 1,
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 0,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#0A0A0A00",
+                "position": 0
+              },
+              {
+                "color": "#BF00FF30",
+                "position": 0.3
+              },
+              {
+                "color": "#FF006E30",
+                "position": 0.7
+              },
+              {
+                "color": "#0A0A0A00",
+                "position": 1
+              }
+            ]
+          }
+        },
+        {
+          "type": "frame",
+          "id": "Vu0ai",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#060608",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": [
+            64,
+            80,
+            40,
+            80
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "OgbKt",
+              "name": "Footer Top",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RbIJE",
+                  "name": "footerBrand",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "0wKN6",
+                      "name": "footerLogo",
+                      "fill": "$text-primary",
+                      "content": "FREQUENCY",
+                      "fontFamily": "Space Mono",
+                      "fontSize": 20,
+                      "fontWeight": "700",
+                      "letterSpacing": 4
+                    },
+                    {
+                      "type": "text",
+                      "id": "vF9p9",
+                      "name": "footerTagline",
+                      "fill": "$text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": 280,
+                      "content": "Underground electronic music events.\nThe signal never stops.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14
+                    },
+                    {
+                      "type": "frame",
+                      "id": "8NIAe",
+                      "name": "footerSocials",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "acvN5",
+                          "name": "socialIG",
+                          "width": 20,
+                          "height": 20,
+                          "iconFontName": "instagram",
+                          "iconFontFamily": "lucide",
+                          "fill": "$text-secondary"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "TWr2j",
+                          "name": "socialTW",
+                          "width": 20,
+                          "height": 20,
+                          "iconFontName": "twitter",
+                          "iconFontFamily": "lucide",
+                          "fill": "$text-secondary"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "QjASx",
+                          "name": "socialSC",
+                          "width": 20,
+                          "height": 20,
+                          "iconFontName": "headphones",
+                          "iconFontFamily": "lucide",
+                          "fill": "$text-secondary"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "NZyop",
+                          "name": "socialYT",
+                          "width": 20,
+                          "height": 20,
+                          "iconFontName": "youtube",
+                          "iconFontFamily": "lucide",
+                          "fill": "$text-secondary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jSqCV",
+                  "name": "Newsletter",
+                  "width": 400,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "P605S",
+                      "name": "nlLabel",
+                      "fill": "$text-primary",
+                      "content": "JOIN THE SIGNAL",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 3
+                    },
+                    {
+                      "type": "text",
+                      "id": "qLySC",
+                      "name": "nlDesc",
+                      "fill": "$text-muted",
+                      "textGrowth": "fixed-width",
+                      "width": 380,
+                      "content": "Get early access to events, secret locations, and lineup drops.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 13
+                    },
+                    {
+                      "type": "frame",
+                      "id": "WosIp",
+                      "name": "nlRow",
+                      "width": "fill_container",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Kv52m",
+                          "name": "nlInput",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "#0A0A0A",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$neon-purple"
+                          },
+                          "padding": [
+                            0,
+                            16
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Nv9xy",
+                              "name": "nlPlaceholder",
+                              "fill": "$text-muted",
+                              "content": "YOUR@EMAIL.COM",
+                              "fontFamily": "Space Mono",
+                              "fontSize": 12,
+                              "letterSpacing": 1
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "qyblW",
+                          "name": "nlBtn",
+                          "height": 48,
+                          "fill": "$neon-purple",
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "$neon-purple-glow",
+                            "blur": 20
+                          },
+                          "padding": [
+                            0,
+                            28
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GiCQw",
+                              "name": "nlBtnText",
+                              "fill": "#FFFFFF",
+                              "content": "SUBSCRIBE",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             },
             {
               "type": "frame",
-              "id": "b5P6f",
-              "name": "nav4",
-              "layout": "vertical",
-              "gap": 4,
+              "id": "NUQxj",
+              "name": "footerDivider",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "$border-subtle"
+            },
+            {
+              "type": "frame",
+              "id": "jQcv4",
+              "name": "footerBottom",
+              "width": "fill_container",
+              "justifyContent": "space_between",
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
-                  "id": "8VaUr",
-                  "name": "nav4icon",
-                  "width": 22,
-                  "height": 22,
-                  "iconFontName": "user",
-                  "iconFontFamily": "lucide",
-                  "fill": "#525260"
+                  "type": "text",
+                  "id": "60Na9",
+                  "name": "copyright",
+                  "fill": "$text-muted",
+                  "content": "© 2026 FREQUENCY. ALL RIGHTS RESERVED.",
+                  "fontFamily": "Space Mono",
+                  "fontSize": 10,
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "h4VsI",
+                  "name": "footerLinks",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nDqj0",
+                      "name": "fl1",
+                      "fill": "$text-muted",
+                      "content": "PRIVACY",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "Sl0h4",
+                      "name": "fl2",
+                      "fill": "$text-muted",
+                      "content": "TERMS",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "dyenM",
+                      "name": "fl3",
+                      "fill": "$text-muted",
+                      "content": "CONTACT",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "cX4xA",
+      "x": -600,
+      "y": 0,
+      "name": "Component/EventCard",
+      "reusable": true,
+      "clip": true,
+      "width": 400,
+      "fill": "#0F0F1A",
+      "cornerRadius": 2,
+      "stroke": {
+        "thickness": 1,
+        "fill": "#1F1F2E"
+      },
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ESLRW",
+          "name": "CardImage",
+          "width": "fill_container",
+          "height": 200,
+          "fill": "#15152A"
+        },
+        {
+          "type": "frame",
+          "id": "0k0JF",
+          "name": "CardBody",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "JkGcF",
+              "name": "GenreTag",
+              "fill": "#BF00FF20",
+              "stroke": {
+                "thickness": 1,
+                "fill": "$neon-purple"
+              },
+              "padding": [
+                4,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0tGmX",
+                  "name": "GenreText",
+                  "fill": "$neon-purple",
+                  "content": "TECHNO",
+                  "fontFamily": "Space Mono",
+                  "fontSize": 10,
+                  "fontWeight": "700",
+                  "letterSpacing": 2
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "yYj5O",
+              "name": "EventTitle",
+              "fill": "$text-primary",
+              "content": "EVENT NAME",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "800",
+              "letterSpacing": -0.5
+            },
+            {
+              "type": "frame",
+              "id": "naZtk",
+              "name": "CardMeta",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "LqYFW",
+                  "name": "cardDate",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "9ry8b",
+                      "name": "cardDateIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "calendar",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xg47S",
+                      "name": "DateText",
+                      "fill": "$text-secondary",
+                      "content": "SAT 15 MAR — 23:00",
+                      "fontFamily": "Space Mono",
+                      "fontSize": 12
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y45NL",
+                  "name": "cardVenue",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "aEP9n",
+                      "name": "cardVenueIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "map-pin",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "tuIoz",
+                      "name": "VenueText",
+                      "fill": "$text-secondary",
+                      "content": "WAREHOUSE 9",
+                      "fontFamily": "Space Mono",
+                      "fontSize": 12
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YOjnA",
+              "name": "LineupSection",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "LQH10",
+                  "name": "lineupLabel",
+                  "fill": "$text-muted",
+                  "content": "LINEUP",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "letterSpacing": 3
                 },
                 {
                   "type": "text",
-                  "id": "CuAMh",
-                  "name": "nav4label",
-                  "fill": "#525260",
-                  "content": "Profile",
+                  "id": "7fvTl",
+                  "name": "LineupText",
+                  "fill": "$text-secondary",
+                  "content": "DJ Nexus / Prism / Void Engine",
+                  "lineHeight": 1.4,
                   "fontFamily": "Inter",
-                  "fontSize": 10,
-                  "fontWeight": "500"
+                  "fontSize": 13
                 }
               ]
             }
@@ -1159,5 +1697,71 @@
         }
       ]
     }
-  ]
+  ],
+  "variables": {
+    "bg-card": {
+      "type": "color",
+      "value": "#0F0F0F"
+    },
+    "bg-card-glass": {
+      "type": "color",
+      "value": "#1A1A2E80"
+    },
+    "bg-deep": {
+      "type": "color",
+      "value": "#0A0A0A"
+    },
+    "border-glow-cyan": {
+      "type": "color",
+      "value": "#00F0FF60"
+    },
+    "border-glow-purple": {
+      "type": "color",
+      "value": "#BF00FF60"
+    },
+    "border-subtle": {
+      "type": "color",
+      "value": "#1F1F2E"
+    },
+    "grid-line": {
+      "type": "color",
+      "value": "#1A1A2E30"
+    },
+    "neon-cyan": {
+      "type": "color",
+      "value": "#00F0FF"
+    },
+    "neon-cyan-glow": {
+      "type": "color",
+      "value": "#00F0FF40"
+    },
+    "neon-pink": {
+      "type": "color",
+      "value": "#FF006E"
+    },
+    "neon-pink-glow": {
+      "type": "color",
+      "value": "#FF006E40"
+    },
+    "neon-purple": {
+      "type": "color",
+      "value": "#BF00FF"
+    },
+    "neon-purple-glow": {
+      "type": "color",
+      "value": "#BF00FF40"
+    },
+    "text-muted": {
+      "type": "color",
+      "value": "#555566"
+    },
+    "text-primary": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "text-secondary": {
+      "type": "color",
+      "value": "#8A8A9B"
+    }
+  }
 }

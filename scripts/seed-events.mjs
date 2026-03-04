@@ -87,6 +87,68 @@ const seedCatalog = [
 			{ id: 'advance', label: 'Advance', priceCents: 1600, maxPerOrder: 4 },
 			{ id: 'door', label: 'Door', priceCents: 2600, maxPerOrder: 4 }
 		]
+	},
+	{
+		id: 'dillon-francis-table-experience',
+		title: 'DILLON FRANCIS',
+		venue: 'Decca Live',
+		location: 'Brooklyn, NYC',
+		addressLine: '130 Myrtle Ave, Brooklyn, NY 11201',
+		startAt: '2026-03-06T22:00:00-05:00',
+		endAt: '2026-03-07T02:00:00-05:00',
+		posterHeadline: 'DILLON FRANCIS',
+		posterImageUrl: '/images/events/decca.png',
+		posterClass:
+			'bg-[radial-gradient(circle_at_14%_0%,rgba(255,154,72,0.2),transparent_33%),radial-gradient(circle_at_92%_18%,rgba(255,51,51,0.3),transparent_42%),linear-gradient(180deg,#51140f_0%,#21080d_58%,#09090b_100%)]',
+		description:
+			'Table packages only. No basic ticket options are available for this event.',
+		defaultTableType: 'Main Floor Tables',
+		dressCode: 'Upscale nightlife attire',
+		salesMode: 'table-packages',
+		ticketTiers: [
+			{ id: 'main-floor-tables', label: 'Main Floor Tables', priceCents: 100000, maxPerOrder: 1 },
+			{ id: 'mezzanine-tables', label: 'Mezzanine Tables', priceCents: 100000, maxPerOrder: 1 }
+		],
+		tablePackages: [
+			{
+				id: 'main-floor-tables',
+				sectionLabel: 'Main Floor Tables',
+				capacity: 8,
+				minSpendCents: 200000,
+				depositCents: 100000,
+				maxPerOrder: 1
+			},
+			{
+				id: 'mezzanine-tables',
+				sectionLabel: 'Mezzanine Tables',
+				capacity: 8,
+				minSpendCents: 150000,
+				depositCents: 100000,
+				maxPerOrder: 1
+			}
+		],
+		packageDetails: {
+			heading: 'VIP Table Details',
+			summary:
+				'VIP Table - Premium Experience for 8 (Can accommodate larger or smaller groups)',
+			intro:
+				'Level up your night with a private VIP table and bottle service experience in the best spot in the house. This experience includes:',
+			inclusions: [
+				'Dedicated VIP server',
+				'Premium bottle service',
+				'Custom packages and mixers',
+				'Hookah with top-tier flavors',
+				'Skip-the-line entry',
+				'Prime view of the party',
+				'21+ for VIP'
+			],
+			policy:
+				'Minimum spend required (includes bottles, hookah and upgrades). 22% service fee + tax apply.',
+			capacityNote:
+				'Guest count per table is 8 but is flexible - perfect for birthdays, celebrations, or any unforgettable night out.',
+			contactEmail: 'VIP@DeccaLive.com',
+			infoUrl: 'https://www.deccalive.com/vipmenu'
+		}
 	}
 ];
 
@@ -199,6 +261,8 @@ async function seedEvents({ dryRun }) {
 			description: event.description,
 			defaultTableType: event.defaultTableType,
 			dressCode: event.dressCode,
+			salesMode: event.salesMode ?? 'tickets',
+			...(event.packageDetails ? { packageDetails: event.packageDetails } : {}),
 			published: true,
 			updatedAt: FieldValue.serverTimestamp()
 		};
@@ -214,6 +278,23 @@ async function seedEvents({ dryRun }) {
 					label: tier.label,
 					priceCents: tier.priceCents,
 					maxPerOrder: tier.maxPerOrder,
+					sortOrder: index,
+					updatedAt: FieldValue.serverTimestamp()
+				},
+				{ merge: true }
+			);
+		});
+
+		(event.tablePackages ?? []).forEach((tablePackage, index) => {
+			const packageRef = eventRef.collection('tablePackages').doc(tablePackage.id);
+			batch.set(
+				packageRef,
+				{
+					sectionLabel: tablePackage.sectionLabel,
+					capacity: tablePackage.capacity,
+					minSpendCents: tablePackage.minSpendCents,
+					depositCents: tablePackage.depositCents,
+					maxPerOrder: tablePackage.maxPerOrder,
 					sortOrder: index,
 					updatedAt: FieldValue.serverTimestamp()
 				},

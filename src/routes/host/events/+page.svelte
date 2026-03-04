@@ -1,17 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { Search } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Input } from '$lib/components/ui/input';
 	import { authReady, currentUser, waitForAuthReady } from '$lib/firebase/auth';
 	import { listHostReservations } from '$lib/firebase/firestore';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
 	import type { HostReservationListItem } from '$lib/types/models';
-	import { cn } from '$lib/utils/cn';
 	import { formatReservationDate } from '$lib/utils/format';
 	import { inviteUrl } from '$lib/utils/links';
 
@@ -34,10 +30,6 @@
 
 	function reservationDateLine(value: HostReservationListItem): string {
 		return formatReservationDate(value.startAt.toDate());
-	}
-
-	function responseSummary(value: HostReservationListItem): string {
-		return `${value.acceptedCount} accepted - ${value.declinedCount} declined`;
 	}
 
 	function reservationStatus(value: HostReservationListItem): HostEventStatus {
@@ -66,16 +58,16 @@
 		return 'Past';
 	}
 
-	function statusVariant(status: HostEventStatus): 'default' | 'success' | 'outline' {
+	function statusBadgeClass(status: HostEventStatus): string {
 		if (status === 'live') {
-			return 'success';
+			return 'border-cyan-500/35 bg-cyan-500/15 text-cyan-300';
 		}
 
-		if (status === 'past') {
-			return 'outline';
+		if (status === 'upcoming') {
+			return 'border-violet-500/35 bg-violet-500/15 text-violet-300';
 		}
 
-		return 'default';
+		return 'border-zinc-700 bg-[#1A1A22] text-zinc-400';
 	}
 
 	function loadErrorMessage(error: unknown): string {
@@ -204,257 +196,334 @@
 	);
 </script>
 
-<AppHeader />
+<div class="min-h-screen bg-[#050507] text-white">
+	<AppHeader />
 
-<main class="app-shell py-6 sm:py-10">
-	<section class="mx-auto w-full max-w-5xl space-y-6">
-		<div class="flex flex-wrap items-start justify-between gap-3">
-			<div class="space-y-1">
-				<h1 class="section-title">My Events</h1>
+	<main class="mx-auto w-full max-w-[1440px] px-5 pb-16 pt-8 sm:px-8 lg:px-20">
+		<section class="space-y-6">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<h1 class="font-display text-[28px] font-extrabold uppercase tracking-[0.05em] text-white">
+					MY EVENTS
+				</h1>
+				<a
+					href="/event"
+					class="font-display inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+				>
+					Browse events
+				</a>
 			</div>
-		</div>
 
-		{#if loading}
-			<div class="space-y-4" aria-live="polite" aria-busy="true">
-				{#each [1, 2] as _}
-					<Card class="animate-pulse">
-						<CardHeader class="space-y-2">
-							<div class="flex items-center gap-2">
-								<div class="h-5 w-16 rounded-full bg-secondary/50"></div>
-							</div>
-							<div class="h-6 w-2/3 rounded bg-secondary/60"></div>
-							<div class="h-4 w-1/3 rounded bg-secondary/50"></div>
-						</CardHeader>
-						<CardContent class="space-y-3">
-							<div class="h-4 w-1/2 rounded bg-secondary/50"></div>
-							<div class="flex gap-2">
-								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
-								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
-								<div class="h-9 w-24 rounded-lg bg-secondary/40"></div>
-							</div>
-						</CardContent>
-					</Card>
-				{/each}
-			</div>
-		{:else if !$currentUser}
-			<Card>
-				<CardHeader>
-					<CardTitle>Sign in required</CardTitle>
-					<CardDescription>Sign in to view the events you host.</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Button size="sm" onclick={handleSignIn}>Sign in</Button>
-				</CardContent>
-			</Card>
-		{:else if loadError}
-			<Card>
-				<CardContent class="p-6">
-					<p class="state-panel-error" aria-live="polite">{loadError}</p>
-					<Button class="mt-4" size="sm" variant="outline" onclick={() => loadHostEvents($currentUser.uid)}>
-						Try again
-					</Button>
-				</CardContent>
-			</Card>
-		{:else if reservations.length === 0}
-			<Card>
-				<CardContent class="p-6">
-					<div class="state-panel-muted">
-						<p class="font-medium text-foreground">No hosted events yet.</p>
-						<p class="mt-1 text-sm">
-							Open an event card and book a table to create your first hosted event.
-						</p>
-						<div class="mt-4 flex flex-wrap gap-2">
-							<a class={cn(buttonVariants({ size: 'sm' }))} href="/event">Browse events</a>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		{:else}
-			<Card>
-				<CardContent class="space-y-4 p-4 sm:p-5">
-					<Input
-						type="search"
-						placeholder="Search by venue, table type, notes, date..."
-						bind:value={search}
-						class="h-12 text-base"
-					/>
-					<div class="flex flex-wrap items-center gap-2">
-						<Badge variant="success">Live {liveReservations.length}</Badge>
-						<Badge>Upcoming {upcomingReservations.length}</Badge>
-						<Badge variant="outline">Past {pastReservations.length}</Badge>
-					</div>
-					<p class="text-xs uppercase tracking-[0.15em] text-muted-foreground">{filteredCountLabel}</p>
-				</CardContent>
-			</Card>
-
-			{#if filteredReservations.length === 0}
-				<Card>
-					<CardContent class="p-6">
-						<div class="state-panel-muted">
-							<p class="font-medium text-foreground">No matching events.</p>
-							<p class="mt-1 text-sm">Try a different search term.</p>
-						</div>
-					</CardContent>
-				</Card>
-			{:else}
-				<div class="space-y-6">
-					{#if liveReservations.length > 0}
-						<section class="space-y-3">
-							<div class="flex items-center justify-between gap-3">
-								<h2 class="text-lg font-semibold">Live</h2>
-								<Badge variant="success">{liveReservations.length}</Badge>
-							</div>
-							<div class="space-y-3">
-								{#each liveReservations as reservation (reservation.reservationId)}
-									<article class="rounded-2xl border border-success/35 bg-success/10 p-4 sm:p-5">
-										<div class="flex flex-wrap items-start justify-between gap-3">
-											<div class="space-y-1">
-												<p class="text-base font-semibold text-foreground">{reservation.clubName}</p>
-												<p class="text-sm text-primary">{reservationDateLine(reservation)}</p>
-												<p class="text-xs text-muted-foreground">
-													{reservation.tableType} - Capacity {reservation.capacity}
-												</p>
-											</div>
-											<Badge variant={statusVariant(reservationStatus(reservation))}>
-												{statusLabel(reservationStatus(reservation))}
-											</Badge>
-										</div>
-
-										<p class="mt-3 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-											{responseSummary(reservation)}
-										</p>
-
-										{#if reservation.notes}
-											<p class="mt-3 text-sm text-muted-foreground">{reservation.notes}</p>
-										{/if}
-
-										<div class="mt-4 flex flex-wrap gap-2">
-											<a class={cn(buttonVariants({ variant: 'default', size: 'sm' }))} href={`/r/${reservation.reservationId}/host`}>
-												Host hub
-											</a>
-											<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservation.reservationId}/checkin`}>
-												Check-in
-											</a>
-											<Button
-												size="sm"
-												variant="ghost"
-												disabled={copyingReservationId === reservation.reservationId}
-												onclick={() => copyInvite(reservation.reservationId)}
-											>
-												{copyButtonText(reservation.reservationId)}
-											</Button>
-										</div>
-									</article>
-								{/each}
-							</div>
-						</section>
-					{/if}
-
-					{#if upcomingReservations.length > 0}
-						<section class="space-y-3">
-							<div class="flex items-center justify-between gap-3">
-								<h2 class="text-lg font-semibold">Upcoming</h2>
-								<Badge>{upcomingReservations.length}</Badge>
-							</div>
-							<div class="space-y-3">
-								{#each upcomingReservations as reservation (reservation.reservationId)}
-									<article class="rounded-2xl border border-border/75 bg-card/45 p-4 sm:p-5">
-										<div class="flex flex-wrap items-start justify-between gap-3">
-											<div class="space-y-1">
-												<p class="text-base font-semibold text-foreground">{reservation.clubName}</p>
-												<p class="text-sm text-primary">{reservationDateLine(reservation)}</p>
-												<p class="text-xs text-muted-foreground">
-													{reservation.tableType} - Capacity {reservation.capacity}
-												</p>
-											</div>
-											<Badge variant={statusVariant(reservationStatus(reservation))}>
-												{statusLabel(reservationStatus(reservation))}
-											</Badge>
-										</div>
-
-										<p class="mt-3 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-											{responseSummary(reservation)}
-										</p>
-
-										{#if reservation.notes}
-											<p class="mt-3 text-sm text-muted-foreground">{reservation.notes}</p>
-										{/if}
-
-										<div class="mt-4 flex flex-wrap gap-2">
-											<a class={cn(buttonVariants({ variant: 'default', size: 'sm' }))} href={`/r/${reservation.reservationId}/host`}>
-												Host hub
-											</a>
-											<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservation.reservationId}/checkin`}>
-												Check-in
-											</a>
-											<Button
-												size="sm"
-												variant="ghost"
-												disabled={copyingReservationId === reservation.reservationId}
-												onclick={() => copyInvite(reservation.reservationId)}
-											>
-												{copyButtonText(reservation.reservationId)}
-											</Button>
-										</div>
-									</article>
-								{/each}
-							</div>
-						</section>
-					{/if}
-
-					{#if pastReservations.length > 0}
-						<section class="space-y-3">
-							<div class="flex items-center justify-between gap-3">
-								<h2 class="text-lg font-semibold">Past</h2>
-								<Badge variant="outline">{pastReservations.length}</Badge>
-							</div>
-							<div class="space-y-3">
-								{#each pastReservations as reservation (reservation.reservationId)}
-									<article class="rounded-2xl border border-border/70 bg-secondary/20 p-4 sm:p-5">
-										<div class="flex flex-wrap items-start justify-between gap-3">
-											<div class="space-y-1">
-												<p class="text-base font-semibold text-foreground">{reservation.clubName}</p>
-												<p class="text-sm text-muted-foreground">{reservationDateLine(reservation)}</p>
-												<p class="text-xs text-muted-foreground">
-													{reservation.tableType} - Capacity {reservation.capacity}
-												</p>
-											</div>
-											<Badge variant={statusVariant(reservationStatus(reservation))}>
-												{statusLabel(reservationStatus(reservation))}
-											</Badge>
-										</div>
-
-										<p class="mt-3 text-xs uppercase tracking-[0.15em] text-muted-foreground">
-											{responseSummary(reservation)}
-										</p>
-
-										{#if reservation.notes}
-											<p class="mt-3 text-sm text-muted-foreground">{reservation.notes}</p>
-										{/if}
-
-										<div class="mt-4 flex flex-wrap gap-2">
-											<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservation.reservationId}/host`}>
-												Host hub
-											</a>
-											<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservation.reservationId}/checkin`}>
-												Check-in
-											</a>
-											<Button
-												size="sm"
-												variant="ghost"
-												disabled={copyingReservationId === reservation.reservationId}
-												onclick={() => copyInvite(reservation.reservationId)}
-											>
-												{copyButtonText(reservation.reservationId)}
-											</Button>
-										</div>
-									</article>
-								{/each}
-							</div>
-						</section>
-					{/if}
+			{#if loading}
+				<div class="space-y-4" aria-live="polite" aria-busy="true">
+					{#each [1, 2, 3] as placeholder (placeholder)}
+						<div class="h-[170px] animate-pulse rounded-2xl border border-zinc-800 bg-[#14141A]"></div>
+					{/each}
 				</div>
+			{:else if !$currentUser}
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+					<p class="font-display text-xl font-semibold text-white">Sign in required</p>
+					<p class="mt-2 text-sm text-zinc-400">Sign in to view the events you host.</p>
+					<button
+						type="button"
+						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+						onclick={handleSignIn}
+					>
+						Sign in
+					</button>
+				</div>
+			{:else if loadError}
+				<div class="rounded-2xl border border-rose-500/35 bg-rose-500/10 p-6">
+					<p class="text-sm text-rose-100" aria-live="polite">{loadError}</p>
+					<button
+						type="button"
+						class="mt-4 inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/90 px-5 text-sm font-semibold text-zinc-200 transition hover:border-cyan-400/45 hover:text-white"
+						onclick={() => {
+							if ($currentUser) {
+								void loadHostEvents($currentUser.uid);
+							}
+						}}
+					>
+						Try again
+					</button>
+				</div>
+			{:else if reservations.length === 0}
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+					<p class="font-display text-xl font-semibold text-white">No hosted events yet</p>
+					<p class="mt-2 text-sm text-zinc-400">
+						Open an event card and book a table to create your first hosted event.
+					</p>
+					<a
+						href="/event"
+						class="font-display mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-5 text-sm font-bold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+					>
+						Browse events
+					</a>
+				</div>
+			{:else}
+				<section class="space-y-6">
+					<div class="overflow-hidden rounded-2xl border border-zinc-800 bg-[#14141A]">
+						<div class="px-5 py-4 sm:px-6">
+							<div class="flex items-center gap-2 text-zinc-500">
+								<Search class="h-4 w-4" />
+								<input
+									type="search"
+									placeholder="Search by venue, table type, notes, date..."
+									bind:value={search}
+									class="h-7 w-full border-none bg-transparent p-0 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
+								/>
+							</div>
+						</div>
+						<div class="flex flex-wrap items-center gap-2 border-t border-zinc-800 px-5 py-3 sm:px-6">
+							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-cyan-500/35 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-300">
+								<span class="h-1.5 w-1.5 rounded-full bg-cyan-300"></span>
+								Live {liveReservations.length}
+							</span>
+							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-violet-500/35 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">
+								<span class="h-1.5 w-1.5 rounded-full bg-violet-300"></span>
+								Upcoming {upcomingReservations.length}
+							</span>
+							<span class="font-mono inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-[#1A1A22] px-3 py-1 text-xs font-semibold text-zinc-400">
+								Past {pastReservations.length}
+							</span>
+						</div>
+						<div class="border-t border-zinc-800 px-5 py-3 sm:px-6">
+							<p class="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+								{filteredCountLabel}
+							</p>
+						</div>
+					</div>
+
+					{#if filteredReservations.length === 0}
+						<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6 text-sm text-zinc-400">
+							No events match this search.
+						</div>
+					{:else}
+						<div class="space-y-8">
+							{#if upcomingReservations.length > 0}
+								<section class="space-y-4">
+									<div class="flex items-center justify-between gap-3">
+										<h2 class="font-display text-2xl font-bold text-white">Upcoming</h2>
+										<span class="font-mono inline-flex items-center rounded-full border border-violet-500/35 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-300">
+											{upcomingReservations.length}
+										</span>
+									</div>
+									<div class="space-y-4">
+										{#each upcomingReservations as reservation (reservation.reservationId)}
+											{@const status = reservationStatus(reservation)}
+											<article class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+												<div class="flex flex-wrap items-start justify-between gap-3">
+													<div class="space-y-1">
+														<p class="font-display text-2xl font-bold text-white">{reservation.clubName}</p>
+														<p class="font-mono text-xs font-semibold text-violet-300">
+															{reservationDateLine(reservation)}
+														</p>
+														<p class="text-sm text-zinc-400">
+															{reservation.tableType} · Capacity {reservation.capacity}
+														</p>
+													</div>
+													<span class={`font-mono inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${statusBadgeClass(status)}`}>
+														{statusLabel(status)}
+													</span>
+												</div>
+
+												<div class="mt-3 flex flex-wrap items-center gap-4">
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.acceptedCount} ACCEPTED
+														</span>
+													</div>
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-pink-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.declinedCount} DECLINED
+														</span>
+													</div>
+												</div>
+
+												{#if reservation.notes}
+													<p class="mt-3 text-sm text-zinc-400">{reservation.notes}</p>
+												{/if}
+
+												<div class="mt-4 flex flex-wrap items-center gap-2">
+													<a
+														href={`/r/${reservation.reservationId}/host`}
+														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(168,85,247,0.35)]"
+													>
+														Host hub
+													</a>
+													<a
+														href={`/r/${reservation.reservationId}/checkin`}
+														class="inline-flex h-8 items-center justify-center rounded-md border border-zinc-700 bg-[#1A1A22] px-3 text-xs font-semibold text-zinc-300 transition hover:text-white"
+													>
+														Check-in
+													</a>
+													<button
+														type="button"
+														class="inline-flex h-8 items-center justify-center rounded-md border border-transparent bg-transparent px-3 text-xs font-semibold text-zinc-500 transition hover:text-zinc-300 disabled:opacity-60"
+														disabled={copyingReservationId === reservation.reservationId}
+														onclick={() => copyInvite(reservation.reservationId)}
+													>
+														{copyButtonText(reservation.reservationId)}
+													</button>
+												</div>
+											</article>
+										{/each}
+									</div>
+								</section>
+							{/if}
+
+							{#if liveReservations.length > 0}
+								<section class="space-y-4">
+									<div class="flex items-center justify-between gap-3">
+										<h2 class="font-display text-2xl font-bold text-white">Live</h2>
+										<span class="font-mono inline-flex items-center rounded-full border border-cyan-500/35 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-300">
+											{liveReservations.length}
+										</span>
+									</div>
+									<div class="space-y-4">
+										{#each liveReservations as reservation (reservation.reservationId)}
+											{@const status = reservationStatus(reservation)}
+											<article class="rounded-2xl border border-cyan-500/30 bg-[#14141A] p-6 shadow-[0_0_18px_rgba(34,211,238,0.08)]">
+												<div class="flex flex-wrap items-start justify-between gap-3">
+													<div class="space-y-1">
+														<p class="font-display text-2xl font-bold text-white">{reservation.clubName}</p>
+														<p class="font-mono text-xs font-semibold text-cyan-300">
+															{reservationDateLine(reservation)}
+														</p>
+														<p class="text-sm text-zinc-400">
+															{reservation.tableType} · Capacity {reservation.capacity}
+														</p>
+													</div>
+													<span class={`font-mono inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${statusBadgeClass(status)}`}>
+														{statusLabel(status)}
+													</span>
+												</div>
+
+												<div class="mt-3 flex flex-wrap items-center gap-4">
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.acceptedCount} ACCEPTED
+														</span>
+													</div>
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-pink-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.declinedCount} DECLINED
+														</span>
+													</div>
+												</div>
+
+												{#if reservation.notes}
+													<p class="mt-3 text-sm text-zinc-400">{reservation.notes}</p>
+												{/if}
+
+												<div class="mt-4 flex flex-wrap items-center gap-2">
+													<a
+														href={`/r/${reservation.reservationId}/host`}
+														class="font-display inline-flex h-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_14px_rgba(168,85,247,0.35)]"
+													>
+														Host hub
+													</a>
+													<a
+														href={`/r/${reservation.reservationId}/checkin`}
+														class="inline-flex h-8 items-center justify-center rounded-md border border-zinc-700 bg-[#1A1A22] px-3 text-xs font-semibold text-zinc-300 transition hover:text-white"
+													>
+														Check-in
+													</a>
+													<button
+														type="button"
+														class="inline-flex h-8 items-center justify-center rounded-md border border-transparent bg-transparent px-3 text-xs font-semibold text-zinc-500 transition hover:text-zinc-300 disabled:opacity-60"
+														disabled={copyingReservationId === reservation.reservationId}
+														onclick={() => copyInvite(reservation.reservationId)}
+													>
+														{copyButtonText(reservation.reservationId)}
+													</button>
+												</div>
+											</article>
+										{/each}
+									</div>
+								</section>
+							{/if}
+
+							{#if pastReservations.length > 0}
+								<section class="space-y-4">
+									<div class="flex items-center justify-between gap-3">
+										<h2 class="font-display text-2xl font-bold text-white">Past</h2>
+										<span class="font-mono inline-flex items-center rounded-full border border-zinc-700 bg-[#1A1A22] px-3 py-1 text-xs font-semibold text-zinc-400">
+											{pastReservations.length}
+										</span>
+									</div>
+									<div class="space-y-4">
+										{#each pastReservations as reservation (reservation.reservationId)}
+											{@const status = reservationStatus(reservation)}
+											<article class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+												<div class="flex flex-wrap items-start justify-between gap-3">
+													<div class="space-y-1">
+														<p class="font-display text-2xl font-bold text-white">{reservation.clubName}</p>
+														<p class="font-mono text-xs font-semibold text-zinc-400">
+															{reservationDateLine(reservation)}
+														</p>
+														<p class="text-sm text-zinc-400">
+															{reservation.tableType} · Capacity {reservation.capacity}
+														</p>
+													</div>
+													<span class={`font-mono inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold ${statusBadgeClass(status)}`}>
+														{statusLabel(status)}
+													</span>
+												</div>
+
+												<div class="mt-3 flex flex-wrap items-center gap-4">
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.acceptedCount} ACCEPTED
+														</span>
+													</div>
+													<div class="flex items-center gap-1.5">
+														<span class="h-1.5 w-1.5 rounded-full bg-pink-400"></span>
+														<span class="font-mono text-[11px] tracking-[0.05em] text-zinc-300">
+															{reservation.declinedCount} DECLINED
+														</span>
+													</div>
+												</div>
+
+												{#if reservation.notes}
+													<p class="mt-3 text-sm text-zinc-400">{reservation.notes}</p>
+												{/if}
+
+												<div class="mt-4 flex flex-wrap items-center gap-2">
+													<a
+														href={`/r/${reservation.reservationId}/host`}
+														class="inline-flex h-8 items-center justify-center rounded-md border border-zinc-700 bg-[#1A1A22] px-3 text-xs font-semibold text-zinc-300 transition hover:text-white"
+													>
+														Host hub
+													</a>
+													<a
+														href={`/r/${reservation.reservationId}/checkin`}
+														class="inline-flex h-8 items-center justify-center rounded-md border border-zinc-700 bg-[#1A1A22] px-3 text-xs font-semibold text-zinc-300 transition hover:text-white"
+													>
+														Check-in
+													</a>
+													<button
+														type="button"
+														class="inline-flex h-8 items-center justify-center rounded-md border border-transparent bg-transparent px-3 text-xs font-semibold text-zinc-500 transition hover:text-zinc-300 disabled:opacity-60"
+														disabled={copyingReservationId === reservation.reservationId}
+														onclick={() => copyInvite(reservation.reservationId)}
+													>
+														{copyButtonText(reservation.reservationId)}
+													</button>
+												</div>
+											</article>
+										{/each}
+									</div>
+								</section>
+							{/if}
+						</div>
+					{/if}
+				</section>
 			{/if}
-		{/if}
-	</section>
-</main>
+		</section>
+	</main>
+</div>

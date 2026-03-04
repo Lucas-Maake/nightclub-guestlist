@@ -9,6 +9,12 @@ import AuthModal from '$lib/components/common/auth-modal.svelte';
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=Space+Mono:wght@400;500;600;700&display=swap"
+		rel="stylesheet"
+	/>
 	<meta
 		name="description"
 		content="Nightclub table reservations, guestlist, and loyalty-ready check-in in one premium flow."

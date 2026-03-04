@@ -1,0 +1,1176 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "GGYop",
+      "x": 900,
+      "y": 0,
+      "name": "Rave Events",
+      "clip": true,
+      "width": 1440,
+      "fill": "#0A0A0F",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "vRM6s",
+          "name": "Header",
+          "width": "fill_container",
+          "padding": [
+            20,
+            24,
+            16,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "xtvHY",
+              "name": "headerLeft",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tBuXe",
+                  "name": "headerGreeting",
+                  "fill": "#6B7AFF50",
+                  "content": "TONIGHT &amp; UPCOMING",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "700",
+                  "letterSpacing": 3
+                },
+                {
+                  "type": "text",
+                  "id": "ldMj8",
+                  "name": "headerTitle",
+                  "fill": "#FFFFFF",
+                  "content": "Events",
+                  "fontFamily": "Sora",
+                  "fontSize": 32,
+                  "fontWeight": "700",
+                  "letterSpacing": -1.5
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QGmdD",
+              "name": "bellFrame",
+              "width": 40,
+              "height": 40,
+              "fill": "#15152080",
+              "cornerRadius": 20,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#2A2A3A"
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "w2iuM",
+                  "name": "bellIcon",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "bell",
+                  "iconFontFamily": "lucide",
+                  "fill": "#8A8AAA"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FxN0y",
+          "name": "Filter Tabs",
+          "width": "fill_container",
+          "gap": 8,
+          "padding": [
+            0,
+            24
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "v0JrB",
+              "name": "tabAll",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#4F5AFF",
+                    "position": 0
+                  },
+                  {
+                    "color": "#7B3FE4",
+                    "position": 1
+                  }
+                ]
+              },
+              "cornerRadius": 20,
+              "padding": [
+                8,
+                18
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t3R5e",
+                  "name": "tabAllText",
+                  "fill": "#FFFFFF",
+                  "content": "All Events",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mHM2C",
+              "name": "tabTechno",
+              "fill": "#15152080",
+              "cornerRadius": 20,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#2A2A3A"
+              },
+              "padding": [
+                8,
+                18
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bV0pm",
+                  "name": "tabTechnoText",
+                  "fill": "#6A6A8A",
+                  "content": "Techno",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "26zd9",
+              "name": "tabHouse",
+              "fill": "#15152080",
+              "cornerRadius": 20,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#2A2A3A"
+              },
+              "padding": [
+                8,
+                18
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uR3TE",
+                  "name": "tabHouseText",
+                  "fill": "#6A6A8A",
+                  "content": "House",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sfyj2",
+              "name": "tabDnB",
+              "fill": "#15152080",
+              "cornerRadius": 20,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#2A2A3A"
+              },
+              "padding": [
+                8,
+                18
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "E0i9l",
+                  "name": "tabDnBText",
+                  "fill": "#6A6A8A",
+                  "content": "DnB",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BlcuG",
+              "name": "tabTrance",
+              "fill": "#15152080",
+              "cornerRadius": 20,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#2A2A3A"
+              },
+              "padding": [
+                8,
+                18
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "6s5R2",
+                  "name": "tabTranceText",
+                  "fill": "#6A6A8A",
+                  "content": "Trance",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LZXAU",
+          "name": "Events List",
+          "width": "fill_container",
+          "gap": 16,
+          "padding": [
+            20,
+            24,
+            24,
+            24
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "1aBGO",
+              "name": "Event Card 1",
+              "clip": true,
+              "width": "fill_container",
+              "height": 220,
+              "cornerRadius": 16,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#1E1E3A"
+              },
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "cS4U2",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Image",
+                  "width": 354,
+                  "height": 220,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1772425578662.png",
+                    "mode": "fill"
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "afruP",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Overlay",
+                  "width": 354,
+                  "height": 220,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 0,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#0A0A0F00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#0A0A0FDD",
+                        "position": 0.55
+                      },
+                      {
+                        "color": "#0A0A0F",
+                        "position": 1
+                      }
+                    ]
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kJush",
+                      "x": 16,
+                      "y": 130,
+                      "name": "Card Content",
+                      "width": 322,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "oGC1d",
+                          "name": "tonightBadge",
+                          "fill": {
+                            "type": "gradient",
+                            "gradientType": "linear",
+                            "enabled": true,
+                            "rotation": 180,
+                            "size": {
+                              "height": 1
+                            },
+                            "colors": [
+                              {
+                                "color": "#4F5AFF",
+                                "position": 0
+                              },
+                              {
+                                "color": "#7B3FE4",
+                                "position": 1
+                              }
+                            ]
+                          },
+                          "cornerRadius": 4,
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GRxff",
+                              "name": "tonightText",
+                              "fill": "#FFFFFF",
+                              "content": "TONIGHT",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "700",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "a4cck",
+                          "name": "card1title",
+                          "fill": "#FFFFFF",
+                          "content": "NOCTURNAL FREQUENCY",
+                          "fontFamily": "Sora",
+                          "fontSize": 20,
+                          "fontWeight": "700",
+                          "letterSpacing": -0.5
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Ylzkg",
+                          "name": "card1meta",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Wnt9M",
+                              "name": "card1time",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "rXNyw",
+                                  "name": "card1timeIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "clock-3",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "ZyaEr",
+                                  "name": "card1timeText",
+                                  "fill": "#8A8AAA",
+                                  "content": "23:00 — 06:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "kkBdY",
+                              "name": "card1loc",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "8mr12",
+                                  "name": "card1locIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "map-pin",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "giHBs",
+                                  "name": "card1locText",
+                                  "fill": "#8A8AAA",
+                                  "content": "Warehouse 9",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nVM1B",
+              "name": "Event Card 2",
+              "clip": true,
+              "width": "fill_container",
+              "height": 200,
+              "cornerRadius": 16,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#1E1E3A"
+              },
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "AHVf8",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Image 2",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1772425584773.png",
+                    "mode": "fill"
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "KI5LX",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Overlay 2",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 0,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#0A0A0F00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#0A0A0FDD",
+                        "position": 0.5
+                      },
+                      {
+                        "color": "#0A0A0F",
+                        "position": 1
+                      }
+                    ]
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "dwKb5",
+                      "x": 16,
+                      "y": 110,
+                      "name": "Card Content 2",
+                      "width": 322,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "cdSDg",
+                          "name": "card2badge",
+                          "fill": "#1A1A3080",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#4F5AFF40"
+                          },
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "guwW9",
+                              "name": "card2badgeText",
+                              "fill": "#7B8AFF",
+                              "content": "SAT MAR 7",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "700",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "cVGoH",
+                          "name": "card2title",
+                          "fill": "#FFFFFF",
+                          "content": "SYSTEM OVERRIDE",
+                          "fontFamily": "Sora",
+                          "fontSize": 20,
+                          "fontWeight": "700",
+                          "letterSpacing": -0.5
+                        },
+                        {
+                          "type": "frame",
+                          "id": "g92i5",
+                          "name": "card2meta",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "4nx07",
+                              "name": "card2time",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "161gI",
+                                  "name": "card2timeIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "clock-3",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "93Lsq",
+                                  "name": "card2timeText",
+                                  "fill": "#8A8AAA",
+                                  "content": "22:00 — 05:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "BST5f",
+                              "name": "card2loc",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "k2PcD",
+                                  "name": "card2locIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "map-pin",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "LdcMw",
+                                  "name": "card2locText",
+                                  "fill": "#8A8AAA",
+                                  "content": "The Bunker",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "8sKrL",
+              "name": "Event Card 3",
+              "clip": true,
+              "width": "fill_container",
+              "height": 200,
+              "cornerRadius": 16,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#1E1E3A"
+              },
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rIOnh",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Image 3",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1772425590604.png",
+                    "mode": "fill"
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "qDcxM",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Overlay 3",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 0,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#0A0A0F00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#0A0A0FDD",
+                        "position": 0.5
+                      },
+                      {
+                        "color": "#0A0A0F",
+                        "position": 1
+                      }
+                    ]
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "TPUA8",
+                      "x": 16,
+                      "y": 110,
+                      "name": "Card Content 3",
+                      "width": 322,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "0Nv4k",
+                          "name": "card3badge",
+                          "fill": "#1A1A3080",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#4F5AFF40"
+                          },
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "zqpOV",
+                              "name": "card3badgeText",
+                              "fill": "#7B8AFF",
+                              "content": "FRI MAR 13",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "700",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "CADGF",
+                          "name": "card3title",
+                          "fill": "#FFFFFF",
+                          "content": "PULSE REACTOR",
+                          "fontFamily": "Sora",
+                          "fontSize": 20,
+                          "fontWeight": "700",
+                          "letterSpacing": -0.5
+                        },
+                        {
+                          "type": "frame",
+                          "id": "6WD7I",
+                          "name": "card3meta",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "cp5XF",
+                              "name": "card3time",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "z4bCT",
+                                  "name": "card3timeIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "clock-3",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "WCu5i",
+                                  "name": "card3timeText",
+                                  "fill": "#8A8AAA",
+                                  "content": "21:00 — 04:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "rVGNd",
+                              "name": "card3loc",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "tpUBk",
+                                  "name": "card3locIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "map-pin",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "YPxNZ",
+                                  "name": "card3locText",
+                                  "fill": "#8A8AAA",
+                                  "content": "Void Arena",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "uoDiJ",
+              "name": "Event Card 4",
+              "clip": true,
+              "width": "fill_container",
+              "height": 200,
+              "cornerRadius": 16,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#1E1E3A"
+              },
+              "layout": "none",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "53UaL",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Image 4",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1772425597431.png",
+                    "mode": "fill"
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "kMDaP",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Card Overlay 4",
+                  "width": 354,
+                  "height": 200,
+                  "fill": {
+                    "type": "gradient",
+                    "gradientType": "linear",
+                    "enabled": true,
+                    "rotation": 0,
+                    "size": {
+                      "height": 1
+                    },
+                    "colors": [
+                      {
+                        "color": "#0A0A0F00",
+                        "position": 0
+                      },
+                      {
+                        "color": "#0A0A0FDD",
+                        "position": 0.5
+                      },
+                      {
+                        "color": "#0A0A0F",
+                        "position": 1
+                      }
+                    ]
+                  },
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "3CQer",
+                      "x": 16,
+                      "y": 110,
+                      "name": "Card Content 4",
+                      "width": 322,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "1LlwR",
+                          "name": "card4badge",
+                          "fill": "#1A1A3080",
+                          "cornerRadius": 4,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#4F5AFF40"
+                          },
+                          "padding": [
+                            4,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "A9Q79",
+                              "name": "card4badgeText",
+                              "fill": "#7B8AFF",
+                              "content": "SAT MAR 21",
+                              "fontFamily": "Inter",
+                              "fontSize": 9,
+                              "fontWeight": "700",
+                              "letterSpacing": 2
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "Qbho6",
+                          "name": "card4title",
+                          "fill": "#FFFFFF",
+                          "content": "DARK MATTER",
+                          "fontFamily": "Sora",
+                          "fontSize": 20,
+                          "fontWeight": "700",
+                          "letterSpacing": -0.5
+                        },
+                        {
+                          "type": "frame",
+                          "id": "q0sZe",
+                          "name": "card4meta",
+                          "gap": 12,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "bIMi8",
+                              "name": "card4time",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "hspso",
+                                  "name": "card4timeIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "clock-3",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "aSewo",
+                                  "name": "card4timeText",
+                                  "fill": "#8A8AAA",
+                                  "content": "23:30 — 07:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "A9jSz",
+                              "name": "card4loc",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "JidXH",
+                                  "name": "card4locIcon",
+                                  "width": 12,
+                                  "height": 12,
+                                  "iconFontName": "map-pin",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "#6B7AFF"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "RM7vS",
+                                  "name": "card4locText",
+                                  "fill": "#8A8AAA",
+                                  "content": "Substation 44",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "sXUO2",
+          "name": "Rave Banner",
+          "clip": true,
+          "width": "fill_container",
+          "height": 500,
+          "fill": {
+            "type": "image",
+            "enabled": true,
+            "url": "./images/generated-1772426395346.png",
+            "mode": "fill"
+          }
+        },
+        {
+          "type": "frame",
+          "id": "BbQvl",
+          "name": "Bottom Nav",
+          "width": "fill_container",
+          "fill": "#0A0A0F",
+          "stroke": {
+            "thickness": {
+              "top": 1
+            },
+            "fill": "#1A1A2E"
+          },
+          "padding": [
+            12,
+            0,
+            20,
+            0
+          ],
+          "justifyContent": "space_around",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "jfGDu",
+              "name": "nav1",
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "74y1n",
+                  "name": "nav1icon",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "calendar",
+                  "iconFontFamily": "lucide",
+                  "fill": "#6B7AFF"
+                },
+                {
+                  "type": "text",
+                  "id": "D6vpN",
+                  "name": "nav1label",
+                  "fill": "#6B7AFF",
+                  "content": "Events",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rtW0c",
+              "name": "nav2",
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "NWoTE",
+                  "name": "nav2icon",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "#525260"
+                },
+                {
+                  "type": "text",
+                  "id": "y9Fn9",
+                  "name": "nav2label",
+                  "fill": "#525260",
+                  "content": "Explore",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TPOQi",
+              "name": "nav3",
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "4se7s",
+                  "name": "nav3icon",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "ticket",
+                  "iconFontFamily": "lucide",
+                  "fill": "#525260"
+                },
+                {
+                  "type": "text",
+                  "id": "nWuq2",
+                  "name": "nav3label",
+                  "fill": "#525260",
+                  "content": "Tickets",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "b5P6f",
+              "name": "nav4",
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "8VaUr",
+                  "name": "nav4icon",
+                  "width": 22,
+                  "height": 22,
+                  "iconFontName": "user",
+                  "iconFontFamily": "lucide",
+                  "fill": "#525260"
+                },
+                {
+                  "type": "text",
+                  "id": "CuAMh",
+                  "name": "nav4label",
+                  "fill": "#525260",
+                  "content": "Profile",
+                  "fontFamily": "Inter",
+                  "fontSize": 10,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

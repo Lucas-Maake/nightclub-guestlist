@@ -54,4 +54,25 @@ test.describe('Event Detail Page', () => {
 
 		await expect(page.getByText('Event not found.')).toBeVisible();
 	});
+
+	test('should render table-packages event without ticket quantity controls', async ({ page }) => {
+		await page.goto('/event/dillon-francis-table-experience');
+
+		const packageSection = page.locator('section').filter({ hasText: 'Select a Table Package' }).first();
+		await expect(packageSection).toBeVisible();
+		await expect(packageSection).toContainText('Main Floor Tables');
+		await expect(packageSection).toContainText('Mezzanine Tables');
+		await expect(page.getByText('Select Tickets')).toHaveCount(0);
+		await expect(page.getByText('No basic ticket options are available for this event.')).toBeVisible();
+	});
+
+	test('should open table package checkout modal', async ({ page }) => {
+		await page.goto('/event/dillon-francis-table-experience');
+
+		await page.getByRole('button', { name: /^select$/i }).first().click();
+
+		await expect(page.getByRole('heading', { name: /table package information/i })).toBeVisible();
+		await expect(page.getByText('Deposit Subtotal')).toBeVisible();
+		await expect(page.getByRole('button', { name: /checkout \$1,000.00/i })).toBeVisible();
+	});
 });

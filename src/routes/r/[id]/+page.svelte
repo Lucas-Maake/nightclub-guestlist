@@ -1,19 +1,21 @@
-<script lang="ts">
+﻿<script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import { Timestamp, type Unsubscribe } from 'firebase/firestore';
-	import { ChevronDown } from 'lucide-svelte';
+	import { Calendar, Clock3, MapPin, Sparkles, Users, X } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
-	import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
-	import StatusChip from '$lib/components/common/status-chip.svelte';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
 	import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Input, Label } from '$lib/components/ui/input';
-	import { Separator } from '$lib/components/ui/separator';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { rsvpSchema } from '$lib/schemas/reservation';
-	import { authReady, currentUser, signInAnonymouslyForDebug, waitForAuthReady } from '$lib/firebase/auth';
+	import {
+		authReady,
+		currentUser,
+		signInAnonymouslyForDebug,
+		waitForAuthReady
+	} from '$lib/firebase/auth';
 	import {
 		isCommentRateLimitedError,
 		isHostForReservation,
@@ -36,8 +38,8 @@
 	} from '$lib/types/models';
 	import { openAuthModal } from '$lib/stores/auth-modal';
 	import { pushToast } from '$lib/stores/toast';
-	import { cn } from '$lib/utils/cn';
 	import { formatLastUpdated, formatReservationDate } from '$lib/utils/format';
+	import { inviteUrl } from '$lib/utils/links';
 	import { toUserSafeRsvpMessage } from '$lib/utils/messages';
 	import { canUseDebugMode, isProductionLikeRuntime } from '$lib/utils/security';
 
@@ -55,6 +57,17 @@
 		minute: '2-digit'
 	});
 	const maxCommentLength = 280;
+	const rsvpHeroImages = ['/images/events/den.png', '/images/events/decca.png', '/images/events/monarch.png'];
+	const fireworkParticleAngles = Array.from({ length: 14 }, (_, index) => index);
+
+	type FireworkBurst = {
+		id: number;
+		x: number;
+		y: number;
+		hue: number;
+		delayMs: number;
+		scale: number;
+	};
 
 	let reservation = $state<ReservationPublicRecord | null>(null);
 	let guest = $state<GuestRecord | null>(null);
@@ -76,6 +89,7 @@
 	let postingComment = $state(false);
 	let commentDraft = $state('');
 	let commentError = $state('');
+	let fireworkBursts = $state<FireworkBurst[]>([]);
 
 	let displayName = $state('');
 	let status = $state<'accepted' | 'declined'>('accepted');
@@ -106,6 +120,8 @@
 	let waitlistUnsubscribe: Unsubscribe | null = null;
 	let commentsUnsubscribe: Unsubscribe | null = null;
 	let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
+	let fireworksClearTimer: ReturnType<typeof setTimeout> | null = null;
+	let nextFireworkId = 1;
 	let nowMs = $state(Date.now());
 	let countdownTicker: ReturnType<typeof setInterval> | null = null;
 
@@ -143,13 +159,46 @@
 
 	function triggerAcceptedCelebration(): void {
 		celebrateAccepted = true;
+		fireworkBursts = [
+			{
+				id: nextFireworkId++,
+				x: 22 + Math.random() * 10,
+				y: 35 + Math.random() * 10,
+				hue: 250 + Math.floor(Math.random() * 30),
+				delayMs: 0,
+				scale: 1
+			},
+			{
+				id: nextFireworkId++,
+				x: 50 + Math.random() * 6,
+				y: 26 + Math.random() * 8,
+				hue: 186 + Math.floor(Math.random() * 28),
+				delayMs: 90,
+				scale: 1.1
+			},
+			{
+				id: nextFireworkId++,
+				x: 72 + Math.random() * 10,
+				y: 33 + Math.random() * 9,
+				hue: 318 + Math.floor(Math.random() * 25),
+				delayMs: 170,
+				scale: 0.95
+			}
+		];
 		if (celebrateTimer) {
 			clearTimeout(celebrateTimer);
+		}
+		if (fireworksClearTimer) {
+			clearTimeout(fireworksClearTimer);
 		}
 		celebrateTimer = setTimeout(() => {
 			celebrateAccepted = false;
 			celebrateTimer = null;
-		}, 1100);
+		}, 1300);
+		fireworksClearTimer = setTimeout(() => {
+			fireworkBursts = [];
+			fireworksClearTimer = null;
+		}, 1500);
 	}
 
 	function hydrateGuestForm(record: GuestRecord | null): void {
@@ -355,6 +404,10 @@
 			clearTimeout(celebrateTimer);
 			celebrateTimer = null;
 		}
+		if (fireworksClearTimer) {
+			clearTimeout(fireworksClearTimer);
+			fireworksClearTimer = null;
+		}
 	});
 
 	function formatCountdownDuration(milliseconds: number): string {
@@ -501,7 +554,11 @@
 			if (!joined) {
 				return;
 			}
-			return;
+			await waitForAuthReady();
+			if (!$currentUser) {
+				errorMessage = 'Sign in is required to save your RSVP.';
+				return;
+			}
 		}
 
 		errorMessage = '';
@@ -621,6 +678,7 @@
 			if (authResult !== 'authenticated') {
 				return;
 			}
+			await waitForAuthReady();
 		}
 
 		const uid = $currentUser?.uid;
@@ -651,6 +709,51 @@
 		} finally {
 			postingComment = false;
 		}
+	}
+
+	async function copyInviteLinkToClipboard(): Promise<void> {
+		if (!reservationId) {
+			return;
+		}
+
+		try {
+			await navigator.clipboard.writeText(inviteUrl(reservationId));
+			pushToast({
+				title: 'Invite link copied',
+				description: 'Share it with your group.',
+				variant: 'success'
+			});
+		} catch {
+			pushToast({
+				title: 'Could not copy link',
+				description: 'Please copy the URL from your browser address bar.',
+				variant: 'default'
+			});
+		}
+	}
+
+	function formatGoogleCalendarDate(value: Date): string {
+		return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+	}
+
+	function addToCalendar(): void {
+		if (!startDate) {
+			return;
+		}
+
+		const eventEnd = new Date(startDate.getTime() + 4 * 60 * 60 * 1000);
+		const params = new URLSearchParams({
+			action: 'TEMPLATE',
+			text: reservation ? `${reservation.clubName} RSVP` : 'RSVP Invite',
+			dates: `${formatGoogleCalendarDate(startDate)}/${formatGoogleCalendarDate(eventEnd)}`,
+			details: reservation?.notes ?? '',
+			location: reservation?.tableType ?? ''
+		});
+		window.open(
+			`https://calendar.google.com/calendar/render?${params.toString()}`,
+			'_blank',
+			'noopener,noreferrer'
+		);
 	}
 
 	const spotsRemaining = $derived(
@@ -733,13 +836,7 @@
 		guest?.updatedAt && 'toDate' in guest.updatedAt ? formatLastUpdated(guest.updatedAt.toDate()) : ''
 	);
 	const themeIndex = $derived(stableIndex(reservationId || reservation?.clubName || 'invite', 3));
-	const themeShellClass = $derived(
-		themeIndex === 0
-			? 'border-primary/35 bg-gradient-to-br from-primary/16 via-card/90 to-card'
-			: themeIndex === 1
-				? 'border-success/35 bg-gradient-to-br from-success/16 via-card/90 to-card'
-				: 'border-sky-400/35 bg-gradient-to-br from-sky-400/16 via-card/90 to-card'
-	);
+	const heroImageUrl = $derived(rsvpHeroImages[themeIndex] ?? '');
 	const heroPosterClass = $derived(
 		themeIndex === 0
 			? 'bg-[radial-gradient(circle_at_16%_18%,rgba(59,130,246,0.45),transparent_40%),radial-gradient(circle_at_84%_10%,rgba(16,185,129,0.3),transparent_36%),linear-gradient(160deg,#050911_0%,#0a1326_55%,#030712_100%)]'
@@ -747,460 +844,461 @@
 				? 'bg-[radial-gradient(circle_at_14%_22%,rgba(34,197,94,0.42),transparent_42%),radial-gradient(circle_at_84%_14%,rgba(250,204,21,0.26),transparent_36%),linear-gradient(165deg,#07120d_0%,#122318_55%,#030a06_100%)]'
 				: 'bg-[radial-gradient(circle_at_18%_20%,rgba(14,165,233,0.4),transparent_40%),radial-gradient(circle_at_84%_8%,rgba(168,85,247,0.28),transparent_38%),linear-gradient(158deg,#05111a_0%,#102438_55%,#03080f_100%)]'
 	);
+	const visibleAttendees = $derived(publicAttendees.slice(0, 3));
+	const hiddenAttendeesCount = $derived(Math.max(0, publicAttendees.length - visibleAttendees.length));
 </script>
 
-<AppHeader />
+<main class="-mb-16 relative flex min-h-screen flex-col overflow-hidden bg-[#050507] text-white" style="font-family: 'Manrope', sans-serif;">
+	{#if fireworkBursts.length > 0}
+		<div class="pointer-events-none fixed inset-0 z-[70] overflow-hidden" aria-hidden="true">
+			{#each fireworkBursts as burst (burst.id)}
+				<div
+					class="firework-burst"
+					style={`left:${burst.x}%;top:${burst.y}%;--firework-hue:${burst.hue};--firework-delay:${burst.delayMs}ms;--firework-scale:${burst.scale};`}
+				>
+					{#each fireworkParticleAngles as particleIndex (particleIndex)}
+						<span
+							class="firework-particle"
+							style={`--firework-rotation:${particleIndex * (360 / fireworkParticleAngles.length)}deg;--firework-distance:${56 + (particleIndex % 4) * 10}px;`}
+						></span>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	{/if}
 
-<main class="app-shell pb-24 pt-6 sm:pb-28 sm:pt-10">
-	{#if loadingReservation}
-		<Card>
-			<CardContent class="p-6">
-				<p class="state-panel-muted" aria-live="polite">Loading reservation...</p>
-			</CardContent>
-		</Card>
-	{:else if !reservation}
-		<Card>
-			<CardHeader>
-				<CardTitle>Reservation not found</CardTitle>
-				<CardDescription>
-					This invite may be invalid, expired, or removed by the host.
-				</CardDescription>
-			</CardHeader>
-			<CardContent class="flex flex-wrap gap-3">
-				<a class={cn(buttonVariants({ variant: 'outline', size: 'md' }))} href="/">Back to home</a>
-			</CardContent>
-		</Card>
-	{:else}
-		<section class="motion-stagger grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-			<div class="space-y-6">
-				<Card class={cn('overflow-hidden', themeShellClass)}>
-					<CardContent class="space-y-6 p-6 sm:p-7">
-						<div
-							class={cn(
-								'relative min-h-[220px] overflow-hidden rounded-2xl border border-primary/20 p-5 sm:min-h-[260px] sm:p-6',
-								heroPosterClass
-							)}
-						>
-							<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/40 to-black/72"></div>
-							<div class="pointer-events-none absolute -left-10 -top-10 h-48 w-48 rounded-pill bg-white/12 blur-[60px]"></div>
-							<div class="pointer-events-none absolute -right-10 bottom-0 h-52 w-52 rounded-pill bg-primary/30 blur-[70px]"></div>
-							<div class="relative z-10 flex h-full flex-col justify-end gap-2">
-								<p class="text-xs uppercase tracking-[0.2em] text-white/82">Guest invite</p>
-								<h2 class="max-w-xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
+	<div
+		class="pointer-events-none fixed inset-0 bg-[radial-gradient(55rem_36rem_at_-12%_-8%,rgb(168_85_247_/_0.18),transparent_56%),radial-gradient(48rem_28rem_at_96%_10%,rgb(34_211_238_/_0.1),transparent_56%),linear-gradient(180deg,#07070b_0%,#09090f_45%,#050507_100%)]"
+	></div>
+
+	<AppHeader />
+
+	<div class="relative z-10 flex-1 pb-12 pt-4 sm:pt-6">
+		{#if loadingReservation}
+			<section class="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12">
+				<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+					<p aria-live="polite">Loading reservation...</p>
+				</div>
+			</section>
+		{:else if !reservation}
+			<section class="mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12">
+				<div class="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 text-zinc-300">
+					<p class="text-base font-semibold text-white">Reservation not found</p>
+					<p class="mt-1 text-sm">This invite may be invalid, expired, or removed by the host.</p>
+					<a
+						class="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/50 hover:text-white"
+						href="/"
+					>
+						Back to home
+					</a>
+				</div>
+			</section>
+		{:else}
+			<section class="mx-auto w-full max-w-[1440px] px-0 sm:px-6 lg:px-10">
+				<article class="overflow-hidden border-y border-zinc-800 bg-[#050507] sm:rounded-2xl sm:border">
+					<div class="relative h-[240px] overflow-hidden sm:h-[300px] lg:h-[420px]">
+						{#if heroImageUrl}
+							<img
+								src={heroImageUrl}
+								alt={`Invite cover for ${reservation.clubName}`}
+								class="h-full w-full object-cover"
+								loading="lazy"
+								decoding="async"
+							/>
+						{:else}
+							<div class={`h-full w-full ${heroPosterClass}`}></div>
+						{/if}
+						<div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,7,0.1)_0%,rgba(5,5,7,0.52)_55%,rgba(5,5,7,0.96)_100%)]"></div>
+						<div class="absolute inset-x-0 bottom-0 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-10 lg:pb-8">
+							<div class="inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-black/50 px-2.5 py-1">
+								<span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-violet-400/35 bg-violet-500/20 text-[11px] font-semibold text-violet-200" style="font-family: 'Space Grotesk', sans-serif;">
+									{hostInitials}
+								</span>
+								<div class="leading-tight">
+									<p class="text-[10px] uppercase tracking-[0.1em] text-zinc-300">Hosted by</p>
+									<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">{hostName}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="grid gap-8 px-4 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10 lg:px-10 lg:py-10">
+						<div class="space-y-6">
+							<div>
+								<h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style="font-family: 'Space Grotesk', sans-serif;">
 									{reservation.clubName}
-								</h2>
-								<p class="text-sm text-white/80">{startsAtText || 'Date pending'}</p>
+								</h1>
+								<p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-300 sm:text-base">{reservation.notes}</p>
 							</div>
-						</div>
 
-						<div class="space-y-3">
-							<p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Invite details</p>
-							<p class="text-sm text-muted-foreground sm:text-base">{reservation.notes}</p>
-						</div>
-
-						<div class="grid gap-3 sm:grid-cols-[1.2fr_1fr]">
-							<div
-								class={cn(
-									'rounded-2xl border bg-secondary/25 p-4 backdrop-blur-sm transition-all',
-									eventState === 'live'
-										? 'border-success/40 shadow-[0_0_25px_hsl(150_80%_45%/0.2)]'
-										: 'border-border/80'
-								)}
-							>
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Countdown</p>
-								<p class={cn('mt-2 text-lg font-semibold', eventState === 'live' ? 'text-glow-success text-success-foreground' : 'text-foreground')}>
-									{countdownHeadline}
-								</p>
-								<p class="mt-1 text-xs text-muted-foreground">{countdownSubline}</p>
-							</div>
-							<div class="rounded-2xl border border-border/80 bg-secondary/25 p-4">
-								<div class="flex items-center gap-3">
-									<span class="inline-flex h-10 w-10 items-center justify-center rounded-pill border border-primary/35 bg-primary/15 text-sm font-semibold text-primary">
-										{hostInitials}
+							<div class="space-y-3">
+								<div class="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/45 px-3 py-2.5">
+									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+										<Calendar class="h-4 w-4" />
 									</span>
 									<div class="min-w-0">
-										<p class="text-xs uppercase tracking-wide text-muted-foreground">Hosted by</p>
-										<p class="truncate text-sm font-medium text-foreground">{hostName}</p>
+										<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">{startsAtText || 'Date pending'}</p>
+										<p class="text-xs text-zinc-400">{countdownHeadline}</p>
 									</div>
 								</div>
-								<p class="mt-3 text-xs text-muted-foreground">{hostWelcome}</p>
-							</div>
-						</div>
-
-						<div class="rounded-2xl border border-border/80 bg-secondary/30 p-4">
-							<p class="text-xs uppercase tracking-wide text-muted-foreground">Table</p>
-							<p class="mt-2 text-sm font-medium">{reservation.tableType}</p>
-						</div>
-					</CardContent>
-				</Card>
-
-				{#if !productionLike && debugMessage}
-					<div class="state-panel-muted">
-						{debugMessage}
-					</div>
-				{/if}
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Join the guestlist</CardTitle>
-					</CardHeader>
-					<CardContent class="space-y-4">
-						{#if lowSpotsWarning}
-							<div class="rounded-2xl border border-primary/35 bg-primary/12 px-4 py-3 text-sm text-primary-foreground">
-								Only {spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left.
-							</div>
-						{/if}
-
-						{#if !$currentUser}
-							<p class="text-sm text-muted-foreground">
-								Sign in with phone verification to respond and reserve your spot.
-							</p>
-							{#if errorMessage}
-								<p class="state-panel-error text-sm" aria-live="polite">{errorMessage}</p>
-							{/if}
-							<div class="flex flex-wrap gap-3">
-								<Button onclick={joinGuestlist}>Join Guestlist</Button>
-								<button
-									type="button"
-									class={cn(buttonVariants({ variant: 'outline', size: 'md' }))}
-									onclick={openGuestSignIn}
-								>
-									Sign in
-								</button>
-							</div>
-						{:else if hostRoleChecking}
-							<p class="state-panel-muted" aria-live="polite">Checking your access...</p>
-						{:else if hostViewOnly}
-							<div class="space-y-3 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-								<p class="text-sm font-medium text-foreground">Host preview mode</p>
-								<p class="text-sm text-muted-foreground">
-									Hosts can view this guest page, but RSVP actions are disabled.
-								</p>
-								<div class="flex flex-wrap gap-2">
-									<a class={cn(buttonVariants({ variant: 'outline', size: 'sm' }))} href={`/r/${reservationId}/host`}>
-										Open host hub
-									</a>
-									<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))} href={`/r/${reservationId}/checkin`}>
-										Open check-in
-									</a>
-								</div>
-							</div>
-						{:else}
-							<div class="space-y-2">
-								<Label for="displayName">Display name</Label>
-								<Input
-									id="displayName"
-									bind:value={displayName}
-									placeholder="Your full name"
-									oninput={clearFormErrors}
-								/>
-								<p class="text-xs text-muted-foreground">This name appears on the guest list</p>
-							</div>
-
-							{#if blocksNewAcceptance}
-								<div class="space-y-3 rounded-2xl border border-destructive/35 bg-destructive/12 p-4">
-									<p class="text-sm font-medium text-destructive-foreground">
-										This guest list is full right now.
-									</p>
-									<p class="text-xs text-muted-foreground">
-										Join the waitlist to stay on standby if a spot opens.
-									</p>
-									<Button
-										size="sm"
-										variant={waitlistJoined ? 'success' : 'outline'}
-										onclick={joinWaitlist}
-										disabled={waitlistSubmitting}
-									>
-										{waitlistSubmitting
-											? 'Saving...'
-											: waitlistJoined
-												? 'On waitlist'
-												: 'Join waitlist'}
-									</Button>
-									{#if waitlistError}
-										<p class="text-xs text-destructive-foreground">{waitlistError}</p>
-									{/if}
-								</div>
-							{/if}
-
-							<div class="grid gap-3 sm:grid-cols-2">
-								<button
-									type="button"
-									aria-pressed={status === 'accepted'}
-									disabled={blocksNewAcceptance}
-									class={cn(
-										'rounded-2xl border p-4 text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60',
-										status === 'accepted'
-											? 'border-success/50 bg-success/18 shadow-[0_0_20px_hsl(150_80%_45%/0.15)]'
-											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35 hover:border-primary/25'
-									)}
-									onclick={() => {
-										status = 'accepted';
-										clearFormErrors();
-									}}
-								>
-									<p class="text-sm font-semibold">I&apos;m in</p>
-									<p class="mt-1 text-xs text-muted-foreground">
-										Keep me on the list and hold my spot.
-									</p>
-								</button>
-								<button
-									type="button"
-									aria-pressed={status === 'declined'}
-									class={cn(
-										'rounded-2xl border p-4 text-left transition-all duration-200',
-										status === 'declined'
-											? 'border-destructive/45 bg-destructive/14'
-											: 'border-border/80 bg-secondary/20 hover:bg-secondary/35 hover:border-primary/25'
-									)}
-									onclick={() => {
-										status = 'declined';
-										clearFormErrors();
-									}}
-								>
-									<p class="text-sm font-semibold">Can&apos;t make it</p>
-									<p class="mt-1 text-xs text-muted-foreground">
-										Free up capacity and update your RSVP.
-									</p>
-								</button>
-							</div>
-
-							{#if plusOnesEnabled}
-								<div class="space-y-2">
-									<div class="flex items-baseline justify-between gap-2">
-										<Label for="plusOnes">Plus-ones (optional)</Label>
-										<span class="text-xs text-muted-foreground">{parsedPlusOnes.length}/4</span>
-									</div>
-									<Textarea
-										id="plusOnes"
-										rows={4}
-										bind:value={plusOneLines}
-										placeholder="One name per line, max 4"
-										oninput={clearFormErrors}
-									/>
-									{#if parsedPlusOnes.length > 0}
-										<p class="text-xs text-muted-foreground">
-											Adding: {parsedPlusOnes.join(', ')}
-										</p>
-									{/if}
-								</div>
-							{:else}
-								<p class="text-xs text-muted-foreground">
-									The host has disabled plus-ones for this invite.
-								</p>
-							{/if}
-
-							{#if errorMessage}
-								<p class="state-panel-error" aria-live="polite">
-									{errorMessage}
-								</p>
-							{/if}
-
-							<div class="relative inline-flex">
-								<Button onclick={submitRsvp} disabled={submitting} class="relative z-10">
-									{submitting ? 'Saving...' : 'Save RSVP'}
-								</Button>
-								{#if celebrateAccepted}
-									<span class="pointer-events-none absolute -inset-3 rounded-pill border border-success/45 animate-ping"></span>
-									<span class="pointer-events-none absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-pill bg-success/70 motion-enter"></span>
-									<span
-										class="pointer-events-none absolute -right-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-pill bg-primary/70 motion-enter"
-										style="animation-delay: 90ms"
-									></span>
-									<span
-										class="pointer-events-none absolute left-1/2 -top-1 h-2 w-2 -translate-x-1/2 rounded-pill bg-success/75 motion-enter"
-										style="animation-delay: 140ms"
-									></span>
-								{/if}
-							</div>
-						{/if}
-
-						{#if guest}
-							<Separator class="my-2" />
-							<div class="space-y-3 rounded-2xl border border-border/70 bg-secondary/25 p-4">
-								<div class="flex flex-wrap items-center gap-2">
-									<StatusChip status={guest.checkedInAt ? 'checked-in' : guest.status} />
-									<span class="text-xs text-muted-foreground">Saved response</span>
-								</div>
-								<p class="text-sm font-medium text-foreground">
-									{guest.status === 'accepted'
-										? 'You already responded: Accepted'
-										: 'You already responded: Declined'}
-								</p>
-								{#if guestLastUpdated}
-									<p class="text-xs text-muted-foreground">{guestLastUpdated}</p>
-								{/if}
-								<p class="text-xs text-muted-foreground">
-									Need to change your response? Edit the fields above and save again.
-								</p>
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
-			</div>
-
-			<div class="space-y-4">
-				<CapacityMeter
-					capacity={reservation.capacity}
-					accepted={reservation.claimedCount}
-					declined={reservation.declinedCount}
-				/>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Activity</CardTitle>
-						<CardDescription>Live updates and comments for this invite.</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-3">
-						{#if loadingComments}
-							<div class="state-panel-muted">Loading updates...</div>
-						{:else if comments.length === 0}
-							<div class="state-panel-muted">No updates yet. Be the first to post.</div>
-						{:else}
-							<div class="space-y-2">
-								{#each comments as comment (comment.id)}
-									<div class="rounded-xl border border-border/80 bg-secondary/20 px-3 py-2">
-										<div class="flex items-center justify-between gap-2">
-											<p class="text-xs font-semibold text-foreground">{comment.displayName}</p>
-											<p class="text-xs text-muted-foreground">{formatCommentTime(comment.createdAt)}</p>
-										</div>
-										<p class="mt-1 whitespace-pre-wrap break-words text-sm text-foreground">
-											{comment.text}
-										</p>
-									</div>
-								{/each}
-							</div>
-						{/if}
-
-						<div class="space-y-2 rounded-2xl border border-border/80 bg-secondary/20 p-3">
-							<p class="text-xs text-muted-foreground">Share a quick update or comment.</p>
-							<Textarea
-								rows={3}
-								placeholder="Set times changed, line is moving fast, dress code reminder..."
-								bind:value={commentDraft}
-								maxlength={maxCommentLength}
-								disabled={postingComment}
-								oninput={() => { commentError = ''; }}
-							/>
-							<div class="flex items-center justify-between gap-3">
-								<p class="text-xs text-muted-foreground">{commentDraft.trim().length}/{maxCommentLength}</p>
-								{#if $currentUser}
-									<Button
-										size="sm"
-										onclick={handlePostComment}
-										disabled={postingComment || commentDraft.trim().length === 0}
-									>
-										{postingComment ? 'Posting...' : 'Post update'}
-									</Button>
-								{:else}
-									<Button size="sm" variant="outline" onclick={openGuestSignIn}>Sign in to comment</Button>
-								{/if}
-							</div>
-							{#if commentError}
-								<p class="text-xs text-destructive-foreground">{commentError}</p>
-							{/if}
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>FAQ</CardTitle>
-						<CardDescription>Quick answers before you RSVP.</CardDescription>
-					</CardHeader>
-					<CardContent class="space-y-2">
-						{#each faqItems as item (item.id)}
-							<details class="group rounded-2xl border border-border/75 bg-secondary/20">
-								<summary class="faq-summary flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-foreground">
-									<span>{item.question}</span>
-									<span class="inline-flex h-6 w-6 items-center justify-center rounded-pill border border-border/80 bg-background/30 text-muted-foreground">
-										<ChevronDown class="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180" />
+								<div class="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/45 px-3 py-2.5">
+									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-300">
+										<MapPin class="h-4 w-4" />
 									</span>
-								</summary>
-								<p class="px-4 pb-4 text-sm text-muted-foreground">{item.answer}</p>
-							</details>
-						{/each}
-					</CardContent>
-				</Card>
+									<div class="min-w-0">
+										<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">{reservation.tableType}</p>
+										<p class="text-xs text-zinc-400">{countdownSubline}</p>
+									</div>
+								</div>
+								<div class="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/45 px-3 py-2.5">
+									<span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-lime-400/15 text-lime-300">
+										<Users class="h-4 w-4" />
+									</span>
+									<div class="min-w-0">
+										<p class="text-sm font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+											{reservation.claimedCount} going - {spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left
+										</p>
+										<p class="text-xs text-zinc-400">
+											{reservation.plusOnesEnabled === false ? 'Plus-ones currently disabled' : 'Plus-ones allowed (up to 4)'}
+										</p>
+									</div>
+								</div>
+							</div>
 
-				{#if publicGuestListVisible}
-					<Card>
-						<CardHeader>
-							<div class="flex items-center justify-between gap-3">
-								<CardTitle>Who&apos;s going</CardTitle>
-								{#if publicAttendees.length > 0}
-									<Button
-										size="sm"
-										variant="ghost"
+							<div class="h-px w-full bg-zinc-800"></div>
+
+							<section class="space-y-4">
+								<div>
+									<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">Are you going?</p>
+									{#if lowSpotsWarning}
+										<p class="mt-1 text-sm text-amber-300">Only {spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left.</p>
+									{/if}
+								</div>
+
+								{#if !$currentUser}
+									<p class="text-sm text-zinc-300">Sign in with phone verification to respond and reserve your spot.</p>
+									{#if errorMessage}
+										<p class="rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-sm text-rose-200" aria-live="polite">{errorMessage}</p>
+									{/if}
+									<div class="flex flex-wrap gap-2">
+										<Button onclick={joinGuestlist}>Join Guestlist</Button>
+										<button
+											type="button"
+											class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+											onclick={openGuestSignIn}
+										>
+											Sign in
+										</button>
+									</div>
+								{:else if hostRoleChecking}
+									<p class="rounded-lg border border-zinc-700 bg-zinc-900/70 px-3 py-2 text-sm text-zinc-300" aria-live="polite">
+										Checking your access...
+									</p>
+								{:else if hostViewOnly}
+									<div class="space-y-3 rounded-xl border border-violet-500/35 bg-violet-500/10 p-4">
+										<p class="text-sm font-semibold text-white">Host preview mode</p>
+										<p class="text-sm text-zinc-300">Hosts can view this guest page, but RSVP actions are disabled.</p>
+										<div class="flex flex-wrap gap-2">
+											<a
+												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+												href={`/r/${reservationId}/host`}
+											>
+												Open host hub
+											</a>
+											<a
+												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+												href={`/r/${reservationId}/checkin`}
+											>
+												Open check-in
+											</a>
+										</div>
+									</div>
+								{:else}
+									<div class="space-y-2">
+										<Label for="displayName" class="text-zinc-200">Display name</Label>
+										<Input
+											id="displayName"
+											bind:value={displayName}
+											placeholder="Your full name"
+											class="border-zinc-700 bg-zinc-900/85 text-zinc-100 placeholder:text-zinc-500"
+											oninput={clearFormErrors}
+										/>
+										<p class="text-xs text-zinc-400">This name appears on the guest list.</p>
+									</div>
+
+									{#if blocksNewAcceptance}
+										<div class="space-y-3 rounded-xl border border-rose-400/35 bg-rose-500/10 p-4">
+											<p class="text-sm font-semibold text-rose-100">This guest list is full right now.</p>
+											<p class="text-xs text-zinc-300">Join the waitlist to stay on standby if a spot opens.</p>
+											<Button
+												size="sm"
+												variant={waitlistJoined ? 'success' : 'outline'}
+												onclick={joinWaitlist}
+												disabled={waitlistSubmitting}
+											>
+												{waitlistSubmitting ? 'Saving...' : waitlistJoined ? 'On waitlist' : 'Join waitlist'}
+											</Button>
+											{#if waitlistError}
+												<p class="text-xs text-rose-200">{waitlistError}</p>
+											{/if}
+										</div>
+									{/if}
+
+									<div class="grid gap-2 sm:grid-cols-3">
+										<button
+											type="button"
+											aria-pressed={status === 'accepted'}
+											disabled={blocksNewAcceptance}
+											class={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+												status === 'accepted'
+													? 'border-violet-500/65 bg-gradient-to-r from-violet-500 to-violet-700 text-white'
+													: 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-violet-500/45 hover:text-white'
+											}`}
+											onclick={() => {
+												status = 'accepted';
+												clearFormErrors();
+											}}
+										>
+											<Sparkles class="h-4 w-4" />
+											Going
+										</button>
+										<button
+											type="button"
+											disabled
+											class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 text-sm font-semibold text-zinc-500 opacity-80"
+											title="Maybe is not available yet"
+										>
+											<Clock3 class="h-4 w-4" />
+											Maybe
+										</button>
+										<button
+											type="button"
+											aria-pressed={status === 'declined'}
+											class={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
+												status === 'declined'
+													? 'border-rose-500/65 bg-gradient-to-r from-rose-500 to-red-600 text-white'
+													: 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-rose-500/45 hover:text-white'
+											}`}
+											onclick={() => {
+												status = 'declined';
+												clearFormErrors();
+											}}
+										>
+											<X class="h-4 w-4" />
+											Can&apos;t Go
+										</button>
+									</div>
+
+									{#if plusOnesEnabled}
+										<div class="space-y-2">
+											<div class="flex items-baseline justify-between gap-2">
+												<Label for="plusOnes" class="text-zinc-200">Plus-ones (optional)</Label>
+												<span class="text-xs text-zinc-400">{parsedPlusOnes.length}/4</span>
+											</div>
+											<Textarea
+												id="plusOnes"
+												rows={3}
+												bind:value={plusOneLines}
+												placeholder="One name per line, max 4"
+												class="border-zinc-700 bg-zinc-900/85 text-zinc-100 placeholder:text-zinc-500"
+												oninput={clearFormErrors}
+											/>
+											{#if parsedPlusOnes.length > 0}
+												<p class="text-xs text-zinc-400">Adding: {parsedPlusOnes.join(', ')}</p>
+											{/if}
+										</div>
+									{:else}
+										<p class="text-xs text-zinc-400">The host has disabled plus-ones for this invite.</p>
+									{/if}
+
+									{#if errorMessage}
+										<p class="rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-sm text-rose-200" aria-live="polite">
+											{errorMessage}
+										</p>
+									{/if}
+
+									<div class="relative inline-flex">
+										<Button onclick={submitRsvp} disabled={submitting} class="relative z-10">
+											{submitting ? 'Saving...' : guest ? 'Update RSVP' : 'Save RSVP'}
+										</Button>
+										{#if celebrateAccepted}
+											<span class="pointer-events-none absolute -inset-3 rounded-pill border border-violet-400/45 animate-ping"></span>
+										{/if}
+									</div>
+								{/if}
+
+								{#if guest}
+									<div class="rounded-xl border border-zinc-700 bg-zinc-900/55 p-3">
+										<p class="text-sm font-semibold text-white">
+											{guest.status === 'accepted' ? 'You already responded: Going' : 'You already responded: Cannot Go'}
+										</p>
+										{#if guestLastUpdated}
+											<p class="mt-1 text-xs text-zinc-400">{guestLastUpdated}</p>
+										{/if}
+									</div>
+								{/if}
+							</section>
+
+							{#if !productionLike && debugMessage}
+								<p class="rounded-lg border border-zinc-700 bg-zinc-900/65 px-3 py-2 text-xs text-zinc-300">{debugMessage}</p>
+							{/if}
+						</div>
+
+						<aside class="space-y-6">
+							<section class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+								<div class="flex items-center justify-between gap-3">
+									<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">Who&apos;s Going</p>
+									<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 px-2 text-[11px] text-zinc-300">
+										{reservation.claimedCount}
+									</span>
+								</div>
+
+								{#if !publicGuestListVisible}
+									<p class="text-sm text-zinc-400">The host has hidden the public guest list.</p>
+								{:else if publicAttendees.length === 0}
+									<p class="text-sm text-zinc-400">No accepted guests yet. Check back soon.</p>
+								{:else}
+									<div class="flex items-center">
+										{#each visibleAttendees as attendee, index (attendee.uid)}
+											<span
+												class="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#050507] bg-violet-500/25 text-xs font-semibold text-violet-100 first:ml-0"
+												style={`z-index:${10 - index}`}
+											>
+												{initials(attendee.namePublic)}
+											</span>
+										{/each}
+										{#if hiddenAttendeesCount > 0}
+											<span class="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-[11px] font-semibold text-zinc-300">
+												+{hiddenAttendeesCount}
+											</span>
+										{/if}
+									</div>
+
+									<div class="space-y-2">
+										{#each visibleAttendees as attendee (attendee.uid)}
+											<div class="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2">
+												<div class="min-w-0">
+													<p class="truncate text-sm font-semibold text-white">{attendee.namePublic}</p>
+													<p class="text-xs text-violet-300">Going</p>
+												</div>
+												<p class="text-[11px] text-zinc-500">recent</p>
+											</div>
+										{/each}
+									</div>
+
+									<button
+										type="button"
+										class="text-xs font-semibold text-violet-300 transition hover:text-violet-200"
 										onclick={() => {
 											guestListDialogOpen = true;
 										}}
 									>
-										View all
-									</Button>
+										View all {publicAttendees.length} guests ?
+									</button>
 								{/if}
-							</div>
-							<CardDescription>Accepted attendees shown in first-name format.</CardDescription>
-						</CardHeader>
-						<CardContent>
-							{#if publicAttendees.length === 0}
-								<div class="state-panel-muted" aria-live="polite">
-									No accepted guests yet. Check back once more responses come in.
-								</div>
-							{:else}
-								<div class="grid gap-2">
-									{#each publicAttendees as attendee (attendee.uid)}
-										<p class="rounded-2xl border border-border/70 bg-secondary/20 px-3 py-2 text-sm">
-											{attendee.namePublic}
-										</p>
-									{/each}
-								</div>
-							{/if}
-						</CardContent>
-					</Card>
-				{/if}
-			</div>
-		</section>
-	{/if}
-</main>
+							</section>
 
-{#if reservation && !hostViewOnly}
-	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-background/85 backdrop-blur-xl">
-		<div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-		<div class="app-shell py-3">
-			<div class="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
-				<div class="min-w-0">
-					{#if isCapacityFull}
-						<p class="text-sm font-medium text-destructive-foreground">
-							{waitlistJoined ? 'You are on the waitlist' : 'Guest list is currently full'}
-						</p>
-					{:else}
-						<p class="text-sm font-medium text-foreground">
-							{spotsRemaining} spot{spotsRemaining === 1 ? '' : 's'} left
-						</p>
-					{/if}
-					<p class="text-xs text-muted-foreground">
-						{$currentUser ? 'Update your RSVP any time.' : 'Sign in to respond and save your spot.'}
-					</p>
+							<section class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+								<p class="text-lg font-semibold text-white" style="font-family: 'Space Grotesk', sans-serif;">Comments</p>
+								{#if loadingComments}
+									<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm text-zinc-400">Loading updates...</div>
+								{:else if comments.length === 0}
+									<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm text-zinc-400">No updates yet. Be the first to post.</div>
+								{:else}
+									<div class="space-y-2">
+										{#each comments as comment (comment.id)}
+											<div class="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
+												<div class="flex items-center justify-between gap-2">
+													<p class="text-xs font-semibold text-white">{comment.displayName}</p>
+													<p class="text-[11px] text-zinc-500">{formatCommentTime(comment.createdAt)}</p>
+												</div>
+												<p class="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-300">{comment.text}</p>
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								<div class="rounded-lg border border-zinc-700 bg-zinc-950/60 p-2">
+									<div class="flex items-center gap-2">
+										<Input
+											placeholder="Add a comment..."
+											bind:value={commentDraft}
+											maxlength={maxCommentLength}
+											disabled={postingComment}
+											class="h-9 border-zinc-700 bg-zinc-900/80 text-zinc-100 placeholder:text-zinc-500"
+											oninput={() => {
+												commentError = '';
+											}}
+										/>
+										{#if $currentUser}
+											<button
+												type="button"
+												class="inline-flex h-9 items-center justify-center rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white transition hover:bg-violet-500 disabled:opacity-60"
+												onclick={handlePostComment}
+												disabled={postingComment || commentDraft.trim().length === 0}
+											>
+												{postingComment ? 'Posting...' : 'Post'}
+											</button>
+										{:else}
+											<button
+												type="button"
+												class="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+												onclick={openGuestSignIn}
+											>
+												Sign in
+											</button>
+										{/if}
+									</div>
+									<div class="mt-2 flex items-center justify-between gap-2">
+										<p class="text-[11px] text-zinc-500">{commentDraft.trim().length}/{maxCommentLength}</p>
+										{#if commentError}
+											<p class="text-[11px] text-rose-300">{commentError}</p>
+										{/if}
+									</div>
+								</div>
+							</section>
+
+							<section class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+								<button
+									type="button"
+									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+									onclick={addToCalendar}
+								>
+									Add to Calendar
+								</button>
+								<button
+									type="button"
+									class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-semibold text-zinc-200 transition hover:border-violet-500/55 hover:text-white"
+									onclick={copyInviteLinkToClipboard}
+								>
+									Copy Link
+								</button>
+							</section>
+						</aside>
+					</div>
+				</article>
+			</section>
+		{/if}
+	</div>
+
+	<footer class="relative z-10 mt-2 w-full border-t border-zinc-800 bg-[#0e0e12]">
+		<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-5 py-8 text-zinc-300 sm:px-8 lg:px-12">
+			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<p class="text-lg font-extrabold uppercase text-white" style="font-family: 'Space Grotesk', sans-serif;">Nightclub Guestlist</p>
+					<p class="text-sm text-zinc-400">Your gateway to underground nights and hosted experiences.</p>
 				</div>
-				{#if !$currentUser}
-					<Button size="sm" onclick={joinGuestlist}>Join Guestlist</Button>
-				{:else}
-					<Button size="sm" onclick={submitRsvp} disabled={submitting || hostRoleChecking}>
-						{submitting ? 'Saving...' : guest ? 'Update RSVP' : 'Save RSVP'}
-					</Button>
-				{/if}
+			</div>
+			<div class="flex flex-col gap-3 border-t border-zinc-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+				<p class="text-sm text-zinc-300">Stay in the loop when newly published events drop.</p>
+				<a href="/event" class="inline-flex h-8 w-fit items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-3 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.35)]">Browse Events</a>
+			</div>
+			<div class="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
+				<span>(c) 2026 Nightclub Guestlist. All rights reserved.</span>
 			</div>
 		</div>
-	</div>
-{/if}
-
-<style>
-	:global(.faq-summary::-webkit-details-marker) {
-		display: none;
-	}
-</style>
-
+	</footer>
+</main>
 <Dialog
 	open={guestListDialogOpen}
 	on:openChange={(event) => {
@@ -1225,3 +1323,62 @@
 		{/if}
 	</div>
 </Dialog>
+
+<style>
+	.firework-burst {
+		position: absolute;
+		width: 0;
+		height: 0;
+		transform: translate(-50%, -50%) scale(var(--firework-scale));
+		animation: firework-fade 1150ms var(--firework-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+
+	.firework-particle {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 4px;
+		height: 18px;
+		border-radius: 999px;
+		background: linear-gradient(
+			to top,
+			hsl(var(--firework-hue) 95% 62% / 0.95),
+			hsl(calc(var(--firework-hue) + 28) 96% 76% / 0.9)
+		);
+		box-shadow:
+			0 0 8px hsl(var(--firework-hue) 95% 68% / 0.55),
+			0 0 16px hsl(var(--firework-hue) 95% 62% / 0.35);
+		opacity: 0;
+		transform: rotate(var(--firework-rotation)) translateY(0) scale(0.35);
+		animation: firework-shoot 900ms var(--firework-delay) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+
+	@keyframes firework-shoot {
+		0% {
+			opacity: 0;
+			transform: rotate(var(--firework-rotation)) translateY(0) scale(0.35);
+		}
+		20% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+			transform: rotate(var(--firework-rotation)) translateY(calc(var(--firework-distance) * -1))
+				scale(0.95);
+		}
+	}
+
+	@keyframes firework-fade {
+		0% {
+			opacity: 0.25;
+		}
+		20% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+</style>
+
+

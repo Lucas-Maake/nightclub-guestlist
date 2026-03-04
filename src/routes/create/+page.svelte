@@ -2,16 +2,13 @@
 import { afterNavigate, goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { onDestroy, onMount } from 'svelte';
-import { Minus, Plus } from 'lucide-svelte';
+import { Calendar, LayoutGrid, Minus, Plus, QrCode as QrCodeIcon, Shirt, Users } from 'lucide-svelte';
 import QRCode from 'qrcode';
 import AppHeader from '$lib/components/common/app-header.svelte';
-import CapacityMeter from '$lib/components/common/capacity-meter.svelte';
-import ReservationPreviewCard from '$lib/components/common/reservation-preview-card.svelte';
 	import { findEventById } from '$lib/data/events';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input, Label } from '$lib/components/ui/input';
-	import { Separator } from '$lib/components/ui/separator';
 	import { Switch } from '$lib/components/ui/switch';
 	import { TextSelect } from '$lib/components/ui/text-select';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -44,6 +41,15 @@ const TABLE_TYPE_OPTIONS = [
 	'Mezzanine Tables',
 	'Private Buyout'
 ] as const;
+const inviteDateFormatter = new Intl.DateTimeFormat('en-US', {
+	month: 'short',
+	day: 'numeric',
+	year: 'numeric'
+});
+const inviteTimeFormatter = new Intl.DateTimeFormat('en-US', {
+	hour: 'numeric',
+	minute: '2-digit'
+});
 
 	const defaultForm: FormState = {
 		clubName: '',
@@ -163,7 +169,7 @@ let appliedPrefillSignature = $state('');
 	}
 
 	function prefillSignature(params: URLSearchParams): string {
-		const keys = ['eventId', 'clubName', 'startAt', 'tableType', 'notes', 'dressCode'];
+		const keys = ['eventId', 'clubName', 'startAt', 'tableType', 'notes', 'dressCode', 'capacity'];
 		return keys.map((key) => `${key}=${params.get(key) ?? ''}`).join('&');
 	}
 
@@ -190,7 +196,7 @@ let appliedPrefillSignature = $state('');
 			nextForm.clubName = linkedEvent.venue;
 			nextForm.startAt = toDateTimeInput(new Date(linkedEvent.startAt));
 			nextForm.tableType = normalizeTableTypeSelection(linkedEvent.defaultTableType) ?? '';
-			nextForm.notes = `${linkedEvent.title} — table request from event detail page.`;
+			nextForm.notes = `${linkedEvent.title} - table request from event detail page.`;
 			nextForm.dressCode = linkedEvent.dressCode;
 			hasPrefill = true;
 		}
@@ -223,6 +229,15 @@ let appliedPrefillSignature = $state('');
 		if (dressCode) {
 			nextForm.dressCode = dressCode;
 			hasPrefill = true;
+		}
+
+		const capacityRaw = params.get('capacity');
+		if (capacityRaw) {
+			const parsedCapacity = Number(capacityRaw);
+			if (Number.isFinite(parsedCapacity)) {
+				nextForm.capacity = clampCapacity(Math.round(parsedCapacity));
+				hasPrefill = true;
+			}
 		}
 
 		if (!hasPrefill) {
@@ -474,6 +489,37 @@ const debugInvite = $derived(
 		? inviteDebugUrl(shareReservationId, shareDebugToken)
 		: ''
 );
+const shareStartLine = $derived.by(() => {
+	if (!shareReservation?.startAt || !('toDate' in shareReservation.startAt)) {
+		return 'Start time pending';
+	}
+
+	const value = shareReservation.startAt.toDate();
+	return `${inviteDateFormatter.format(value)} at ${inviteTimeFormatter.format(value)}`;
+});
+const shareDressCodeLine = $derived(shareReservation?.dressCode?.trim() || 'Not specified');
+const shareSpotsLeft = $derived.by(() => {
+	if (!shareReservation) {
+		return 0;
+	}
+	return Math.max(0, shareReservation.capacity - shareReservation.claimedCount);
+});
+const shareCapacityPercent = $derived.by(() => {
+	if (!shareReservation || shareReservation.capacity <= 0) {
+		return 0;
+	}
+
+	return Math.max(
+		0,
+		Math.min(100, Math.round((shareReservation.claimedCount / shareReservation.capacity) * 100))
+	);
+});
+const shareCapacityBarWidth = $derived.by(() => {
+	if (shareCapacityPercent <= 0) {
+		return 0;
+	}
+	return Math.max(shareCapacityPercent, 6);
+});
 const startAtError = $derived.by(() => {
 	const parsedStartAt = createReservationSchema.shape.startAt.safeParse(form.startAt);
 	return parsedStartAt.success
@@ -564,126 +610,181 @@ $effect(() => {
 
 <main class="app-shell py-6 sm:py-10">
 	{#if shareReservationId}
-		<section class="space-y-6">
-			<div class="space-y-2">
-				<h1 class="section-title">Invite is live</h1>
+		<section class="mx-auto w-full max-w-[1440px] space-y-6 text-white">
+			<div class="flex items-center gap-2 bg-[linear-gradient(90deg,rgba(168,85,247,0.12)_0%,rgba(5,5,7,0)_100%)] px-5 py-3 sm:px-8 lg:px-10">
+				<span class="h-2.5 w-2.5 rounded-full bg-lime-300"></span>
+				<p class="text-xs font-bold uppercase tracking-[0.2em] text-lime-300" style="font-family: 'Space Mono', monospace;">
+					Invite is live
+				</p>
 			</div>
 
 			{#if shareLoading}
-				<Card>
-					<CardContent class="p-6">
-						<p class="state-panel-muted" aria-live="polite">Loading invite preview...</p>
-					</CardContent>
-				</Card>
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] px-6 py-10 text-sm text-zinc-400">
+					Loading invite preview...
+				</div>
 			{:else if shareReservation}
-				<ReservationPreviewCard reservation={shareReservation} />
+				<div class="space-y-1 px-5 sm:px-8 lg:px-10">
+					<p class="text-[11px] uppercase tracking-[0.2em] text-zinc-500" style="font-family: 'Space Mono', monospace;">
+						Reservation invite
+					</p>
+					<h1 class="text-4xl font-extrabold text-white" style="font-family: 'Space Grotesk', sans-serif;">
+						{shareReservation.clubName}
+					</h1>
+					<p class="max-w-[800px] text-sm text-zinc-400">{shareReservation.notes}</p>
+				</div>
 
-				<div class="grid gap-4 lg:grid-cols-[2fr_1fr]">
-					<Card>
-						<CardHeader>
-							<CardTitle>Share links</CardTitle>
-							<CardDescription>Send this link to your guests.</CardDescription>
-						</CardHeader>
-						<CardContent class="space-y-4">
-							<div class="rounded-2xl border border-border/75 bg-secondary/30 p-4">
-								<p class="text-xs uppercase tracking-wide text-muted-foreground">Guest Invite</p>
-								<p class="mt-2 break-all text-sm">{invite}</p>
-								<Button
-									class="mt-4"
-									size="sm"
-									disabled={copyingTarget === 'invite'}
-									variant={inviteCopied ? 'success' : 'default'}
-									onclick={() => copyShareLink(invite, 'Invite link copied', 'invite')}
-								>
-									{copyingTarget === 'invite' ? 'Copying...' : inviteCopied ? 'Copied' : 'Copy invite link'}
-								</Button>
-							</div>
-
-							{#if debugInvite}
-								<div class="rounded-2xl border border-primary/30 bg-primary/10 p-4">
-									<p class="text-xs uppercase tracking-wide text-primary">Test access link</p>
-									<p class="mt-2 break-all text-sm">{debugInvite}</p>
-									<p class="mt-2 text-xs text-muted-foreground">
-										For local testing only. This link does not work on live sites.
-									</p>
-									<Button
-										class="mt-4"
-										size="sm"
-										disabled={copyingTarget === 'debug'}
-										variant={debugInviteCopied ? 'success' : 'outline'}
-										onclick={() => copyShareLink(debugInvite, 'Test link copied', 'debug')}
-									>
-										{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy test link'}
-									</Button>
+				<div class="px-5 sm:px-8 lg:px-10">
+					<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-7">
+						<div class="grid gap-4 md:grid-cols-3">
+							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Starts</p>
+								<div class="flex items-center gap-2.5">
+									<Calendar class="h-4 w-4 text-violet-400" />
+									<p class="text-sm font-semibold text-white">{shareStartLine}</p>
 								</div>
-							{/if}
-						</CardContent>
-					</Card>
+							</div>
+							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Table</p>
+								<div class="flex items-center gap-2.5">
+									<LayoutGrid class="h-4 w-4 text-cyan-400" />
+									<p class="text-sm font-semibold text-white">{shareReservation.tableType}</p>
+								</div>
+							</div>
+							<div class="space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Capacity</p>
+								<div class="flex items-center gap-2.5">
+									<Users class="h-4 w-4 text-lime-300" />
+									<p class="text-sm font-semibold text-white">{shareReservation.capacity} guests</p>
+								</div>
+							</div>
+						</div>
+						<div class="mt-4 space-y-2 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+							<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Dress code</p>
+							<div class="flex items-center gap-2.5">
+								<Shirt class="h-4 w-4 text-pink-400" />
+								<p class="text-sm font-semibold text-white">{shareDressCodeLine}</p>
+							</div>
+						</div>
+					</div>
+				</div>
 
-					<div class="space-y-4">
-						<CapacityMeter
-							capacity={shareReservation.capacity}
-							accepted={shareReservation.claimedCount}
-							declined={shareReservation.declinedCount}
-						/>
-						<Card>
-							<CardHeader>
-								<CardTitle>Scan invite</CardTitle>
-								<CardDescription>Guests can scan this QR code to open the invite page.</CardDescription>
-							</CardHeader>
-							<CardContent class="space-y-3 p-4">
+				<div class="grid gap-6 px-5 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-10">
+					<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-7">
+						<h2 class="text-2xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Share links</h2>
+						<p class="mt-1 text-sm text-zinc-400">Send this link to your guests.</p>
+
+						<div class="mt-4 space-y-4 rounded-xl border border-zinc-800 bg-[#1A1A22] px-5 py-4">
+							<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500" style="font-family: 'Space Mono', monospace;">Guest invite</p>
+							<p class="break-all text-sm text-white" style="font-family: 'Space Mono', monospace;">{invite}</p>
+							<button
+								type="button"
+								disabled={copyingTarget === 'invite'}
+								class="inline-flex h-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-xs font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] disabled:opacity-60"
+								onclick={() => copyShareLink(invite, 'Invite link copied', 'invite')}
+							>
+								{copyingTarget === 'invite' ? 'Copying...' : inviteCopied ? 'Copied' : 'Copy invite link'}
+							</button>
+						</div>
+
+						{#if debugInvite}
+							<div class="mt-4 space-y-3 rounded-xl border border-violet-500/35 bg-violet-500/10 px-5 py-4">
+								<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-300" style="font-family: 'Space Mono', monospace;">Test access</p>
+								<p class="break-all text-xs text-zinc-200" style="font-family: 'Space Mono', monospace;">{debugInvite}</p>
+								<button
+									type="button"
+									disabled={copyingTarget === 'debug'}
+									class="inline-flex h-8 items-center justify-center rounded-lg border border-violet-500/45 bg-transparent px-3 text-xs font-semibold text-violet-200 transition hover:text-white disabled:opacity-60"
+									onclick={() => copyShareLink(debugInvite, 'Test link copied', 'debug')}
+								>
+									{copyingTarget === 'debug' ? 'Copying...' : debugInviteCopied ? 'Copied' : 'Copy test link'}
+								</button>
+							</div>
+						{/if}
+					</section>
+
+					<div class="space-y-5">
+						<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+							<div class="flex items-center justify-between gap-3">
+								<h2 class="text-xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Capacity</h2>
+								<p class="text-xs text-zinc-400" style="font-family: 'Space Mono', monospace;">
+									{shareReservation.claimedCount}/{shareReservation.capacity} spots claimed
+								</p>
+							</div>
+							<div class="mt-3 h-1.5 w-full rounded bg-[#1A1A22]">
+								<div
+									class="h-1.5 rounded bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"
+									style={`width:${shareCapacityBarWidth}%`}
+								></div>
+							</div>
+							<div class="mt-3 flex items-center justify-between gap-2 text-xs" style="font-family: 'Space Mono', monospace;">
+								<p class="font-semibold text-lime-300">{shareSpotsLeft} spots left</p>
+								<p class="text-zinc-500">{shareReservation.declinedCount} declined</p>
+							</div>
+						</section>
+
+						<section class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6">
+							<h2 class="text-xl font-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">Scan invite</h2>
+							<p class="mt-1 text-sm text-zinc-400">Guests can scan this QR code to open the invite page.</p>
+							<div class="mt-4 flex justify-center">
 								{#if inviteQrLoading}
-									<div class="mx-auto h-[210px] w-[210px] animate-pulse rounded-2xl border border-border/75 bg-secondary/35"></div>
+									<div class="h-40 w-40 animate-pulse rounded-xl border border-zinc-700 bg-zinc-800"></div>
 								{:else if inviteQrDataUrl}
 									<img
 										src={inviteQrDataUrl}
 										alt="QR code for reservation invite link"
-										class="mx-auto h-[210px] w-[210px] rounded-2xl border border-border/75 bg-white p-2"
+										class="h-40 w-40 rounded-xl border border-zinc-700 bg-white p-2"
 									/>
 								{:else}
-									<p class="state-panel-muted text-center">Unable to generate QR code right now.</p>
+									<div class="flex h-40 w-40 items-center justify-center rounded-xl border border-zinc-700 bg-white">
+										<QrCodeIcon class="h-16 w-16 text-zinc-700" />
+									</div>
 								{/if}
-								<p class="text-center text-xs text-muted-foreground">
-									Best for at-door scan and quick guest access.
-								</p>
-							</CardContent>
-						</Card>
-						<Card>
-							<CardContent class="space-y-3 p-4">
-								<a class={cn(buttonVariants({ variant: 'default', size: 'md' }), 'w-full')} href={invite}>
-									Open guest page
-								</a>
-								<a
-									class={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'w-full')}
-									href={`/r/${shareReservationId}/host`}
-								>
-									Open host hub
-								</a>
-								<a
-									class={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'w-full')}
-									href={`/r/${shareReservationId}/checkin`}
-								>
-									Open door check-in
-								</a>
-								<Separator class="my-1" />
-								<a class={cn(buttonVariants({ variant: 'ghost', size: 'md' }), 'w-full')} href="/event">
-									Browse events
-								</a>
-							</CardContent>
-						</Card>
+							</div>
+							<p class="mt-3 text-center text-xs italic text-zinc-500">Best for at-door scan and quick guest access.</p>
+						</section>
+
+						<section class="space-y-2">
+							<a
+								href={invite}
+								class="inline-flex h-11 w-full items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 px-4 text-sm font-bold text-white shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+								style="font-family: 'Space Grotesk', sans-serif;"
+							>
+								Open guest page
+							</a>
+							<a
+								href={`/r/${shareReservationId}/host`}
+								class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-violet-500/55 bg-transparent px-4 text-sm font-bold text-violet-300 transition hover:text-white"
+								style="font-family: 'Space Grotesk', sans-serif;"
+							>
+								Open host hub
+							</a>
+							<a
+								href={`/r/${shareReservationId}/checkin`}
+								class="inline-flex h-11 w-full items-center justify-center rounded-lg border border-zinc-700 bg-transparent px-4 text-sm font-bold text-zinc-300 transition hover:text-white"
+								style="font-family: 'Space Grotesk', sans-serif;"
+							>
+								Open door check-in
+							</a>
+							<a
+								href="/event"
+								class="inline-flex h-9 w-full items-center justify-center text-sm font-semibold text-zinc-500 transition hover:text-zinc-300"
+							>
+								Browse events
+							</a>
+						</section>
 					</div>
 				</div>
 			{:else}
-				<Card>
-					<CardContent class="p-6">
-						<div class="state-panel-muted">
-							<p>Reservation not found. Open an event to book a table and start again.</p>
-							<a class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mt-3')} href="/event">
-								Browse events
-							</a>
-						</div>
-					</CardContent>
-				</Card>
+				<div class="rounded-2xl border border-zinc-800 bg-[#14141A] p-6 text-zinc-300">
+					<p class="font-semibold text-white">Reservation not found.</p>
+					<p class="mt-1 text-sm">Open an event to book a table and start again.</p>
+					<a
+						class="mt-4 inline-flex h-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm font-semibold text-zinc-200 transition hover:border-violet-500/50 hover:text-white"
+						href="/event"
+					>
+						Browse events
+					</a>
+				</div>
 			{/if}
 		</section>
 	{:else}
