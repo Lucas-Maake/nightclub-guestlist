@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { Calendar, ChevronRight, Clock3, MapPin, Sparkles, Ticket } from 'lucide-svelte';
 	import AppHeader from '$lib/components/common/app-header.svelte';
@@ -223,11 +224,11 @@
 
 			<div class="scrollbar-none flex w-full flex-wrap items-center gap-2 overflow-x-auto">
 				<div class="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/80 p-1" role="tablist" aria-label="Main view">
-					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'events')}>
+					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'events' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => goto('?tab=events', { replaceState: true, noScroll: true })}>
 						<Calendar class="h-4 w-4" />
 						<span>Events</span>
 					</button>
-					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => (mainView = 'tickets')}>
+					<button type="button" class={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold transition ${mainView === 'tickets' ? 'bg-gradient-to-br from-violet-500 to-violet-700 text-white shadow-[0_0_24px_rgba(168,85,247,0.35)]' : 'text-zinc-400 hover:text-white'}`} onclick={() => goto('?tab=tickets', { replaceState: true, noScroll: true })}>
 						<Ticket class="h-4 w-4" />
 						<span>Tickets</span>
 					</button>
@@ -261,8 +262,8 @@
 					</div>
 				</section>
 			{:else if !eventsError && featuredEvent}
-				<section class="mx-5 grid max-h-[360px] overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:max-h-none lg:grid-cols-[280px_minmax(0,1fr)]">
-					<div class="min-h-[190px]">
+				<section class="mx-5 grid overflow-hidden rounded-2xl border border-violet-500/35 bg-zinc-900 sm:mx-8 lg:mx-12 lg:grid-cols-[280px_minmax(0,1fr)]">
+					<div class="h-[220px] lg:h-auto lg:min-h-full">
 						{#if eventPosterImage(featuredEvent)}
 							<img class="h-full w-full object-cover" src={eventPosterImage(featuredEvent)} alt={`Featured poster for ${featuredEvent.title}`} loading="lazy" decoding="async" />
 						{/if}
